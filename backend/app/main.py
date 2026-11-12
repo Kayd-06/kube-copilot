@@ -24,6 +24,7 @@ from app.deps import (
 )
 from app.k8s_client import K8sClient, K8sUnavailableError, PodNotFoundError
 from app.llm_explainer import LLMError, LLMExplainer, fallback_diagnosis, parse_diagnosis
+from app.metrics.instrumentation import instrument_app, record_anomaly, record_llm_call, track_diagnose_latency
 from app.metrics.prometheus import PrometheusClient, PrometheusUnavailableError
 from app.models import (
     AnomaliesResponse,
@@ -76,8 +77,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application = FastAPI(
         title="Kube Copilot",
         description=(
-            "AI incident copilot for Kubernetes — Phase 3 diagnoses unhealthy "
-            "pods with an LLM, citing retrieved runbooks, and flags metric "
+            "AI incident copilot for Kubernetes — diagnoses unhealthy pods "
+            "with an LLM, citing retrieved runbooks, and flags metric "
             "anomalies with an Isolation Forest trained on synthetic data."
         ),
         version=__version__,
@@ -90,6 +91,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    instrument_app(application)
     return application
 
 
@@ -205,7 +207,9 @@ def _score_pod(
         if not scorer.loaded:
             return None, True
         points = prometheus.pod_metric_series(namespace, name)
-        return to_anomaly_score(scorer.score_window(namespace, name, points)), False
+        scored = to_anomaly_score(scorer.score_window(namespace, name, points))
+        record_anomaly(scored.namespace, scored.name, scored.score, scored.is_anomaly)
+        return scored, False
     except (AnomalyModelMissingError, PrometheusUnavailableError) as exc:
         logger.info("Anomaly scoring skipped for %s/%s: %s", namespace, name, exc)
         return None, True
@@ -240,10 +244,13 @@ async def diagnose_pod(
             },
         )
 
-    try:
-        diagnosis = llm.explain(pod, events, logs, retrieved=retrieved.chunks, anomaly=anomaly)
-    except LLMError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    with track_diagnose_latency():
+        try:
+            diagnosis = llm.explain(pod, events, logs, retrieved=retrieved.chunks, anomaly=anomaly)
+            record_llm_call(True)
+        except LLMError as exc:
+            record_llm_call(False)
+            raise HTTPException(status_code=502, detail=str(exc)) from exc
     return DiagnoseResponse(
         pod=pod,
         events=events,
@@ -303,15 +310,18 @@ async def _diagnosis_sse(
         )
 
     chunks: list[str] = []
-    try:
-        async for piece in llm.aexplain_stream(
-            pod, events, logs, retrieved=retrieved.chunks, anomaly=anomaly
-        ):
-            chunks.append(piece)
-            yield _sse("token", json.dumps({"text": piece}))
-    except LLMError as exc:
-        yield _sse("error", {"detail": str(exc)})
-        return
+    with track_diagnose_latency():
+        try:
+            async for piece in llm.aexplain_stream(
+                pod, events, logs, retrieved=retrieved.chunks, anomaly=anomaly
+            ):
+                chunks.append(piece)
+                yield _sse("token", json.dumps({"text": piece}))
+            record_llm_call(True)
+        except LLMError as exc:
+            record_llm_call(False)
+            yield _sse("error", {"detail": str(exc)})
+            return
 
     text = "".join(chunks)
     try:
@@ -358,7 +368,9 @@ def list_anomalies(
         result = scorer.score_window(ns, name, points)
         if flagged_only and not result.is_anomaly:
             continue
-        scores.append(to_anomaly_score(result))
+        scored = to_anomaly_score(result)
+        record_anomaly(scored.namespace, scored.name, scored.score, scored.is_anomaly)
+        scores.append(scored)
     scores.sort(key=lambda item: item.score, reverse=True)
     return AnomaliesResponse(pods=scores, count=len(scores), model_loaded=True)
 
@@ -384,7 +396,9 @@ def get_pod_anomaly(
                 "Is metrics-up running, and has the pod been scraping for a minute?"
             ),
         )
-    return to_anomaly_score(scorer.score_window(namespace, name, points))
+    scored = to_anomaly_score(scorer.score_window(namespace, name, points))
+    record_anomaly(scored.namespace, scored.name, scored.score, scored.is_anomaly)
+    return scored
 
 
 @app.post("/incidents", response_model=IncidentSaved)

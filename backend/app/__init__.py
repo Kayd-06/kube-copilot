@@ -11,4 +11,4 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timezone
+from pathlib import Path
 
 from kubernetes import client, config
 from kubernetes.client import ApiException
@@ -221,11 +222,20 @@ class K8sClient:
         self._loaded = False
         self._core: client.CoreV1Api | None = None
 
+
+    def _should_load_incluster(self) -> bool:
+        """Prefer in-cluster config when running as a pod, even if the env flag was omitted."""
+        if self._settings.k8s_in_cluster:
+            return True
+        if self._settings.k8s_kubeconfig:
+            return False
+        return Path("/var/run/secrets/kubernetes.io/serviceaccount/token").is_file()
+
     def _ensure_connected(self) -> client.CoreV1Api:
         if self._core is not None and self._loaded:
             return self._core
         try:
-            if self._settings.k8s_in_cluster:
+            if self._should_load_incluster():
                 config.load_incluster_config()
             else:
                 config.load_kube_config(config_file=self._settings.k8s_kubeconfig)

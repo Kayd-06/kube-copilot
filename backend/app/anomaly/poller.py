@@ -8,11 +8,11 @@ from __future__ import annotations
 
 import logging
 import threading
-import time
 from datetime import datetime, timezone
 
 from app.anomaly.scorer import AnomalyModelMissingError, AnomalyScorer, ScoreResult
 from app.config import Settings, get_settings
+from app.metrics.instrumentation import record_anomaly
 from app.metrics.prometheus import PrometheusClient, PrometheusUnavailableError
 
 logger = logging.getLogger(__name__)
@@ -96,5 +96,7 @@ class AnomalyPoller:
             self._cache = results
             self._last_error = None
             self._last_run = datetime.now(timezone.utc)
+        for item in results.values():
+            record_anomaly(item.namespace, item.name, item.score, item.is_anomaly)
         flagged = sum(1 for item in results.values() if item.is_anomaly)
         logger.info("Anomaly poller scored %s pods (%s flagged)", len(results), flagged)
