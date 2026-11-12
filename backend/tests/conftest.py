@@ -2,14 +2,22 @@
 
 from __future__ import annotations
 
+import os
+
+# Must run before app imports: Settings and embedder factories read these.
+os.environ.setdefault("EMBEDDING_BACKEND", "fake")
+os.environ.setdefault("QDRANT_URL", ":memory:")
+
 from datetime import datetime, timezone
 
 import pytest
 from fastapi.testclient import TestClient
 
-from app.deps import get_k8s_client, get_llm_explainer
+from app.deps import get_k8s_client, get_llm_explainer, get_retriever
 from app.main import app
 from app.models import Diagnosis, PodEvent, PodLogs, PodSummary
+from app.rag.retriever import RetrievedChunk, RetrieveResult
+from app.rag.store import KnowledgeUnavailableError
 
 
 @pytest.fixture
@@ -115,18 +123,18 @@ class FakeLLM:
         self.stream_chunks = stream_chunks
         self.calls = []
 
-    def explain(self, pod, events, logs):
+    def explain(self, pod, events, logs, retrieved=None):
         from app.llm_explainer import LLMError
 
-        self.calls.append(("explain", pod, events, logs))
+        self.calls.append(("explain", pod, events, logs, retrieved))
         if self.error:
             raise LLMError(self.error)
         return self.diagnosis
 
-    def explain_stream(self, pod, events, logs):
+    def explain_stream(self, pod, events, logs, retrieved=None):
         from app.llm_explainer import LLMError
 
-        self.calls.append(("stream", pod, events, logs))
+        self.calls.append(("stream", pod, events, logs, retrieved))
         if self.error:
             raise LLMError(self.error)
         chunks = self.stream_chunks
@@ -135,20 +143,79 @@ class FakeLLM:
         for piece in chunks or []:
             yield piece
 
-    async def aexplain_stream(self, pod, events, logs):
-        for piece in self.explain_stream(pod, events, logs):
+    async def aexplain_stream(self, pod, events, logs, retrieved=None):
+        for piece in self.explain_stream(pod, events, logs, retrieved):
             yield piece
+
+
+
+
+class FakeRetriever:
+    def __init__(self, chunks=None, unavailable=False, warning=None):
+        self.chunks = list(chunks or [])
+        self.unavailable = unavailable
+        self.warning = warning or (
+            "Knowledge store is unavailable; diagnosing without runbooks."
+            if unavailable
+            else None
+        )
+        self.saved = []
+        self.queries = []
+
+    def retrieve_for_pod(self, pod, events, logs, top_k=None):
+        self.queries.append(("pod", pod, events, logs, top_k))
+        return RetrieveResult(
+            chunks=list(self.chunks),
+            knowledge_unavailable=self.unavailable,
+            warning=self.warning,
+            query="crashloop",
+        )
+
+    def search(self, query, top_k=None):
+        self.queries.append(("search", query, top_k))
+        return RetrieveResult(
+            chunks=list(self.chunks),
+            query=query,
+            knowledge_unavailable=self.unavailable,
+            warning=self.warning,
+        )
+
+    def save_incident(self, **kwargs):
+        if self.unavailable:
+            raise KnowledgeUnavailableError(
+                "Knowledge store is unavailable; cannot save the incident."
+            )
+        self.saved.append(kwargs)
+        return "incident-test-id"
+
+
+
+@pytest.fixture
+def sample_chunk() -> RetrievedChunk:
+    return RetrievedChunk(
+        title="CrashLoopBackOff",
+        source="crashloopbackoff.md",
+        section="Common causes",
+        text="The container command or entrypoint exits immediately (`exit 1`).",
+        score=0.91,
+        kind="runbook",
+    )
 
 
 @pytest.fixture
 def client_factory():
     """Build a TestClient with k8s and LLM dependencies overridden."""
 
-    def _make(k8s=None, llm=None) -> TestClient:
+    def _make(k8s=None, llm=None, retriever=None) -> TestClient:
         if k8s is not None:
             app.dependency_overrides[get_k8s_client] = lambda: k8s
         if llm is not None:
             app.dependency_overrides[get_llm_explainer] = lambda: llm
+        if retriever is not None:
+            app.dependency_overrides[get_retriever] = lambda: retriever
+        else:
+            # Default: available store with no hits, so existing tests stay deterministic.
+            app.dependency_overrides[get_retriever] = lambda: FakeRetriever()
         test_client = TestClient(app)
         return test_client
 

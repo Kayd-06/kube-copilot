@@ -53,6 +53,14 @@ class Diagnosis(BaseModel):
     confidence: float = Field(ge=0.0, le=1.0)
 
 
+class Citation(BaseModel):
+    title: str
+    source: str
+    section: str
+    score: float
+    kind: str = "runbook"
+
+
 class UnhealthyPodsResponse(BaseModel):
     pods: list[PodSummary]
     count: int
@@ -63,9 +71,42 @@ class DiagnoseResponse(BaseModel):
     events: list[PodEvent]
     logs: PodLogs
     diagnosis: Diagnosis
+    citations: list[Citation] = Field(default_factory=list)
+    knowledge_unavailable: bool = False
 
 
 class HealthResponse(BaseModel):
     status: str
     service: str = "kube-copilot"
     version: str
+
+
+class IncidentCreate(BaseModel):
+    pod_name: str
+    namespace: str
+    reason: str | None = None
+    root_cause: str
+    fix: str
+    notes: str | None = None
+
+
+class IncidentSaved(BaseModel):
+    id: str
+    title: str
+    collection: str = "incidents"
+
+
+class KnowledgeHit(BaseModel):
+    title: str
+    source: str
+    section: str
+    score: float
+    kind: str
+    text: str
+
+
+class KnowledgeSearchResponse(BaseModel):
+    query: str
+    results: list[KnowledgeHit] = Field(default_factory=list)
+    knowledge_unavailable: bool = False
+    warning: str | None = None

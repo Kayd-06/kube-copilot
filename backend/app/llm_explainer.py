@@ -11,13 +11,16 @@ from openai import APIError, OpenAI, OpenAIError
 
 from app.config import Settings, get_settings
 from app.models import Diagnosis, PodEvent, PodLogs, PodSummary
+from app.rag.retriever import RetrievedChunk
 
 logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = """You are a senior Kubernetes SRE helping diagnose a failing pod.
 
 You will receive the pod's status, recent cluster events, and container logs.
-Use only that evidence. Do not invent facts that are not supported by it.
+You may also receive retrieved runbooks and past incidents. Use those when
+they clearly match the evidence; do not invent facts that are not supported
+by the evidence or the retrieved knowledge.
 
 Respond with a single JSON object (no markdown fences) with exactly these keys:
 - "summary": two or three sentences describing what is happening to the pod.
@@ -101,7 +104,12 @@ def fallback_diagnosis(raw_text: str, pod: PodSummary) -> Diagnosis:
     )
 
 
-def build_user_prompt(pod: PodSummary, events: list[PodEvent], logs: PodLogs) -> str:
+def build_user_prompt(
+    pod: PodSummary,
+    events: list[PodEvent],
+    logs: PodLogs,
+    retrieved: list[RetrievedChunk] | None = None,
+) -> str:
     containers = []
     for c in pod.containers:
         entry = {
@@ -146,6 +154,19 @@ def build_user_prompt(pod: PodSummary, events: list[PodEvent], logs: PodLogs) ->
         "Previous container logs (from the last restart):",
         previous_logs,
     ]
+    if retrieved:
+        parts.append("")
+        parts.append(
+            "Retrieved knowledge (runbooks and past incidents). "
+            "Use these when they match the evidence. Do not invent citations."
+        )
+        for index, chunk in enumerate(retrieved, start=1):
+            parts.append(
+                f"[{index}] ({chunk.kind}) {chunk.title} — {chunk.section} "
+                f"(source: {chunk.source})"
+            )
+            parts.append(chunk.text)
+            parts.append("")
     return "\n".join(parts)
 
 
@@ -190,10 +211,16 @@ class LLMExplainer:
             kwargs["response_format"] = {"type": "json_object"}
         return kwargs
 
-    def explain(self, pod: PodSummary, events: list[PodEvent], logs: PodLogs) -> Diagnosis:
+    def explain(
+        self,
+        pod: PodSummary,
+        events: list[PodEvent],
+        logs: PodLogs,
+        retrieved: list[RetrievedChunk] | None = None,
+    ) -> Diagnosis:
         messages = [
             {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": build_user_prompt(pod, events, logs)},
+            {"role": "user", "content": build_user_prompt(pod, events, logs, retrieved)},
         ]
         client = self._get_client()
         try:
@@ -223,12 +250,16 @@ class LLMExplainer:
             return fallback_diagnosis(text, pod)
 
     def explain_stream(
-        self, pod: PodSummary, events: list[PodEvent], logs: PodLogs
+        self,
+        pod: PodSummary,
+        events: list[PodEvent],
+        logs: PodLogs,
+        retrieved: list[RetrievedChunk] | None = None,
     ) -> Iterator[str]:
         """Yield text chunks from the model, then the caller parses the full text."""
         messages = [
             {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": build_user_prompt(pod, events, logs)},
+            {"role": "user", "content": build_user_prompt(pod, events, logs, retrieved)},
         ]
         client = self._get_client()
         kwargs = self._create_kwargs(messages, stream=True)
@@ -255,8 +286,12 @@ class LLMExplainer:
                 yield piece
 
     async def aexplain_stream(
-        self, pod: PodSummary, events: list[PodEvent], logs: PodLogs
+        self,
+        pod: PodSummary,
+        events: list[PodEvent],
+        logs: PodLogs,
+        retrieved: list[RetrievedChunk] | None = None,
     ) -> AsyncIterator[str]:
         # The official OpenAI SDK streaming iterator is sync; wrap it for SSE.
-        for piece in self.explain_stream(pod, events, logs):
+        for piece in self.explain_stream(pod, events, logs, retrieved):
             yield piece
