@@ -5,32 +5,70 @@ from __future__ import annotations
 import json
 import logging
 from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
 from app import __version__
+from app.anomaly.poller import AnomalyPoller
+from app.anomaly.scorer import AnomalyModelMissingError, AnomalyScorer, ScoreResult
 from app.config import Settings, get_settings
-from app.deps import get_k8s_client, get_llm_explainer, get_retriever
+from app.deps import (
+    get_anomaly_scorer,
+    get_k8s_client,
+    get_llm_explainer,
+    get_prometheus_client,
+    get_retriever,
+)
 from app.k8s_client import K8sClient, K8sUnavailableError, PodNotFoundError
 from app.llm_explainer import LLMError, LLMExplainer, fallback_diagnosis, parse_diagnosis
+from app.metrics.prometheus import PrometheusClient, PrometheusUnavailableError
 from app.models import (
+    AnomaliesResponse,
+    AnomalyScore,
     Citation,
     DiagnoseResponse,
     Diagnosis,
+    FeatureContribution,
     HealthResponse,
     IncidentCreate,
     IncidentSaved,
     KnowledgeHit,
     KnowledgeSearchResponse,
+    MetricSample,
     UnhealthyPodsResponse,
 )
 from app.rag.retriever import RetrievedChunk, Retriever, RetrieveResult
 from app.rag.store import KnowledgeUnavailableError
+from ml.features import MIB
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
+
+_poller: AnomalyPoller | None = None
+
+
+def get_poller() -> AnomalyPoller | None:
+    return _poller
+
+
+@asynccontextmanager
+async def lifespan(application: FastAPI):
+    global _poller
+    settings = get_settings()
+    poller: AnomalyPoller | None = None
+    if settings.anomaly_poller_enabled:
+        poller = AnomalyPoller(get_anomaly_scorer(), get_prometheus_client(), settings)
+        poller.start()
+        _poller = poller
+    try:
+        yield
+    finally:
+        if poller is not None:
+            poller.stop()
+        _poller = None
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -38,10 +76,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application = FastAPI(
         title="Kube Copilot",
         description=(
-            "AI incident copilot for Kubernetes — Phase 2 diagnoses unhealthy "
-            "pods with an LLM, citing retrieved runbooks and past incidents."
+            "AI incident copilot for Kubernetes — Phase 3 diagnoses unhealthy "
+            "pods with an LLM, citing retrieved runbooks, and flags metric "
+            "anomalies with an Isolation Forest trained on synthetic data."
         ),
         version=__version__,
+        lifespan=lifespan,
     )
     application.add_middleware(
         CORSMiddleware,
@@ -124,6 +164,56 @@ def _retrieve(retriever: Retriever, pod, events, logs) -> RetrieveResult:
         )
 
 
+def _series_from_result(result: ScoreResult) -> list[MetricSample]:
+    samples: list[MetricSample] = []
+    for point in result.points:
+        limit = point.memory_limit_bytes
+        ratio = (point.memory_bytes / limit) if limit else 0.0
+        samples.append(
+            MetricSample(
+                ts=point.ts,
+                cpu=round(point.cpu, 4),
+                memory_mib=round(point.memory_bytes / MIB, 3),
+                mem_to_limit_ratio=round(min(max(ratio, 0.0), 2.0), 4),
+                restarts=point.restarts,
+            )
+        )
+    return samples
+
+
+def to_anomaly_score(result: ScoreResult) -> AnomalyScore:
+    return AnomalyScore(
+        namespace=result.namespace,
+        name=result.name,
+        score=round(result.score, 4),
+        is_anomaly=result.is_anomaly,
+        threshold=round(result.threshold, 6),
+        contributing_features=[FeatureContribution(**item) for item in result.contributing_features],
+        series=_series_from_result(result),
+        warning=result.warning,
+    )
+
+
+def _score_pod(
+    scorer: AnomalyScorer,
+    prometheus: PrometheusClient,
+    namespace: str,
+    name: str,
+) -> tuple[AnomalyScore | None, bool]:
+    """Best-effort scoring used by diagnose. Never raises."""
+    try:
+        if not scorer.loaded:
+            return None, True
+        points = prometheus.pod_metric_series(namespace, name)
+        return to_anomaly_score(scorer.score_window(namespace, name, points)), False
+    except (AnomalyModelMissingError, PrometheusUnavailableError) as exc:
+        logger.info("Anomaly scoring skipped for %s/%s: %s", namespace, name, exc)
+        return None, True
+    except Exception as exc:  # noqa: BLE001 — diagnose must still succeed
+        logger.warning("Anomaly scoring failed for %s/%s: %s", namespace, name, exc)
+        return None, True
+
+
 @app.get("/pods/{namespace}/{name}/diagnose", response_model=DiagnoseResponse)
 async def diagnose_pod(
     namespace: str,
@@ -132,13 +222,16 @@ async def diagnose_pod(
     k8s: K8sClient = Depends(get_k8s_client),
     llm: LLMExplainer = Depends(get_llm_explainer),
     retriever: Retriever = Depends(get_retriever),
+    scorer: AnomalyScorer = Depends(get_anomaly_scorer),
+    prometheus: PrometheusClient = Depends(get_prometheus_client),
 ):
     pod, events, logs = _collect_evidence(k8s, namespace, name)
     retrieved = _retrieve(retriever, pod, events, logs)
+    anomaly, anomaly_unavailable = _score_pod(scorer, prometheus, namespace, name)
 
     if stream:
         return StreamingResponse(
-            _diagnosis_sse(llm, pod, events, logs, retrieved),
+            _diagnosis_sse(llm, pod, events, logs, retrieved, anomaly, anomaly_unavailable),
             media_type="text/event-stream",
             headers={
                 "Cache-Control": "no-cache",
@@ -148,7 +241,7 @@ async def diagnose_pod(
         )
 
     try:
-        diagnosis = llm.explain(pod, events, logs, retrieved=retrieved.chunks)
+        diagnosis = llm.explain(pod, events, logs, retrieved=retrieved.chunks, anomaly=anomaly)
     except LLMError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
     return DiagnoseResponse(
@@ -158,6 +251,8 @@ async def diagnose_pod(
         diagnosis=diagnosis,
         citations=_citations(retrieved.chunks),
         knowledge_unavailable=retrieved.knowledge_unavailable,
+        anomaly=anomaly,
+        anomaly_unavailable=anomaly_unavailable,
     )
 
 
@@ -172,8 +267,11 @@ async def _diagnosis_sse(
     events,
     logs,
     retrieved: RetrieveResult,
+    anomaly: AnomalyScore | None = None,
+    anomaly_unavailable: bool = False,
 ) -> AsyncIterator[str]:
     citations = [c.model_dump(mode="json") for c in _citations(retrieved.chunks)]
+    anomaly_payload = anomaly.model_dump(mode="json") if anomaly is not None else None
     yield _sse(
         "context",
         {
@@ -182,6 +280,8 @@ async def _diagnosis_sse(
             "logs": logs.model_dump(mode="json"),
             "citations": citations,
             "knowledge_unavailable": retrieved.knowledge_unavailable,
+            "anomaly": anomaly_payload,
+            "anomaly_unavailable": anomaly_unavailable,
         },
     )
     yield _sse(
@@ -193,10 +293,20 @@ async def _diagnosis_sse(
     )
     if retrieved.knowledge_unavailable:
         yield _sse("warning", {"knowledge_unavailable": True, "detail": retrieved.warning})
+    if anomaly_unavailable:
+        yield _sse(
+            "warning",
+            {
+                "anomaly_unavailable": True,
+                "detail": "Anomaly score was unavailable for this diagnosis.",
+            },
+        )
 
     chunks: list[str] = []
     try:
-        async for piece in llm.aexplain_stream(pod, events, logs, retrieved=retrieved.chunks):
+        async for piece in llm.aexplain_stream(
+            pod, events, logs, retrieved=retrieved.chunks, anomaly=anomaly
+        ):
             chunks.append(piece)
             yield _sse("token", json.dumps({"text": piece}))
     except LLMError as exc:
@@ -214,12 +324,67 @@ async def _diagnosis_sse(
             **diagnosis.model_dump(mode="json"),
             "citations": citations,
             "knowledge_unavailable": retrieved.knowledge_unavailable,
+            "anomaly": anomaly_payload,
+            "anomaly_unavailable": anomaly_unavailable,
         },
     )
     yield _sse(
         "done",
-        {"citations": citations, "knowledge_unavailable": retrieved.knowledge_unavailable},
+        {
+            "citations": citations,
+            "knowledge_unavailable": retrieved.knowledge_unavailable,
+            "anomaly": anomaly_payload,
+            "anomaly_unavailable": anomaly_unavailable,
+        },
     )
+
+
+@app.get("/anomalies", response_model=AnomaliesResponse)
+def list_anomalies(
+    namespace: str | None = Query(default=None, description="Limit scoring to one namespace"),
+    flagged_only: bool = Query(default=False, description="Only return pods flagged as anomalous"),
+    scorer: AnomalyScorer = Depends(get_anomaly_scorer),
+    prometheus: PrometheusClient = Depends(get_prometheus_client),
+) -> AnomaliesResponse:
+    if not scorer.loaded:
+        raise HTTPException(status_code=503, detail=scorer.missing_message)
+    try:
+        series = prometheus.list_pod_series(namespace=namespace)
+    except PrometheusUnavailableError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    scores: list[AnomalyScore] = []
+    for (ns, name), points in sorted(series.items()):
+        result = scorer.score_window(ns, name, points)
+        if flagged_only and not result.is_anomaly:
+            continue
+        scores.append(to_anomaly_score(result))
+    scores.sort(key=lambda item: item.score, reverse=True)
+    return AnomaliesResponse(pods=scores, count=len(scores), model_loaded=True)
+
+
+@app.get("/pods/{namespace}/{name}/anomaly", response_model=AnomalyScore)
+def get_pod_anomaly(
+    namespace: str,
+    name: str,
+    scorer: AnomalyScorer = Depends(get_anomaly_scorer),
+    prometheus: PrometheusClient = Depends(get_prometheus_client),
+) -> AnomalyScore:
+    if not scorer.loaded:
+        raise HTTPException(status_code=503, detail=scorer.missing_message)
+    try:
+        points = prometheus.pod_metric_series(namespace, name)
+    except PrometheusUnavailableError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    if not points:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                f"No Prometheus series found for {namespace}/{name}. "
+                "Is metrics-up running, and has the pod been scraping for a minute?"
+            ),
+        )
+    return to_anomaly_score(scorer.score_window(namespace, name, points))
 
 
 @app.post("/incidents", response_model=IncidentSaved)

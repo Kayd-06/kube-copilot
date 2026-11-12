@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { diagnosePodStream, fetchUnhealthyPods, saveIncident } from "@/lib/api";
-import type { Citation, DiagnoseResponse, Diagnosis, PodSummary } from "@/lib/types";
+import { diagnosePodStream, fetchAnomalies, fetchUnhealthyPods, saveIncident } from "@/lib/api";
+import type { AnomalyScore, Citation, DiagnoseResponse, Diagnosis, PodSummary } from "@/lib/types";
 
 function reasonTone(reason: string | null): string {
   const value = (reason || "").toLowerCase();
@@ -16,8 +16,25 @@ function reasonTone(reason: string | null): string {
   return "bg-sky-500/15 text-sky-200 ring-sky-500/30";
 }
 
-function podKey(pod: PodSummary): string {
+function podKey(pod: { namespace: string; name: string }): string {
   return `${pod.namespace}/${pod.name}`;
+}
+
+function podFromAnomaly(item: AnomalyScore): PodSummary {
+  const last = item.series[item.series.length - 1];
+  return {
+    name: item.name,
+    namespace: item.namespace,
+    phase: "Running",
+    reason: item.is_anomaly ? "Anomaly" : null,
+    message: null,
+    restart_count: last ? Math.round(last.restarts) : 0,
+    ready: !item.is_anomaly,
+    created_at: null,
+    node: null,
+    qos_class: null,
+    containers: [],
+  };
 }
 
 function ConfidenceBar({ value }: { value: number }) {
@@ -39,6 +56,10 @@ export default function HomePage() {
   const [pods, setPods] = useState<PodSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [listError, setListError] = useState<string | null>(null);
+  const [anomalies, setAnomalies] = useState<AnomalyScore[]>([]);
+  const [anomalyError, setAnomalyError] = useState<string | null>(null);
+  const [anomaliesLoading, setAnomaliesLoading] = useState(true);
+  const [diagnosisAnomaly, setDiagnosisAnomaly] = useState<AnomalyScore | null>(null);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [diagnosing, setDiagnosing] = useState(false);
   const [result, setResult] = useState<DiagnoseResponse | null>(null);
@@ -55,6 +76,8 @@ export default function HomePage() {
   const load = useCallback(async () => {
     setLoading(true);
     setListError(null);
+    setAnomaliesLoading(true);
+    setAnomalyError(null);
     try {
       const data = await fetchUnhealthyPods();
       setPods(data.pods);
@@ -63,6 +86,15 @@ export default function HomePage() {
       setPods([]);
     } finally {
       setLoading(false);
+    }
+    try {
+      const data = await fetchAnomalies();
+      setAnomalies(data.pods);
+    } catch (err) {
+      setAnomalyError(err instanceof Error ? err.message : "Failed to load anomalies");
+      setAnomalies([]);
+    } finally {
+      setAnomaliesLoading(false);
     }
   }, []);
 
@@ -85,6 +117,7 @@ export default function HomePage() {
     setKnowledgeUnavailable(false);
     setIncidentSaved(false);
     setIncidentError(null);
+    setDiagnosisAnomaly(null);
 
     let nextDiagnosis: Diagnosis | null = null;
     let nextPod = pod;
@@ -102,6 +135,7 @@ export default function HomePage() {
             nextPod = data.pod;
             nextEvents = data.events;
             nextLogs = data.logs;
+            if (data.anomaly) setDiagnosisAnomaly(data.anomaly);
           },
           onCitations: (data) => {
             nextCitations = data.citations || [];
@@ -181,13 +215,13 @@ export default function HomePage() {
       <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="mb-1 text-xs font-medium uppercase tracking-[0.2em] text-emerald-400">
-            Phase 2 · RAG
+            Phase 3 · Anomaly detection
           </p>
           <h1 className="text-3xl font-semibold tracking-tight text-white">Kube Copilot</h1>
           <p className="mt-2 max-w-xl text-sm text-slate-400">
-            Unhealthy pods from your cluster, explained by an LLM that cites runbooks
-            and past incidents. Connect a kind cluster, ingest the knowledge base, and
-            press Diagnose.
+            Unhealthy pods, explained by an LLM that cites runbooks — plus an
+            Isolation Forest that flags unusual CPU, memory, and restart patterns
+            before a pod enters a terminal wait reason.
           </p>
         </div>
         <button
@@ -199,7 +233,16 @@ export default function HomePage() {
         </button>
       </header>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+      <AnomaliesPanel
+        items={anomalies}
+        loading={anomaliesLoading}
+        error={anomalyError}
+        diagnosing={diagnosing}
+        selectedKey={selectedLabel}
+        onDiagnose={(item) => void onDiagnose(podFromAnomaly(item))}
+      />
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
         <section className="rounded-2xl bg-[#0c1220] ring-1 ring-white/8">
           <div className="flex items-center justify-between border-b border-white/8 px-5 py-4">
             <h2 className="text-sm font-medium text-slate-200">Unhealthy pods</h2>
@@ -325,6 +368,10 @@ export default function HomePage() {
 
                 <Block title="Summary" body={result.diagnosis.summary} />
                 <Block title="Likely root cause" body={result.diagnosis.likely_root_cause} />
+                {(diagnosisAnomaly || result.anomaly) && (
+                  <AnomalyDetails item={(result.anomaly || diagnosisAnomaly)!} />
+                )}
+
                 <Block title="Suggested fix" body={result.diagnosis.suggested_fix} />
 
                 <div>
@@ -438,6 +485,158 @@ function CitationsList({ citations }: { citations: Citation[] }) {
           </li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+
+function scoreTone(score: number, isAnomaly: boolean): string {
+  if (isAnomaly || score >= 0.5) return "bg-rose-500/15 text-rose-200 ring-rose-500/30";
+  if (score >= 0.35) return "bg-amber-500/15 text-amber-200 ring-amber-500/30";
+  return "bg-emerald-500/15 text-emerald-200 ring-emerald-500/30";
+}
+
+function Sparkline({ series }: { series: AnomalyScore["series"] }) {
+  const width = 140;
+  const height = 36;
+  const values = series.map((sample) => sample.memory_mib);
+  if (values.length < 2) {
+    return <p className="text-[11px] text-slate-500">Not enough samples for a chart yet.</p>;
+  }
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const span = max - min || 1;
+  const coords = values.map((value, index) => {
+    const x = (index / (values.length - 1)) * width;
+    const y = height - ((value - min) / span) * (height - 4) - 2;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible">
+      <polyline
+        fill="none"
+        stroke="rgb(52 211 153)"
+        strokeWidth="1.5"
+        points={coords.join(" ")}
+      />
+    </svg>
+  );
+}
+
+function AnomaliesPanel({
+  items,
+  loading,
+  error,
+  diagnosing,
+  selectedKey,
+  onDiagnose,
+}: {
+  items: AnomalyScore[];
+  loading: boolean;
+  error: string | null;
+  diagnosing: boolean;
+  selectedKey: string | null;
+  onDiagnose: (item: AnomalyScore) => void;
+}) {
+  const flagged = items.filter((item) => item.is_anomaly).length;
+  return (
+    <section className="rounded-2xl bg-[#0c1220] ring-1 ring-white/8">
+      <div className="flex items-center justify-between border-b border-white/8 px-5 py-4">
+        <div>
+          <h2 className="text-sm font-medium text-slate-200">Anomalies</h2>
+          <p className="mt-1 text-xs text-slate-500">
+            Isolation Forest scores over the last few minutes of CPU, memory, and restarts.
+          </p>
+        </div>
+        <span className="font-mono text-xs text-slate-500">
+          {flagged} flagged · {items.length} scored
+        </span>
+      </div>
+
+      {loading && <p className="px-5 py-8 text-sm text-slate-400">Scoring recent pod metrics…</p>}
+
+      {!loading && error && (
+        <div className="px-5 py-6 text-sm text-amber-200">
+          <p className="font-medium">Anomaly scores unavailable</p>
+          <p className="mt-2 text-amber-100/80">{error}</p>
+          <p className="mt-3 text-xs text-slate-500">
+            Train a model with <code className="font-mono text-slate-400">make train</code>, start
+            Prometheus with <code className="font-mono text-slate-400">make metrics-up</code>, then
+            <code className="font-mono text-slate-400"> make metrics-forward</code>. Diagnose still
+            works without this panel.
+          </p>
+        </div>
+      )}
+
+      {!loading && !error && items.length === 0 && (
+        <p className="px-5 py-8 text-sm text-slate-400">
+          No pod metric series yet. After <code className="font-mono text-slate-300">make metrics-up</code>{" "}
+          and <code className="font-mono text-slate-300">make demo-break</code>, wait about a minute for
+          the first scrapes.
+        </p>
+      )}
+
+      {!loading && !error && items.length > 0 && (
+        <ul className="divide-y divide-white/6">
+          {items.map((item) => {
+            const key = podKey(item);
+            const active = key === selectedKey;
+            const top = item.contributing_features[0];
+            return (
+              <li
+                key={key}
+                className={`flex flex-wrap items-center gap-3 px-5 py-4 ${active ? "bg-white/4" : ""}`}
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-mono text-sm text-white">
+                    {item.namespace}/{item.name}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {top
+                      ? `${top.name} ${top.direction} (z=${top.zscore.toFixed(1)})`
+                      : item.warning || "No standout feature"}
+                  </p>
+                </div>
+                <Sparkline series={item.series} />
+                <span className={`rounded-full px-2.5 py-1 text-xs font-medium ring-1 ${scoreTone(item.score, item.is_anomaly)}`}>
+                  {item.is_anomaly ? "flagged" : "ok"} · {item.score.toFixed(2)}
+                </span>
+                <button
+                  type="button"
+                  disabled={diagnosing && active}
+                  onClick={() => onDiagnose(item)}
+                  className="rounded-lg bg-emerald-400 px-3 py-1.5 text-sm font-medium text-emerald-950 transition hover:bg-emerald-300 disabled:opacity-60"
+                >
+                  {diagnosing && active ? "Diagnosing…" : "Diagnose"}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function AnomalyDetails({ item }: { item: AnomalyScore }) {
+  return (
+    <div>
+      <h3 className="mb-1.5 text-xs font-medium uppercase tracking-wider text-slate-500">
+        Anomaly score
+      </h3>
+      <div className="flex flex-wrap items-center gap-3 rounded-lg bg-black/30 px-3 py-2 ring-1 ring-white/8">
+        <span className={`rounded-full px-2.5 py-1 text-xs font-medium ring-1 ${scoreTone(item.score, item.is_anomaly)}`}>
+          {item.is_anomaly ? "flagged" : "ok"} · {item.score.toFixed(2)}
+        </span>
+        <Sparkline series={item.series} />
+        <ul className="min-w-0 flex-1 text-xs text-slate-400">
+          {item.contributing_features.slice(0, 3).map((feat) => (
+            <li key={feat.name}>
+              {feat.name}: {feat.value.toFixed(2)} ({feat.direction}, z={feat.zscore.toFixed(1)})
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }

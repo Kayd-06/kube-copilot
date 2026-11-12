@@ -59,6 +59,40 @@ export type UnhealthyPodsResponse = {
   count: number;
 };
 
+export type FeatureContribution = {
+  name: string;
+  value: number;
+  zscore: number;
+  direction: string;
+};
+
+export type MetricSample = {
+  ts: number;
+  cpu: number;
+  memory_mib: number;
+  mem_to_limit_ratio: number;
+  restarts: number;
+};
+
+export type AnomalyScore = {
+  namespace: string;
+  name: string;
+  score: number;
+  is_anomaly: boolean;
+  threshold: number;
+  contributing_features: FeatureContribution[];
+  series: MetricSample[];
+  warning?: string | null;
+};
+
+export type AnomaliesResponse = {
+  pods: AnomalyScore[];
+  count: number;
+  model_loaded: boolean;
+  prometheus_unavailable?: boolean;
+  warning?: string | null;
+};
+
 export type DiagnoseResponse = {
   pod: PodSummary;
   events: PodEvent[];
@@ -66,6 +100,8 @@ export type DiagnoseResponse = {
   diagnosis: Diagnosis;
   citations: Citation[];
   knowledge_unavailable?: boolean;
+  anomaly?: AnomalyScore | null;
+  anomaly_unavailable?: boolean;
 };
 
 export type IncidentSaved = {

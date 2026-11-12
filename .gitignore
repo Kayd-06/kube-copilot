@@ -34,3 +34,12 @@ npm-debug.log*
 # Local embedded Qdrant store
 .qdrant/
 qdrant_storage/
+
+# MLflow local file store and ad-hoc training artifacts
+mlruns/
+mlartifacts/
+.mlflow/
+*.db
+# Keep the committed eval report and the served model; ignore other local dumps.
+backend/models/*.pt
+backend/models/*.pth

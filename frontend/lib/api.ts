@@ -1,4 +1,4 @@
-import type { DiagnoseResponse, IncidentSaved, UnhealthyPodsResponse } from "./types";
+import type { AnomaliesResponse, DiagnoseResponse, IncidentSaved, UnhealthyPodsResponse } from "./types";
 
 export const API_BASE =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "http://localhost:8000";
@@ -19,6 +19,15 @@ export async function fetchUnhealthyPods(): Promise<UnhealthyPodsResponse> {
   return response.json();
 }
 
+export async function fetchAnomalies(namespace?: string): Promise<AnomaliesResponse> {
+  const params = new URLSearchParams();
+  if (namespace) params.set("namespace", namespace);
+  const query = params.toString();
+  const response = await fetch(`${API_BASE}/anomalies${query ? `?${query}` : ""}`, { cache: "no-store" });
+  if (!response.ok) throw new Error(await readError(response));
+  return response.json();
+}
+
 export async function diagnosePod(namespace: string, name: string): Promise<DiagnoseResponse> {
   const response = await fetch(
     `${API_BASE}/pods/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}/diagnose`,
@@ -29,7 +38,7 @@ export async function diagnosePod(namespace: string, name: string): Promise<Diag
 }
 
 export type DiagnoseStreamHandlers = {
-  onContext?: (data: Pick<DiagnoseResponse, "pod" | "events" | "logs">) => void;
+  onContext?: (data: Pick<DiagnoseResponse, "pod" | "events" | "logs" | "anomaly" | "anomaly_unavailable">) => void;
   onCitations?: (data: { citations: DiagnoseResponse["citations"]; knowledge_unavailable?: boolean }) => void;
   onToken?: (text: string) => void;
   onDiagnosis?: (data: DiagnoseResponse["diagnosis"]) => void;

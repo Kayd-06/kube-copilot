@@ -113,7 +113,7 @@ def test_diagnose_includes_citations(client_factory, sample_pod, sample_events, 
     # The LLM should have been given the retrieved chunks.
     assert llm.calls
     assert llm.calls[0][0] == "explain"
-    assert llm.calls[0][-1] == [sample_chunk]
+    assert llm.calls[0][4] == [sample_chunk]
 
 
 def test_diagnose_falls_back_when_knowledge_unavailable(

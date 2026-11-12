@@ -176,3 +176,22 @@ def test_build_user_prompt_includes_retrieved_chunks(sample_pod, sample_events, 
     assert "crashloopbackoff.md" in prompt
     assert "Common causes" in prompt
     assert "exit 1" in prompt
+
+
+def test_build_user_prompt_includes_anomaly(sample_pod, sample_events, sample_logs):
+    from app.models import AnomalyScore, FeatureContribution
+
+    anomaly = AnomalyScore(
+        namespace=sample_pod.namespace,
+        name=sample_pod.name,
+        score=0.91,
+        is_anomaly=True,
+        threshold=0.5,
+        contributing_features=[
+            FeatureContribution(name="mem_slope_mib_per_min", value=12.4, zscore=5.2, direction="high")
+        ],
+    )
+    prompt = build_user_prompt(sample_pod, sample_events, sample_logs, anomaly=anomaly)
+    assert "flagged_as_anomaly: true" in prompt
+    assert "mem_slope_mib_per_min" in prompt
+    assert "Isolation Forest" in prompt
