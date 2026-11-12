@@ -1,15 +1,27 @@
-# Runs the Phase 1 API and UI. The backend expects a kubeconfig so it can
+# Runs the Phase 2 API, UI, and Qdrant. The backend expects a kubeconfig so it can
 # reach the kind cluster on your machine — mount is read-only.
 #
 #   cp .env.example .env   # then add your Groq API key
 #   docker compose up --build
+#   docker compose exec backend python -m app.ingest
 #
 # The browser talks to the API at http://localhost:8000 (published on the host).
+# kind advertises the API server as 127.0.0.1 — the most reliable workflow is
+# still `make backend-dev` on the host (and `make qdrant-up && make ingest`).
 
 services:
+  qdrant:
+    image: qdrant/qdrant:v1.13.4
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    restart: unless-stopped
+
   backend:
     build:
-      context: ./backend
+      context: .
+      dockerfile: backend/Dockerfile
     ports:
       - "8000:8000"
     env_file:
@@ -17,11 +29,15 @@ services:
     environment:
       # Inside the container, use the mounted kubeconfig path.
       K8S_KUBECONFIG: /root/.kube/config
+      QDRANT_URL: http://qdrant:6333
+      KNOWLEDGE_DIR: /knowledge/runbooks
     volumes:
       - ${HOME}/.kube:/root/.kube:ro
     # kind's API server is often advertised as 127.0.0.1 — reach the host from the container.
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    depends_on:
+      - qdrant
     restart: unless-stopped
 
   frontend:
@@ -36,3 +52,6 @@ services:
     depends_on:
       - backend
     restart: unless-stopped
+
+volumes:
+  qdrant_data:
