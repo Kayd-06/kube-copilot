@@ -1,0 +1,44 @@
+# Grows memory slowly (~1 MiB every 5s in /dev/shm) under a 64Mi limit so the
+# Isolation Forest can flag a leak well before the eventual OOMKill.
+# Stays on busybox — no extra images — to keep the kind node laptop-friendly.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: leak-app
+  namespace: copilot-demo
+  labels:
+    app: leak-app
+    demo: kube-copilot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: leak-app
+  template:
+    metadata:
+      labels:
+        app: leak-app
+        demo: kube-copilot
+    spec:
+      containers:
+        - name: leak
+          image: busybox:1.36
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - |
+              echo "slowly leaking into /dev/shm (counts as memory)"
+              : > /dev/shm/leak
+              while true; do
+                dd if=/dev/zero bs=1048576 count=1 >> /dev/shm/leak 2>/dev/null
+                echo "leaked another 1Mi, size=$(wc -c < /dev/shm/leak) bytes"
+                sleep 5
+              done
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 50m
+              memory: 64Mi
