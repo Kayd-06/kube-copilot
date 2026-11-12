@@ -8,7 +8,7 @@ on:
 
 concurrency:
   group: images-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 permissions:
   contents: read
@@ -34,6 +34,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
+      - name: Lowercase image name
+        id: img
+        run: echo "name=${REGISTRY}/${OWNER,,}/kube-copilot-${{ matrix.component }}" >> "$GITHUB_OUTPUT"
+        env:
+          OWNER: ${{ github.repository_owner }}
       # Multi-arch (linux/amd64,linux/arm64) can be enabled later; amd64
       # keeps CI minutes and the kind smoke test cheap.
       - name: Log in to GHCR
@@ -46,7 +51,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/kube-copilot-${{ matrix.component }}
+          images: ${{ steps.img.outputs.name }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha,prefix=sha-
@@ -69,7 +74,7 @@ jobs:
       - name: Trivy scan
         uses: aquasecurity/trivy-action@v0.36.0
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ github.repository_owner }}/kube-copilot-${{ matrix.component }}:${{ steps.meta.outputs.version }}
+          image-ref: ${{ steps.img.outputs.name }}:${{ steps.meta.outputs.version }}
           format: table
           exit-code: "0"
           severity: CRITICAL,HIGH
