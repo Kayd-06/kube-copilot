@@ -1,0 +1,30 @@
+# Minimal Chaos Mesh install for a single-node kind cluster on a low-spec laptop.
+# Only the controller and the per-node daemon run; no dashboard, no DNS server.
+controllerManager:
+  replicaCount: 1
+  leaderElection:
+    enabled: false
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      memory: 256Mi
+chaosDaemon:
+  # kind nodes run containerd, not Docker.
+  runtime: containerd
+  socketPath: /run/containerd/containerd.sock
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      memory: 256Mi
+dashboard:
+  create: false
+dnsServer:
+  create: false
+# Images are side-loaded with `kind load` by `make chaos-up`, so never pull.
+images:
+  registry: ghcr.io
+  tag: v2.8.8

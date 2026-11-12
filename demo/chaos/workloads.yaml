@@ -1,0 +1,257 @@
+# Target workloads for the chaos experiments. Each scenario gets its own
+# 2-replica deployment so labels are unambiguous: a pod is anomalous only while
+# the experiment aimed at its deployment is running. `steady` is never touched.
+# nginx:alpine idles at a few MiB, so 12 pods + a load generator stay tiny.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: chaos-lab
+  labels:
+    app.kubernetes.io/part-of: kube-copilot
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: loadgen-script
+  namespace: chaos-lab
+data:
+  run.sh: |
+    #!/bin/sh
+    # A little steady traffic so network and CPU have a realistic baseline.
+    while true; do
+      for svc in steady victim-cpu victim-mem victim-net victim-kill victim-restart; do
+        curl -s -o /dev/null --max-time 2 "http://$svc.chaos-lab.svc.cluster.local/" || true
+      done
+      sleep 1
+    done
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loadgen
+  namespace: chaos-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: loadgen}
+  template:
+    metadata:
+      labels: {app: loadgen}
+    spec:
+      containers:
+        - name: curl
+          image: curlimages/curl:8.11.1
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "/scripts/run.sh"]
+          resources:
+            requests: {cpu: 10m, memory: 16Mi}
+            limits: {cpu: 200m, memory: 64Mi}
+          volumeMounts:
+            - {name: script, mountPath: /scripts}
+      volumes:
+        - name: script
+          configMap: {name: loadgen-script}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: steady
+  namespace: chaos-lab
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: steady}
+  template:
+    metadata:
+      labels: {app: steady, kube-copilot/chaos-target: "true"}
+    spec:
+      containers:
+        - name: web
+          image: nginx:1.27-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          resources:
+            requests: {cpu: 10m, memory: 16Mi}
+            limits: {cpu: "1", memory: 128Mi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: steady
+  namespace: chaos-lab
+spec:
+  selector: {app: steady}
+  ports:
+    - port: 80
+      targetPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: victim-cpu
+  namespace: chaos-lab
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: victim-cpu}
+  template:
+    metadata:
+      labels: {app: victim-cpu, kube-copilot/chaos-target: "true"}
+    spec:
+      containers:
+        - name: web
+          image: nginx:1.27-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          resources:
+            requests: {cpu: 10m, memory: 16Mi}
+            limits: {cpu: "1", memory: 128Mi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: victim-cpu
+  namespace: chaos-lab
+spec:
+  selector: {app: victim-cpu}
+  ports:
+    - port: 80
+      targetPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: victim-mem
+  namespace: chaos-lab
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: victim-mem}
+  template:
+    metadata:
+      labels: {app: victim-mem, kube-copilot/chaos-target: "true"}
+    spec:
+      containers:
+        - name: web
+          image: nginx:1.27-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          resources:
+            requests: {cpu: 10m, memory: 16Mi}
+            limits: {cpu: "1", memory: 128Mi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: victim-mem
+  namespace: chaos-lab
+spec:
+  selector: {app: victim-mem}
+  ports:
+    - port: 80
+      targetPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: victim-net
+  namespace: chaos-lab
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: victim-net}
+  template:
+    metadata:
+      labels: {app: victim-net, kube-copilot/chaos-target: "true"}
+    spec:
+      containers:
+        - name: web
+          image: nginx:1.27-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          resources:
+            requests: {cpu: 10m, memory: 16Mi}
+            limits: {cpu: "1", memory: 128Mi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: victim-net
+  namespace: chaos-lab
+spec:
+  selector: {app: victim-net}
+  ports:
+    - port: 80
+      targetPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: victim-kill
+  namespace: chaos-lab
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: victim-kill}
+  template:
+    metadata:
+      labels: {app: victim-kill, kube-copilot/chaos-target: "true"}
+    spec:
+      containers:
+        - name: web
+          image: nginx:1.27-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          resources:
+            requests: {cpu: 10m, memory: 16Mi}
+            limits: {cpu: "1", memory: 128Mi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: victim-kill
+  namespace: chaos-lab
+spec:
+  selector: {app: victim-kill}
+  ports:
+    - port: 80
+      targetPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: victim-restart
+  namespace: chaos-lab
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: victim-restart}
+  template:
+    metadata:
+      labels: {app: victim-restart, kube-copilot/chaos-target: "true"}
+    spec:
+      containers:
+        - name: web
+          image: nginx:1.27-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          resources:
+            requests: {cpu: 10m, memory: 16Mi}
+            limits: {cpu: "1", memory: 128Mi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: victim-restart
+  namespace: chaos-lab
+spec:
+  selector: {app: victim-restart}
+  ports:
+    - port: 80
+      targetPort: 80

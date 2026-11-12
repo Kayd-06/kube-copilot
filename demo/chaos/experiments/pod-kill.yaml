@@ -1,0 +1,18 @@
+# pod_kill: delete every victim-kill pod once a minute; the ReplicaSet recreates them.
+apiVersion: chaos-mesh.org/v1alpha1
+kind: Schedule
+metadata:
+  name: pod-kill
+  namespace: chaos-lab
+  labels: {kube-copilot/scenario: pod_kill}
+spec:
+  schedule: "@every 60s"
+  type: PodChaos
+  historyLimit: 2
+  concurrencyPolicy: Forbid
+  podChaos:
+    action: pod-kill
+    mode: all
+    selector:
+      namespaces: [chaos-lab]
+      labelSelectors: {app: victim-kill}

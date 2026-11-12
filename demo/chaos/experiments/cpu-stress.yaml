@@ -1,0 +1,17 @@
+# cpu_stress: one stress-ng worker at ~80% load inside each victim-cpu container.
+apiVersion: chaos-mesh.org/v1alpha1
+kind: StressChaos
+metadata:
+  name: cpu-stress
+  namespace: chaos-lab
+  labels: {kube-copilot/scenario: cpu_stress}
+spec:
+  mode: all
+  selector:
+    namespaces: [chaos-lab]
+    labelSelectors: {app: victim-cpu}
+  stressors:
+    cpu:
+      workers: 1
+      load: 80
+  duration: "10m"
