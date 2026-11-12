@@ -1,6 +1,6 @@
 # Training-time extras on top of backend/requirements.txt.
 # Isolated so the API image does not have to ship MLflow.
 scikit-learn>=1.5.0,<2.0.0
-numpy>=2.0.0
+numpy>=2.5.4
 joblib>=1.4.0
 mlflow>=2.17.0,<4.0.0
