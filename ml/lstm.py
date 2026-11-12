@@ -17,19 +17,13 @@ same idea as the Isolation Forest pipeline.
 
 from __future__ import annotations
 
-import json
-import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
 
-from ml.features import FEATURE_NAMES
 from ml.synthetic import generate_dataset
 from ml.train import (
-    DEFAULT_MLRUNS,
-    DEFAULT_REPORT_JSON,
-    DEFAULT_REPORT_MD,
     REPO_ROOT,
     EvalReport,
     _metrics,

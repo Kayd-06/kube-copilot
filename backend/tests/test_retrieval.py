@@ -2,7 +2,6 @@ import pytest
 
 from app.config import Settings
 from app.ingest import ingest_runbooks
-from app.models import PodEvent, PodLogs, PodSummary
 from app.rag.embeddings import HashEmbedder
 from app.rag.retriever import Retriever, build_retrieval_query
 from app.rag.store import KnowledgeStore, KnowledgeUnavailableError
