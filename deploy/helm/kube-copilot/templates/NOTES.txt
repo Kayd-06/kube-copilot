@@ -1,0 +1,39 @@
+Kube Copilot {{ .Chart.AppVersion }} is installed in namespace {{ .Release.Namespace }}.
+
+The backend uses in-cluster Kubernetes config, so it talks to the API
+server directly — no kubeconfig mount and no 127.0.0.1-from-a-container gap.
+
+1. Wait for the pods:
+
+   kubectl -n {{ .Release.Namespace }} get pods -l app.kubernetes.io/instance={{ .Release.Name }}
+
+2. Port-forward the dashboard (it proxies /api to the backend):
+
+   kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "kube-copilot.frontend.fullname" . }} 3000:{{ .Values.frontend.service.port }}
+
+   Open http://localhost:3000
+
+3. Or hit the API directly:
+
+   kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "kube-copilot.backend.fullname" . }} 8000:{{ .Values.backend.service.port }}
+
+   curl http://localhost:8000/health
+
+{{- if not (or .Values.llm.existingSecret .Values.llm.apiKey) }}
+
+No LLM_API_KEY was provided. The API will start and /health will pass, but
+Diagnose will return HTTP 502 until you create a secret and set
+llm.existingSecret, for example:
+
+  kubectl -n {{ .Release.Namespace }} create secret generic kube-copilot-llm \
+    --from-literal=LLM_API_KEY=gsk_...
+  helm upgrade {{ .Release.Name }} deploy/helm/kube-copilot -n {{ .Release.Namespace }} \
+    --reuse-values --set llm.existingSecret=kube-copilot-llm
+{{- end }}
+
+{{- if .Values.qdrant.enabled }}
+
+4. Ingest runbooks into Qdrant (first run downloads a small CPU embedder):
+
+   kubectl -n {{ .Release.Namespace }} exec deploy/{{ include "kube-copilot.backend.fullname" . }} -- python -m app.ingest
+{{- end }}

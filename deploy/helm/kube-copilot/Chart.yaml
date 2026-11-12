@@ -1,0 +1,18 @@
+apiVersion: v2
+name: kube-copilot
+description: AI incident copilot for Kubernetes — diagnoses failing pods with an LLM, runbook retrieval, and an Isolation Forest anomaly detector.
+type: application
+version: 0.4.0
+appVersion: "0.4.0"
+home: https://github.com/Kayd-06/kube-copilot
+sources:
+  - https://github.com/Kayd-06/kube-copilot
+keywords:
+  - kubernetes
+  - observability
+  - incident-response
+  - llm
+  - rag
+maintainers:
+  - name: Kunal Dadlani
+    url: https://github.com/Kayd-06

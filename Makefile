@@ -1,25 +1,41 @@
 # Kube Copilot — common local-dev targets.
 # Designed for a low-spec laptop: a single-node kind cluster and tiny demo images.
 
-.PHONY: cluster-up cluster-down demo-break demo-clean backend-dev frontend-dev test ingest qdrant-up metrics-up metrics-forward train mlflow-ui help
+.PHONY: cluster-up cluster-down demo-break demo-clean backend-dev frontend-dev test \
+	ingest qdrant-up metrics-up metrics-forward train mlflow-ui \
+	images kind-load helm-lint helm-install helm-uninstall \
+	grafana-up grafana-forward help
 
 KIND_CLUSTER ?= kube-copilot
+IMAGE_TAG ?= dev
+HELM_RELEASE ?= kube-copilot
+HELM_NAMESPACE ?= kube-copilot
+CHART := deploy/helm/kube-copilot
+BACKEND_IMAGE ?= ghcr.io/kayd-06/kube-copilot-backend
+FRONTEND_IMAGE ?= ghcr.io/kayd-06/kube-copilot-frontend
 
 help:
 	@echo "Targets:"
-	@echo "  cluster-up     Create a single-node kind cluster named $(KIND_CLUSTER)"
-	@echo "  cluster-down   Delete the kind cluster"
-	@echo "  demo-break     Apply intentionally broken demo workloads"
-	@echo "  demo-clean     Remove the demo workloads"
-	@echo "  qdrant-up      Start a local Qdrant container (docker compose)"
-	@echo "  ingest         Embed runbooks and upsert them into Qdrant"
-	@echo "  metrics-up     Install a tiny Prometheus + kube-state-metrics + metrics-server"
+	@echo "  cluster-up       Create a single-node kind cluster named $(KIND_CLUSTER)"
+	@echo "  cluster-down     Delete the kind cluster"
+	@echo "  demo-break       Apply intentionally broken demo workloads"
+	@echo "  demo-clean       Remove the demo workloads"
+	@echo "  qdrant-up        Start a local Qdrant container (docker compose)"
+	@echo "  ingest           Embed runbooks and upsert them into Qdrant"
+	@echo "  metrics-up       Install a tiny Prometheus + kube-state-metrics + metrics-server"
 	@echo "  metrics-forward  Port-forward Prometheus to http://localhost:9090"
-	@echo "  train          Train the Isolation Forest on synthetic data (MLflow + report)"
-	@echo "  mlflow-ui      Open the local MLflow tracking UI on :5000"
-	@echo "  backend-dev    Run the FastAPI app with reload on :8000"
-	@echo "  frontend-dev   Run the Next.js UI on :3000"
-	@echo "  test           Run backend unit tests"
+	@echo "  grafana-up       Install Grafana (and the metrics stack) with the Kube Copilot dashboard"
+	@echo "  grafana-forward  Port-forward Grafana to http://localhost:3001 (admin/admin, anonymous viewer)"
+	@echo "  train            Train the Isolation Forest on synthetic data (MLflow + report)"
+	@echo "  mlflow-ui        Open the local MLflow tracking UI on :5000"
+	@echo "  images           Build backend and frontend Docker images tagged $(IMAGE_TAG)"
+	@echo "  kind-load        Build images and load them into the kind cluster"
+	@echo "  helm-lint        helm lint + helm template the chart"
+	@echo "  helm-install     Load images into kind and install/upgrade the Helm chart"
+	@echo "  helm-uninstall   Uninstall the Helm release"
+	@echo "  backend-dev      Run the FastAPI app with reload on :8000"
+	@echo "  frontend-dev     Run the Next.js UI on :3000"
+	@echo "  test             Run backend unit tests"
 
 cluster-up:
 	kind create cluster --config demo/kind-config.yaml
@@ -60,7 +76,11 @@ ingest:
 	$$PY -m app.ingest
 
 metrics-up:
-	kubectl apply -f demo/metrics
+	kubectl apply -f demo/metrics/namespace.yaml
+	kubectl apply -f demo/metrics/rbac.yaml
+	kubectl apply -f demo/metrics/metrics-server.yaml
+	kubectl apply -f demo/metrics/kube-state-metrics.yaml
+	kubectl apply -f demo/metrics/prometheus.yaml
 	@echo "Waiting for Prometheus to become ready..."
 	kubectl -n observability wait --for=condition=available deploy/prometheus --timeout=180s
 	kubectl -n observability wait --for=condition=available deploy/kube-state-metrics --timeout=180s || true
@@ -68,10 +88,24 @@ metrics-up:
 	@echo "Prometheus is in-cluster. Expose it on the host with:"
 	@echo "  make metrics-forward          # http://localhost:9090  (leave this running)"
 	@echo "Then set PROMETHEUS_URL=http://localhost:9090 in .env (the default)."
+	@echo "When the API runs in-cluster (make helm-install) it talks to"
+	@echo "http://prometheus.observability.svc.cluster.local:9090 instead."
 
 metrics-forward:
 	@echo "Forwarding observability/prometheus to http://localhost:9090 (Ctrl-C to stop)"
 	kubectl -n observability port-forward svc/prometheus 9090:9090
+
+grafana-up: metrics-up
+	kubectl apply -f demo/metrics/grafana
+	@echo "Waiting for Grafana to become ready..."
+	kubectl -n observability wait --for=condition=available deploy/grafana --timeout=180s
+	@echo
+	@echo "Grafana is in-cluster. Expose it on the host with:"
+	@echo "  make grafana-forward          # http://localhost:3001  (admin/admin, or anonymous Viewer)"
+
+grafana-forward:
+	@echo "Forwarding observability/grafana to http://localhost:3001 (Ctrl-C to stop)"
+	kubectl -n observability port-forward svc/grafana 3001:3000
 
 # PY is the backend venv when present, so training deps live next to the API deps.
 train:
@@ -85,3 +119,54 @@ mlflow-ui:
 	if [ -x .venv/bin/python ]; then PY=.venv/bin/python; else PY=python3; fi && \
 	cd .. && \
 	MLFLOW_DISABLE_AGENT_HINT=1 MLFLOW_ALLOW_FILE_STORE=true $$PY -m mlflow ui --backend-store-uri ./mlruns --host 127.0.0.1 --port 5000
+
+images:
+	docker build -t $(BACKEND_IMAGE):$(IMAGE_TAG) -f backend/Dockerfile .
+	docker build -t $(FRONTEND_IMAGE):$(IMAGE_TAG) \
+		--build-arg NEXT_PUBLIC_API_URL=/api \
+		-f frontend/Dockerfile frontend
+	@echo "Built $(BACKEND_IMAGE):$(IMAGE_TAG) and $(FRONTEND_IMAGE):$(IMAGE_TAG)"
+
+kind-load: images
+	kind load docker-image $(BACKEND_IMAGE):$(IMAGE_TAG) --name $(KIND_CLUSTER)
+	kind load docker-image $(FRONTEND_IMAGE):$(IMAGE_TAG) --name $(KIND_CLUSTER)
+
+helm-lint:
+	helm lint $(CHART)
+	helm template $(HELM_RELEASE) $(CHART) -f $(CHART)/values-kind.yaml --namespace $(HELM_NAMESPACE) >/dev/null
+	@echo "helm lint and helm template: ok"
+
+# Create (or reuse) a secret from LLM_API_KEY in .env, then install the chart.
+# The backend runs in-cluster so it uses the pod ServiceAccount — no kubeconfig
+# mount, and no 127.0.0.1-from-a-container problem.
+helm-install: kind-load
+	kubectl create namespace $(HELM_NAMESPACE) --dry-run=client -o yaml | kubectl apply -f -
+	@SECRET_ARGS=""; \
+	if [ -f .env ]; then \
+	  KEY=$$(awk -F= '/^LLM_API_KEY=/{sub(/^LLM_API_KEY=/,""); print; exit}' .env); \
+	  if [ -n "$$KEY" ] && [ "$$KEY" != "gsk_your_groq_api_key_here" ]; then \
+	    kubectl -n $(HELM_NAMESPACE) create secret generic kube-copilot-llm \
+	      --from-literal=LLM_API_KEY="$$KEY" \
+	      --dry-run=client -o yaml | kubectl apply -f -; \
+	    SECRET_ARGS="--set llm.existingSecret=kube-copilot-llm"; \
+	  fi; \
+	fi; \
+	helm upgrade --install $(HELM_RELEASE) $(CHART) \
+	  --namespace $(HELM_NAMESPACE) --create-namespace \
+	  -f $(CHART)/values-kind.yaml \
+	  --set backend.image.repository=$(BACKEND_IMAGE) \
+	  --set backend.image.tag=$(IMAGE_TAG) \
+	  --set frontend.image.repository=$(FRONTEND_IMAGE) \
+	  --set frontend.image.tag=$(IMAGE_TAG) \
+	  $$SECRET_ARGS \
+	  --wait --timeout 5m
+	@echo
+	@echo "Installed $(HELM_RELEASE) in $(HELM_NAMESPACE)."
+	@echo "  kubectl -n $(HELM_NAMESPACE) port-forward svc/$(HELM_RELEASE)-frontend 3000:3000"
+	@echo "  open http://localhost:3000   (the UI proxies /api to the in-cluster backend)"
+	@echo "Optional — ingest runbooks (downloads a small CPU embedder the first time):"
+	@echo "  kubectl -n $(HELM_NAMESPACE) exec deploy/$(HELM_RELEASE)-backend -- python -m app.ingest"
+
+helm-uninstall:
+	helm uninstall $(HELM_RELEASE) -n $(HELM_NAMESPACE) || true
+	kubectl -n $(HELM_NAMESPACE) delete secret kube-copilot-llm --ignore-not-found

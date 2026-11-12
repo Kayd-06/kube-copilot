@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "kube-copilot.fullname" . }}
+  labels:
+    {{- include "kube-copilot.labels" . | nindent 4 }}
+data:
+  LLM_BASE_URL: {{ .Values.llm.baseUrl | quote }}
+  LLM_MODEL: {{ .Values.llm.model | quote }}
+  K8S_IN_CLUSTER: {{ .Values.backend.env.k8sInCluster | quote }}
+  LOG_TAIL_LINES: {{ .Values.backend.env.logTailLines | quote }}
+  PROMETHEUS_URL: {{ .Values.backend.env.prometheusUrl | quote }}
+  RAG_ENABLED: {{ .Values.backend.env.ragEnabled | quote }}
+  EMBEDDING_BACKEND: {{ .Values.backend.env.embeddingBackend | quote }}
+  EMBEDDING_MODEL: {{ .Values.backend.env.embeddingModel | quote }}
+  RAG_TOP_K: {{ .Values.backend.env.ragTopK | quote }}
+  ANOMALY_POLLER_ENABLED: {{ .Values.backend.env.anomalyPollerEnabled | quote }}
+  CORS_ORIGINS: {{ .Values.backend.env.corsOrigins | quote }}
+  KNOWLEDGE_DIR: /knowledge/runbooks
+  {{- if .Values.qdrant.enabled }}
+  QDRANT_URL: {{ printf "http://%s:%s" (include "kube-copilot.qdrant.fullname" .) (.Values.qdrant.service.port | toString) | quote }}
+  {{- end }}

@@ -1,7 +1,5 @@
-import json
 
 from app.k8s_client import to_pod_summary
-from app.main import app
 from tests.conftest import FakeK8s, FakeLLM, FakeRetriever
 
 

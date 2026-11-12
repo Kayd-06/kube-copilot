@@ -9,7 +9,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     ANOMALY_MODEL_PATH=/src/backend/models/isolation_forest.joblib
 
 COPY backend/requirements.txt /tmp/requirements.txt
-RUN pip install --no-cache-dir -r /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt \
+    && useradd --uid 10001 --create-home --shell /usr/sbin/nologin appuser
 
 COPY backend/app /src/backend/app
 COPY backend/models /src/backend/models
@@ -17,6 +18,7 @@ COPY ml /src/ml
 COPY knowledge /knowledge
 
 WORKDIR /src/backend
+USER 10001
 
 EXPOSE 8000
 

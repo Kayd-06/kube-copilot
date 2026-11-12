@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kube-copilot.frontend.fullname" . }}
+  labels:
+    {{- include "kube-copilot.labels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
+spec:
+  replicas: {{ .Values.frontend.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "kube-copilot.frontend.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "kube-copilot.frontend.selectorLabels" . | nindent 8 }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.frontend.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: frontend
+          image: {{ include "kube-copilot.frontend.image" . }}
+          imagePullPolicy: {{ .Values.frontend.image.pullPolicy }}
+          {{- with .Values.frontend.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.frontend.service.port }}
+              protocol: TCP
+          env:
+            - name: BACKEND_URL
+              value: {{ include "kube-copilot.backendUrl" . | quote }}
+            - name: NEXT_PUBLIC_API_URL
+              value: {{ .Values.frontend.publicApiUrl | quote }}
+            - name: PORT
+              value: {{ .Values.frontend.service.port | quote }}
+            - name: HOSTNAME
+              value: "0.0.0.0"
+          {{- with .Values.frontend.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.frontend.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.frontend.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

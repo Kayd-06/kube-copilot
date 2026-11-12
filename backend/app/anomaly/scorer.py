@@ -113,7 +113,6 @@ class AnomalyScorer:
             if self._settings.anomaly_score_threshold is not None
             else artifact["threshold"]
         )
-        mean = artifact.get("train_raw_mean", threshold)
         std = artifact.get("train_raw_std") or 1.0
         # Sigmoid centred on the threshold so 0.5 == the decision boundary.
         spread = max(std, 1e-6)

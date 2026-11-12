@@ -1,4 +1,4 @@
-# Runs the Phase 2 API, UI, and Qdrant. The backend expects a kubeconfig so it can
+# Runs the API, UI, and Qdrant. Prefer `make helm-install` if you want the The backend expects a kubeconfig so it can
 # reach the kind cluster on your machine — mount is read-only.
 #
 #   cp .env.example .env   # then add your Groq API key
@@ -7,7 +7,7 @@
 #
 # The browser talks to the API at http://localhost:8000 (published on the host).
 # kind advertises the API server as 127.0.0.1 — the most reliable workflow is
-# still `make backend-dev` on the host (and `make qdrant-up && make ingest`).
+# API to reach a kind cluster (in-cluster config). Host dev remains
 
 services:
   qdrant:
@@ -44,11 +44,12 @@ services:
     build:
       context: ./frontend
       args:
-        NEXT_PUBLIC_API_URL: http://localhost:8000
+        NEXT_PUBLIC_API_URL: /api
     ports:
       - "3000:3000"
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8000
+      NEXT_PUBLIC_API_URL: /api
+      BACKEND_URL: http://backend:8000
     depends_on:
       - backend
     restart: unless-stopped

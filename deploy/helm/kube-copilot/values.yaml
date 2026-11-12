@@ -1,0 +1,155 @@
+# Default values for kube-copilot. Sized for a small cluster (kind / a
+# single-node k3s VM). Override in values-kind.yaml or a cloud values file.
+
+nameOverride: ""
+fullnameOverride: ""
+
+imagePullSecrets: []
+
+# LLM key. Prefer an existing Secret (created out of band) so the key is
+# never stored in values or helm history. If both are empty the API still
+# starts; Diagnose returns HTTP 502 until a key is provided.
+llm:
+  existingSecret: ""
+  existingSecretKey: LLM_API_KEY
+  apiKey: ""
+  baseUrl: https://api.groq.com/openai/v1
+  model: llama-3.3-70b-versatile
+
+backend:
+  image:
+    repository: ghcr.io/kayd-06/kube-copilot-backend
+    tag: ""            # defaults to chart appVersion
+    pullPolicy: IfNotPresent
+  replicaCount: 1
+  service:
+    type: ClusterIP
+    port: 8000
+  resources:
+    requests:
+      cpu: 50m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  # In-cluster the backend uses the pod ServiceAccount (see rbac below)
+  # and talks to Prometheus / Qdrant over cluster DNS.
+  env:
+    k8sInCluster: "true"
+    logTailLines: "200"
+    prometheusUrl: http://prometheus.observability.svc.cluster.local:9090
+    ragEnabled: "true"
+    embeddingBackend: fastembed
+    embeddingModel: BAAI/bge-small-en-v1.5
+    ragTopK: "5"
+    anomalyPollerEnabled: "false"
+    corsOrigins: "http://localhost:3000,http://127.0.0.1:3000"
+  extraEnv: []
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 10001
+    fsGroup: 10001
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: ["ALL"]
+    readOnlyRootFilesystem: false
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: http
+    initialDelaySeconds: 5
+    periodSeconds: 20
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: http
+    initialDelaySeconds: 3
+    periodSeconds: 10
+
+frontend:
+  image:
+    repository: ghcr.io/kayd-06/kube-copilot-frontend
+    tag: ""
+    pullPolicy: IfNotPresent
+  replicaCount: 1
+  service:
+    type: ClusterIP
+    port: 3000
+  # Browser calls same-origin /api; the Next.js server proxies to this URL.
+  backendUrl: ""       # empty = http://<release>-backend:<port>
+  publicApiUrl: /api
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1001
+    fsGroup: 1001
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: ["ALL"]
+  livenessProbe:
+    httpGet:
+      path: /
+      port: http
+    initialDelaySeconds: 8
+    periodSeconds: 20
+  readinessProbe:
+    httpGet:
+      path: /
+      port: http
+    initialDelaySeconds: 5
+    periodSeconds: 10
+
+# Lightweight Qdrant (no official subchart, so `helm lint` works offline).
+# Disable if you already run Qdrant, or to save RAM on a low-spec laptop.
+qdrant:
+  enabled: true
+  image:
+    repository: qdrant/qdrant
+    tag: v1.13.4
+    pullPolicy: IfNotPresent
+  service:
+    port: 6333
+  persistence: false
+  resources:
+    requests:
+      cpu: 25m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+ingress:
+  enabled: false
+  className: nginx
+  annotations: {}
+  hosts:
+    - host: kube-copilot.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+rbac:
+  create: true
+  # Cluster-wide read of pods, logs, and events — the minimum the API needs
+  # to list unhealthy pods and collect evidence. No write verbs.
+  clusterRole:
+    create: true
+
+podAnnotations: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}

@@ -1,16 +1,20 @@
 # Kube Copilot
 
+[![CI](https://github.com/Kayd-06/kube-copilot/actions/workflows/ci.yml/badge.svg)](https://github.com/Kayd-06/kube-copilot/actions/workflows/ci.yml)
+[![Images](https://github.com/Kayd-06/kube-copilot/actions/workflows/images.yml/badge.svg)](https://github.com/Kayd-06/kube-copilot/actions/workflows/images.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 **An AI incident copilot for Kubernetes.** Point it at a cluster, get a plain-English explanation of what broke, a short list of `kubectl` commands to fix it, citations from runbooks and past incidents, and an anomaly score over recent Prometheus metrics.
 
-Phase 3 (this repo state) adds a lightweight metrics pipeline and an Isolation Forest that flags unusual CPU, memory, and restart patterns — including a slow memory leak that has not yet been OOMKilled. Diagnoses still work if Prometheus or the model is missing; you just get an `anomaly_unavailable` flag.
+Phase 4 (this repo state) packages that stack: a Helm chart that runs the API *inside* the cluster, GitHub Actions CI (pytest, Helm lint, a kind smoke test, GHCR publish, Trivy), a Terraform module for a small k3s VM, and a Grafana dashboard. Diagnoses still work if Prometheus, Qdrant, or the model is missing; you just get an `anomaly_unavailable` or `knowledge_unavailable` flag.
 
-This project is built to be resume-ready for DevOps, full-stack GenAI, and ML internship / GSoC / LFX applications. The last phase adds production-style packaging (Helm, GitHub Actions, Terraform, Grafana).
+See [CONTRIBUTING.md](CONTRIBUTING.md) for how to develop, [docs/DEMO.md](docs/DEMO.md) for a recording script, and [CHANGELOG.md](CHANGELOG.md) for what landed in each phase.
 
 ## The problem
 
 When a pod goes into `CrashLoopBackOff`, `ImagePullBackOff`, or `OOMKilled`, the signal is scattered across `kubectl describe`, events, and current vs. previous logs. Junior operators (and tired senior ones) spend the first five minutes just assembling context. Some problems, like a memory leak, are visible in metrics *before* the pod enters a terminal wait reason. Kube Copilot gathers the evidence, retrieves the closest runbook sections, scores recent metrics, and returns a root-cause hypothesis you can verify — with citations.
 
-## Architecture (Phase 3)
+## Architecture (Phase 4)
 
 ```mermaid
 flowchart LR
@@ -23,10 +27,9 @@ flowchart LR
     List["GET /pods/unhealthy"]
     Diag["GET /pods/{ns}/{name}/diagnose"]
     Anoms["GET /anomalies"]
-    PodAnom["GET /pods/{ns}/{name}/anomaly"]
+    MetricsEp["GET /metrics"]
     Incidents["POST /incidents"]
-    Search["GET /knowledge/search"]
-    K8S["Kubernetes client"]
+    K8S["Kubernetes client\n(in-cluster or kubeconfig)"]
     RAG["Retriever"]
     Prom["Prometheus client"]
     Scorer["Anomaly scorer"]
@@ -40,16 +43,22 @@ flowchart LR
 
   subgraph Observability["kind cluster — single node"]
     APIServer["API server"]
-    Demo["Demo workloads\n(crash loop, bad image, OOM, memory leak)"]
+    Demo["Demo workloads"]
     PromSvc["Prometheus"]
     KSM["kube-state-metrics"]
-    MS["metrics-server"]
+    Grafana["Grafana dashboard"]
+    HelmRel["Helm release\nbackend + frontend + optional Qdrant"]
   end
 
   subgraph ML["ML"]
     Train["ml.train\n(synthetic data + Isolation Forest)"]
     MLflow["MLflow\n(local mlruns/ file store)"]
     Model["isolation_forest.joblib"]
+  end
+
+  subgraph Packaging["Packaging"]
+    Actions["GitHub Actions\nCI + GHCR + Trivy + kind e2e"]
+    TF["Terraform\nEC2 + k3s + helm_release"]
   end
 
   subgraph Models["Models"]
@@ -67,23 +76,28 @@ flowchart LR
   Diag --> Scorer
   Diag --> LLM
   Anoms --> Scorer
-  PodAnom --> Scorer
   Scorer --> Prom
   Scorer --> Model
   Incidents --> RAG
-  Search --> RAG
   RAG --> Runbooks
   RAG --> Memory
   RAG --> Embed
   Prom --> PromSvc
   PromSvc --> KSM
   PromSvc --> APIServer
+  Grafana --> PromSvc
+  Grafana --> MetricsEp
+  MetricsEp --> Scorer
   K8S --> APIServer
   APIServer --> Demo
+  HelmRel --> API
+  HelmRel --> UI
   Train --> Model
   Train --> MLflow
   LLM --> Groq
-```
+  Actions --> HelmRel
+  TF --> HelmRel
+
 
 The backend talks to the cluster with the official Python `kubernetes` client, to Prometheus over its HTTP API (`PROMETHEUS_URL`), and to the model via an OpenAI-compatible API (`LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`). Groq is the default because it is fast and has a free tier that is enough for local demos; swapping in OpenAI or a local Ollama instance is a three-line `.env` change.
 
@@ -101,15 +115,19 @@ Prometheus, kube-state-metrics, and metrics-server are optional. They are instal
 
 ```
 kube-copilot/
-├── backend/            FastAPI app, anomaly scorer, RAG helpers, tests, Dockerfile
-├── backend/models/     Trained Isolation Forest artifact (committed)
-├── frontend/           Next.js (App Router, TypeScript, Tailwind)
-├── ml/                 Synthetic data, feature engineering, training, eval reports
-├── knowledge/runbooks  Markdown runbooks ingested into Qdrant
-├── demo/               kind config, broken manifests, tiny Prometheus stack
-├── Makefile            cluster, metrics, train, ingest, dev, test targets
-├── docker-compose.yml  Qdrant + optional API + UI containers
-└── .env.example        Groq defaults, Qdrant, Prometheus, and OpenAI / Ollama examples
+├── backend/              FastAPI app, anomaly scorer, RAG helpers, tests, Dockerfile
+├── backend/models/       Trained Isolation Forest artifact (committed)
+├── frontend/             Next.js (App Router, TypeScript, Tailwind)
+├── ml/                   Synthetic data, feature engineering, training, eval reports
+├── knowledge/runbooks    Markdown runbooks ingested into Qdrant
+├── demo/                 kind config, broken manifests, Prometheus + Grafana
+├── deploy/helm/          Helm chart (backend, frontend, optional Qdrant)
+├── deploy/terraform/     Single-node k3s on a cheap AWS VM + helm_release
+├── docs/                 DEMO recording script and resume bullets
+├── .github/workflows/    CI, GHCR publish, Dependabot, issue/PR templates
+├── Makefile              cluster, metrics, grafana, helm, train, ingest, dev, test
+├── docker-compose.yml    Qdrant + optional API + UI containers
+└── .env.example          Groq defaults, Qdrant, Prometheus, and OpenAI / Ollama examples
 ```
 
 ## Quickstart
@@ -234,6 +252,39 @@ Open [http://localhost:3000](http://localhost:3000). The Anomalies panel shows s
 
 `make frontend-dev` does the same once `npm install` has been run once.
 
+## Deploy with Helm (recommended)
+
+This is the supported way to run the API against a kind cluster: the backend pod uses in-cluster Kubernetes config, so it never has to reach an API server advertised as `127.0.0.1`.
+
+You will need Docker, kind, kubectl, and [Helm 3](https://helm.sh/). From the repo root:
+
+```bash
+cp .env.example .env          # add your Groq key as LLM_API_KEY
+make cluster-up
+make demo-break
+make metrics-up               # optional, for anomaly scores
+make grafana-up               # optional, also starts the metrics stack
+make helm-install             # builds images, loads them into kind, installs the chart
+kubectl -n kube-copilot port-forward svc/kube-copilot-frontend 3000:3000
+# open http://localhost:3000 — the UI proxies /api to the in-cluster backend
+```
+
+`make helm-install` creates a Secret from `LLM_API_KEY` in `.env` when the key is set. After the first install, ingest runbooks (the first run downloads a small CPU embedder):
+
+```bash
+kubectl -n kube-copilot exec deploy/kube-copilot-backend -- python -m app.ingest
+```
+
+Useful commands: `make helm-lint`, `make helm-uninstall`, `make grafana-forward` (Grafana at http://localhost:3001, `admin`/`admin`, or anonymous Viewer). The chart lives at [`deploy/helm/kube-copilot`](deploy/helm/kube-copilot); `values-kind.yaml` is already sized for a low-spec laptop.
+
+A Terraform module at [`deploy/terraform`](deploy/terraform) can stand up a small AWS EC2 VM, install k3s, and deploy the same chart. Run `terraform fmt` / `terraform validate` freely; **do not `terraform apply` unless you intend to spend money**, and lock `ssh_cidr` to your IP first. Images are published to GHCR on `main` and on version tags.
+
+## Grafana
+
+`make grafana-up` installs a lightweight Grafana into the `observability` namespace and provisions a **Kube Copilot** dashboard: pod CPU and memory, container restarts, anomaly scores, diagnose latency, and LLM calls. The dashboard JSON is also at [`demo/metrics/grafana/kube-copilot-dashboard.json`](demo/metrics/grafana/kube-copilot-dashboard.json) if you want to import it into an existing Grafana.
+
+When the API runs under Helm, Prometheus scrapes `/metrics` from the backend Service (via the `prometheus.io/scrape` annotation). When the API runs on the host, those custom metrics are still at http://localhost:8000/metrics but are not scraped unless you add a job yourself.
+
 ## Phase 3 — ML anomaly detection
 
 The detector is an Isolation Forest trained **only on synthetic normal windows**, so you can train it on a laptop with no cluster. A generator simulates healthy pods plus three labelled failure modes (memory leak, CPU spike, restart storm). Features are computed over a rolling 3-minute window (12 samples at 15s): rates, z-scores, memory-to-limit ratio, and restart deltas. The forest is fit on a smaller high-signal subset of those features (`cpu_last`, `cpu_mean`, `mem_zscore`, `mem_slope_mib_per_min`, `mem_to_limit_ratio`, `restart_delta`, `restart_rate_per_min`) because a rare behaviour that only shows up in one or two of many features is otherwise hard for Isolation Forest to isolate.
@@ -269,6 +320,7 @@ MLflow tracking uses a local file store at `./mlruns` (gitignored). MLflow 3.x n
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET`  | `/health` | Liveness. Does not touch the cluster, Qdrant, Prometheus, or the LLM. |
+| `GET`  | `/metrics` | Prometheus metrics (HTTP timings plus diagnose latency, LLM calls, and per-pod anomaly scores). |
 | `GET`  | `/pods/unhealthy` | Pods in a bad state (`CrashLoopBackOff`, `Error`, `Pending`, `OOMKilled`, `ImagePullBackOff`, …). Optional `?namespace=`. |
 | `GET`  | `/pods/{namespace}/{name}/diagnose` | Collects status, events, and ~200 lines of logs, retrieves top-k runbook/incident chunks, scores recent metrics, and returns a structured diagnosis plus `citations` and `anomaly`. |
 | `GET`  | `/pods/{namespace}/{name}/diagnose?stream=true` | Same, as server-sent events (`context`, `citations`, `token`, `diagnosis`, `done`; `warning` if Qdrant or the anomaly path is down). |
@@ -327,7 +379,12 @@ docker compose up --build
 docker compose exec backend python -m app.ingest
 ```
 
-The UI is on `:3000`, the API on `:8000`, and Qdrant on `:6333`. Compose mounts `~/.kube` into the API container. **kind advertises the API server as `127.0.0.1`**, which from inside a container is the container itself, not your host. The most reliable workflow is therefore `make qdrant-up && make ingest && make backend-dev` on the host, where your kubeconfig already works. If you want Compose to reach kind, change the server URL in the mounted kubeconfig to `host.docker.internal` (or use [this kind note](https://kind.sigs.k8s.io/docs/user/ingress/)). Prometheus is installed *in* the kind cluster, not in Compose, so keep `make metrics-forward` running on the host even when the API is containerised, or point `PROMETHEUS_URL` at an in-cluster service.
+The UI is on `:3000` (it proxies `/api` to the backend), the API on `:8000`, and Qdrant on `:6333`. Compose still mounts `~/.kube` into the API container, and **kind advertises the API server as `127.0.0.1`**, which from inside a container is the container itself. The reliable ways to run this are:
+
+- **Host process** (fastest loop): `make qdrant-up && make ingest && make backend-dev` plus `make frontend-dev`, where your kubeconfig already works.
+- **In-cluster Helm** (the supported packaging path): `make helm-install`. The backend uses in-cluster config and a least-privilege ServiceAccount, so the `127.0.0.1` gap does not apply.
+
+If you really want Compose to reach kind, change the server URL in the mounted kubeconfig to `host.docker.internal` (or see [this kind note](https://kind.sigs.k8s.io/docs/user/ingress/)). Prometheus is installed *in* the kind cluster, not in Compose, so keep `make metrics-forward` running on the host when the API is a host process, or rely on the in-cluster Service URL when the API runs under Helm.
 
 ## Roadmap
 
@@ -335,9 +392,9 @@ The UI is on `:3000`, the API on `:8000`, and Qdrant on `:6333`. Compose mounts 
 
 **Phase 2 — RAG with Qdrant.** Embed official-style runbooks and past incident write-ups in Qdrant. The explainer retrieves the closest fixes, streams the answer, and cites them instead of guessing from logs alone.
 
-**Phase 3 — ML anomaly detection (current).** Scrape Prometheus metrics, train an Isolation Forest on synthetic pod behaviour, track experiments with MLflow, and serve scores from the API so the copilot can flag issues *before* a pod enters a terminal wait reason. An optional LSTM autoencoder is documented but not required.
+**Phase 3 — ML anomaly detection.** Scrape Prometheus metrics, train an Isolation Forest on synthetic pod behaviour, track experiments with MLflow, and serve scores from the API so the copilot can flag issues *before* a pod enters a terminal wait reason. An optional LSTM autoencoder is documented but not required.
 
-**Phase 4 — DevOps polish.** Docker images already exist; this phase adds Helm charts, GitHub Actions CI/CD, Terraform for a small cloud environment, Grafana dashboards, a public demo, and an architecture-rich README.
+**Phase 4 — DevOps polish (current).** Helm chart, GitHub Actions (tests, Helm lint, kind e2e, GHCR publish, Trivy), Terraform for a single-node k3s VM, Grafana dashboards, and `/metrics` on the API. Next steps that are *not* in this repo yet: evaluating the detector on real cluster metrics, and a published live demo environment.
 
 ## License
 

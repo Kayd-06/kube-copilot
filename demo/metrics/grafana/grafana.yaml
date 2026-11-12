@@ -1,0 +1,147 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources
+  namespace: observability
+  labels:
+    app: grafana
+    app.kubernetes.io/part-of: kube-copilot
+data:
+  datasources.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        uid: prometheus
+        access: proxy
+        url: http://prometheus.observability.svc:9090
+        isDefault: true
+        editable: false
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-provider
+  namespace: observability
+  labels:
+    app: grafana
+    app.kubernetes.io/part-of: kube-copilot
+data:
+  dashboards.yaml: |
+    apiVersion: 1
+    providers:
+      - name: kube-copilot
+        orgId: 1
+        folder: Kube Copilot
+        type: file
+        disableDeletion: false
+        updateIntervalSeconds: 30
+        options:
+          path: /dashboards
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: observability
+  labels:
+    app: grafana
+    app.kubernetes.io/part-of: kube-copilot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      securityContext:
+        fsGroup: 472
+        runAsNonRoot: true
+        runAsUser: 472
+      containers:
+        - name: grafana
+          image: grafana/grafana:11.3.1
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            - name: GF_SECURITY_ADMIN_USER
+              value: admin
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              value: admin
+            - name: GF_AUTH_ANONYMOUS_ENABLED
+              value: "true"
+            - name: GF_AUTH_ANONYMOUS_ORG_ROLE
+              value: Viewer
+            - name: GF_AUTH_DISABLE_LOGIN_FORM
+              value: "false"
+            - name: GF_USERS_DEFAULT_THEME
+              value: dark
+            - name: GF_ANALYTICS_REPORTING_ENABLED
+              value: "false"
+            - name: GF_ANALYTICS_CHECK_FOR_UPDATES
+              value: "false"
+            - name: GF_PATHS_PROVISIONING
+              value: /etc/grafana/provisioning
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 30
+          volumeMounts:
+            - name: datasources
+              mountPath: /etc/grafana/provisioning/datasources
+              readOnly: true
+            - name: provider
+              mountPath: /etc/grafana/provisioning/dashboards
+              readOnly: true
+            - name: dashboards
+              mountPath: /dashboards
+              readOnly: true
+            - name: data
+              mountPath: /var/lib/grafana
+      volumes:
+        - name: datasources
+          configMap:
+            name: grafana-datasources
+        - name: provider
+          configMap:
+            name: grafana-dashboard-provider
+        - name: dashboards
+          configMap:
+            name: grafana-dashboards
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: observability
+  labels:
+    app: grafana
+    app.kubernetes.io/part-of: kube-copilot
+spec:
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http
+  selector:
+    app: grafana

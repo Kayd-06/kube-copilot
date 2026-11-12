@@ -10,7 +10,6 @@ from app.llm_explainer import (
     fallback_diagnosis,
     parse_diagnosis,
 )
-from app.models import Diagnosis, PodLogs, PodSummary
 
 
 def test_parse_plain_json():

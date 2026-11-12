@@ -43,3 +43,11 @@ mlartifacts/
 # Keep the committed eval report and the served model; ignore other local dumps.
 backend/models/*.pt
 backend/models/*.pth
+
+# Terraform (local apply artifacts; the module lockfile is committed)
+deploy/terraform/.terraform/
+deploy/terraform/terraform.tfstate
+deploy/terraform/terraform.tfstate.*
+deploy/terraform/terraform.tfvars
+deploy/terraform/*.pem
+deploy/terraform/*.kubeconfig

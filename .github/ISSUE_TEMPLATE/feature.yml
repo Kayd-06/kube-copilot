@@ -1,0 +1,22 @@
+name: Feature request
+description: Suggest an improvement to Kube Copilot.
+title: "[feat] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed approach
+      description: Rough is fine. Link related issues or docs if you have them.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered
