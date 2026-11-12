@@ -30,3 +30,7 @@ npm-debug.log*
 
 # Packaging
 *.zip
+
+# Local embedded Qdrant store
+.qdrant/
+qdrant_storage/

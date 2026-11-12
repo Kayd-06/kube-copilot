@@ -168,3 +168,11 @@ def test_ollama_allows_empty_key():
     client = explainer._get_client()
     assert client is not None
     assert not explainer._supports_json_response_format()
+
+
+def test_build_user_prompt_includes_retrieved_chunks(sample_pod, sample_events, sample_logs, sample_chunk):
+    prompt = build_user_prompt(sample_pod, sample_events, sample_logs, retrieved=[sample_chunk])
+    assert "Retrieved knowledge" in prompt
+    assert "crashloopbackoff.md" in prompt
+    assert "Common causes" in prompt
+    assert "exit 1" in prompt

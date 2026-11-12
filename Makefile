@@ -1,7 +1,7 @@
 # Kube Copilot — common local-dev targets.
 # Designed for a low-spec laptop: a single-node kind cluster and tiny demo images.
 
-.PHONY: cluster-up cluster-down demo-break demo-clean backend-dev frontend-dev test help
+.PHONY: cluster-up cluster-down demo-break demo-clean backend-dev frontend-dev test ingest qdrant-up help
 
 KIND_CLUSTER ?= kube-copilot
 
@@ -11,6 +11,8 @@ help:
 	@echo "  cluster-down   Delete the kind cluster"
 	@echo "  demo-break     Apply intentionally broken demo workloads"
 	@echo "  demo-clean     Remove the demo workloads"
+	@echo "  qdrant-up      Start a local Qdrant container (docker compose)"
+	@echo "  ingest         Embed runbooks and upsert them into Qdrant"
 	@echo "  backend-dev    Run the FastAPI app with reload on :8000"
 	@echo "  frontend-dev   Run the Next.js UI on :3000"
 	@echo "  test           Run backend unit tests"
@@ -43,3 +45,12 @@ test:
 	cd backend && \
 	if [ -x .venv/bin/python ]; then PY=.venv/bin/python; else PY=python3; fi && \
 	$$PY -m pytest -v
+
+qdrant-up:
+	docker compose up -d qdrant
+	@echo "Qdrant is at http://localhost:6333 — next: make ingest"
+
+ingest:
+	cd backend && \
+	if [ -x .venv/bin/python ]; then PY=.venv/bin/python; else PY=python3; fi && \
+	$$PY -m app.ingest
