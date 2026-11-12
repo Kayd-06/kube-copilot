@@ -1,0 +1,19 @@
+{
+  "rows": 7106,
+  "pods": 43,
+  "rows_by_label": {
+    "cpu_stress": 48,
+    "memory_leak": 46,
+    "memory_stress": 48,
+    "normal": 6672,
+    "pod_kill": 166,
+    "recovery": 78,
+    "restart_storm": 48
+  },
+  "run_id": "run-box-01",
+  "start_utc": "2026-11-12T14:20:12.001885+00:00",
+  "end_utc": "2026-11-12T15:27:35.800853+00:00",
+  "minutes": 67.4,
+  "step_seconds": 15,
+  "grace_seconds": 60.0
+}
