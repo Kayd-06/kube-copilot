@@ -139,18 +139,26 @@ jobs:
             --wait --timeout 5m
       - name: Smoke test /health
         run: |
+          set -euo pipefail
           kubectl -n kube-copilot rollout status deploy/kube-copilot-backend --timeout=180s
-          kubectl -n kube-copilot port-forward svc/kube-copilot-backend 18000:8000 &
+          kubectl -n kube-copilot port-forward svc/kube-copilot-backend 18000:8000 >/tmp/pf.log 2>&1 &
           PF_PID=$!
           trap 'kill ${PF_PID} 2>/dev/null || true' EXIT
+          ok=0
           for i in $(seq 1 30); do
-            if curl -fsS http://127.0.0.1:18000/health | tee /tmp/health.json; then
+            if curl -fsS http://127.0.0.1:18000/health > /tmp/health.json; then
+              ok=1
               break
             fi
             sleep 2
           done
+          if [ "$ok" != 1 ]; then
+            echo "timed out waiting for /health; port-forward log:" >&2
+            cat /tmp/pf.log >&2 || true
+            exit 1
+          fi
           python3 - <<'PY'
-          import json, sys
+          import json
           body = json.load(open("/tmp/health.json"))
           assert body.get("status") == "ok", body
           assert body.get("service") == "kube-copilot", body
