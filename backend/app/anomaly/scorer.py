@@ -16,6 +16,7 @@ from ml.features import (
     MetricPoint,
     contributions,
     extract_features,
+    range_guard_scores,
     select_model_features,
 )
 
@@ -118,6 +119,18 @@ class AnomalyScorer:
         spread = max(std, 1e-6)
         score = float(1.0 / (1.0 + math.exp(-(raw - threshold) / spread)))
         score = min(max(score, 0.0), 1.0)
+        is_anomaly = raw >= threshold
+
+        # Artifacts trained by `make train-real` carry an out-of-range guard:
+        # Isolation Forest cannot score values far beyond its training range
+        # (e.g. a pegged CPU on pods that idled) above the most extreme
+        # training point, so the guard flags those windows explicitly.
+        guard = artifact.get("range_guard")
+        if guard is not None:
+            excess = float(range_guard_scores(guard, full.reshape(1, -1))[0])
+            if excess > guard["limit"]:
+                is_anomaly = True
+                score = max(score, 1.0 - 0.5 * guard["limit"] / excess)
 
         full_scaler = artifact.get("full_scaler")
         if full_scaler is not None:
@@ -142,7 +155,7 @@ class AnomalyScorer:
             namespace=namespace,
             name=name,
             score=score,
-            is_anomaly=raw >= threshold,
+            is_anomaly=is_anomaly,
             threshold=threshold,
             raw_score=raw,
             contributing_features=contrib,

@@ -131,6 +131,7 @@ def test_train_and_evaluate_detects_obvious_chaos(run_dir):
         windows, baseline_end(timeline), seed=0, n_estimators=50, include_synthetic=False
     )
     real = report["models"]["real"]
+    assert "range_guard" in artifact  # the returned artifact is `real+guard`
     assert artifact["threshold"] == pytest.approx(real["threshold"])
     assert real["per_scenario"]["cpu_stress"]["recall"] >= 0.9
     assert real["per_scenario"]["memory_stress"]["recall"] >= 0.9
@@ -158,11 +159,57 @@ def test_main_writes_reports_and_model(run_dir, tmp_path):
         ]
     )
     assert rc == 0
-    report = json.loads((out / "r.json").read_text())
-    assert set(report["models"]) == {"real", "synthetic", "synthetic+real"}
+    payload = json.loads((out / "r.json").read_text())
+    assert set(payload) == {"in_run", "runs"}  # explicit --run-dir: no held-out run
+    assert set(payload["in_run"]["models"]) == {
+        "real", "real+guard", "synthetic", "synthetic+guard", "synthetic+real+guard"
+    }
     md = (out / "r.md").read_text()
-    assert "Time-based split" in md and "`cpu_stress`" in md and "`synthetic`" in md
+    assert "In-run time split" in md and "`cpu_stress`" in md and "`synthetic`" in md
     assert (out / "m.joblib").stat().st_size > 0
+
+
+def test_main_scores_a_heldout_run(run_dir, tmp_path):
+    later = tmp_path / "run-later"
+    later.mkdir()
+    timeline = _fixture_timeline()
+    write_rows(_fixture_rows(timeline, seed=1), later / "points.csv.gz")
+    (later / "timeline.json").write_text(timeline.to_json())
+    out = tmp_path / "out2"
+    rc = train_real.main(
+        [
+            "--run-dir", str(run_dir), "--heldout-run-dir", str(later), "--stride", "3",
+            "--n-estimators", "30", "--no-mlflow", "--no-synthetic",
+            "--output", str(out / "m.joblib"), "--report-json", str(out / "r.json"),
+            "--report-md", str(out / "r.md"),
+        ]
+    )
+    assert rc == 0
+    payload = json.loads((out / "r.json").read_text())
+    heldout = payload["heldout"]
+    assert "held-out" in heldout["split"]
+    # Every normal window of the training run is used, more than the in-run split.
+    assert heldout["train_windows"] > payload["in_run"]["train_windows"]
+    assert heldout["models"]["real+guard"]["per_scenario"]["cpu_stress"]["recall"] >= 0.9
+    assert "Held-out run" in (out / "r.md").read_text()
+
+
+def test_range_guard_flags_values_far_outside_training():
+    from ml.features import FEATURE_NAMES
+    from ml.features import fit_range_guard, range_guard_scores
+
+    rng = np.random.default_rng(0)
+    x = np.zeros((200, len(FEATURE_NAMES)))
+    x[:, FEATURE_NAMES.index("cpu_last")] = rng.uniform(0.001, 0.01, 200)
+    guard = fit_range_guard(x)
+    probe = np.zeros((3, len(FEATURE_NAMES)))
+    probe[:, FEATURE_NAMES.index("cpu_last")] = 0.005  # inside the training range
+    probe[1, FEATURE_NAMES.index("cpu_last")] = 0.8  # far above the idle range
+    probe[2, FEATURE_NAMES.index("restart_delta")] = 1.0  # one restart: at the floor, not flagged
+    scores = range_guard_scores(guard, probe)
+    assert scores[0] == 0.0
+    assert scores[1] > guard["limit"]
+    assert scores[2] <= guard["limit"]
 
 
 def test_latest_run_dir(tmp_path, run_dir):

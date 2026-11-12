@@ -176,3 +176,44 @@ def contributions(
         )
     items.sort(key=lambda item: abs(item["zscore"]), reverse=True)
     return items[:top_k]
+
+
+# Smallest "normal range" width per model feature, in natural units, so a
+# feature that never moved in training (e.g. restart_delta == 0) still has a
+# sensible scale: one restart, 0.05 cores, 1 MiB/min, 5% of the memory limit.
+RANGE_GUARD_FLOORS: dict[str, float] = {
+    "cpu_last": 0.05,
+    "cpu_mean": 0.05,
+    "mem_zscore": 1.0,
+    "mem_slope_mib_per_min": 1.0,
+    "mem_to_limit_ratio": 0.05,
+    "restart_delta": 1.0,
+    "restart_rate_per_min": 0.34,
+}
+RANGE_GUARD_QUANTILES = (0.5, 99.5)
+RANGE_GUARD_LIMIT = 1.0  # flag when a feature is > 1 range-width outside the training range
+
+
+def fit_range_guard(x_train_full: np.ndarray) -> dict:
+    """Per-feature training range for the out-of-range guard.
+
+    Isolation Forest scores a point far beyond the training range no higher than
+    the most extreme training point (splits are drawn inside the observed
+    range), so e.g. 0.8 cores on pods that idled at 0.003 can look "normal".
+    The guard flags windows where any model feature sits more than
+    RANGE_GUARD_LIMIT range-widths outside the training [p0.5, p99.5] band.
+    """
+    x = select_model_features(x_train_full)
+    lo = np.percentile(x, RANGE_GUARD_QUANTILES[0], axis=0)
+    hi = np.percentile(x, RANGE_GUARD_QUANTILES[1], axis=0)
+    floors = np.array([RANGE_GUARD_FLOORS.get(n, 1e-6) for n in MODEL_FEATURE_NAMES])
+    width = np.maximum(hi - lo, floors)
+    return {"lo": lo, "hi": hi, "width": width, "limit": RANGE_GUARD_LIMIT}
+
+
+def range_guard_scores(guard: dict, x_full: np.ndarray) -> np.ndarray:
+    """Max over features of how many range-widths a window is outside training."""
+    x = select_model_features(x_full)
+    over = np.maximum((x - guard["hi"]) / guard["width"], 0.0)
+    under = np.maximum((guard["lo"] - x) / guard["width"], 0.0)
+    return np.max(np.maximum(over, under), axis=1)

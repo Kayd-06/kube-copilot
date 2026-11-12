@@ -38,7 +38,14 @@ from sklearn.metrics import (
 )
 from sklearn.preprocessing import StandardScaler
 
-from ml.features import FEATURE_NAMES, MODEL_FEATURE_NAMES, extract_feature_matrix, select_model_features
+from ml.features import (
+    FEATURE_NAMES,
+    MODEL_FEATURE_NAMES,
+    extract_feature_matrix,
+    fit_range_guard,
+    range_guard_scores,
+    select_model_features,
+)
 from ml.synthetic import ANOMALY_LABELS, LABEL_NORMAL, WindowSample, generate_dataset
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -134,6 +141,7 @@ def fit_isolation_forest(
     threshold_percentile: float = 90.0,
     window_size: int = 12,
     step_seconds: int = 15,
+    range_guard: bool = False,
 ) -> dict:
     """Fit scaler + Isolation Forest on full feature rows of normal windows.
 
@@ -160,7 +168,7 @@ def fit_isolation_forest(
 
     train_raw = _raw_scores(model, x_train_scaled)
     threshold = float(np.percentile(train_raw, threshold_percentile))
-    return {
+    artifact = {
         "model": model,
         "scaler": scaler,
         "full_scaler": full_scaler,
@@ -175,6 +183,9 @@ def fit_isolation_forest(
         "version": ARTIFACT_VERSION,
         "seed": seed,
     }
+    if range_guard:
+        artifact["range_guard"] = fit_range_guard(x_train_full)
+    return artifact
 
 
 def raw_scores(artifact: dict, x_full: np.ndarray) -> np.ndarray:
@@ -185,7 +196,11 @@ def raw_scores(artifact: dict, x_full: np.ndarray) -> np.ndarray:
 
 def predict(artifact: dict, x_full: np.ndarray, threshold: float | None = None) -> np.ndarray:
     cut = float(artifact["threshold"] if threshold is None else threshold)
-    return (raw_scores(artifact, x_full) >= cut).astype(np.int32)
+    flags = raw_scores(artifact, x_full) >= cut
+    guard = artifact.get("range_guard")
+    if guard is not None:
+        flags |= range_guard_scores(guard, x_full) > guard["limit"]
+    return flags.astype(np.int32)
 
 
 def train(
