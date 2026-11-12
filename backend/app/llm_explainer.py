@@ -10,7 +10,7 @@ from collections.abc import AsyncIterator, Iterator
 from openai import APIError, OpenAI, OpenAIError
 
 from app.config import Settings, get_settings
-from app.models import Diagnosis, PodEvent, PodLogs, PodSummary
+from app.models import AnomalyScore, Diagnosis, PodEvent, PodLogs, PodSummary
 from app.rag.retriever import RetrievedChunk
 
 logger = logging.getLogger(__name__)
@@ -18,9 +18,12 @@ logger = logging.getLogger(__name__)
 SYSTEM_PROMPT = """You are a senior Kubernetes SRE helping diagnose a failing pod.
 
 You will receive the pod's status, recent cluster events, and container logs.
-You may also receive retrieved runbooks and past incidents. Use those when
-they clearly match the evidence; do not invent facts that are not supported
-by the evidence or the retrieved knowledge.
+You may also receive retrieved runbooks, past incidents, and an anomaly score
+computed from recent Prometheus metrics (CPU, memory, restarts, network).
+Use those when they clearly match the evidence; do not invent facts that are
+not supported by the evidence or the retrieved knowledge. A flagged anomaly
+can be an early warning (for example a memory leak that has not yet been
+OOMKilled) — mention it when it is relevant.
 
 Respond with a single JSON object (no markdown fences) with exactly these keys:
 - "summary": two or three sentences describing what is happening to the pod.
@@ -109,6 +112,7 @@ def build_user_prompt(
     events: list[PodEvent],
     logs: PodLogs,
     retrieved: list[RetrievedChunk] | None = None,
+    anomaly: AnomalyScore | None = None,
 ) -> str:
     containers = []
     for c in pod.containers:
@@ -167,6 +171,21 @@ def build_user_prompt(
             )
             parts.append(chunk.text)
             parts.append("")
+    if anomaly is not None:
+        parts.append("Anomaly detector (Isolation Forest on recent Prometheus metrics):")
+        parts.append(
+            f"- score: {anomaly.score:.3f} (0.5 is the decision boundary; higher is more anomalous)"
+        )
+        parts.append(f"- flagged_as_anomaly: {str(anomaly.is_anomaly).lower()}")
+        if anomaly.contributing_features:
+            parts.append("- contributing features (z-score vs the healthy training distribution):")
+            for feat in anomaly.contributing_features:
+                parts.append(
+                    f"  - {feat.name}: {feat.value:.3f} ({feat.direction}, z={feat.zscore:.2f})"
+                )
+        if anomaly.warning:
+            parts.append(f"- warning: {anomaly.warning}")
+        parts.append("")
     return "\n".join(parts)
 
 
@@ -217,10 +236,11 @@ class LLMExplainer:
         events: list[PodEvent],
         logs: PodLogs,
         retrieved: list[RetrievedChunk] | None = None,
+        anomaly: AnomalyScore | None = None,
     ) -> Diagnosis:
         messages = [
             {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": build_user_prompt(pod, events, logs, retrieved)},
+            {"role": "user", "content": build_user_prompt(pod, events, logs, retrieved, anomaly)},
         ]
         client = self._get_client()
         try:
@@ -255,11 +275,12 @@ class LLMExplainer:
         events: list[PodEvent],
         logs: PodLogs,
         retrieved: list[RetrievedChunk] | None = None,
+        anomaly: AnomalyScore | None = None,
     ) -> Iterator[str]:
         """Yield text chunks from the model, then the caller parses the full text."""
         messages = [
             {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": build_user_prompt(pod, events, logs, retrieved)},
+            {"role": "user", "content": build_user_prompt(pod, events, logs, retrieved, anomaly)},
         ]
         client = self._get_client()
         kwargs = self._create_kwargs(messages, stream=True)
@@ -291,7 +312,8 @@ class LLMExplainer:
         events: list[PodEvent],
         logs: PodLogs,
         retrieved: list[RetrievedChunk] | None = None,
+        anomaly: AnomalyScore | None = None,
     ) -> AsyncIterator[str]:
         # The official OpenAI SDK streaming iterator is sync; wrap it for SSE.
-        for piece in self.explain_stream(pod, events, logs, retrieved):
+        for piece in self.explain_stream(pod, events, logs, retrieved, anomaly):
             yield piece

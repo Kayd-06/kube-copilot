@@ -49,6 +49,18 @@ class Settings(BaseSettings):
     # Directory of markdown runbooks. Empty means "discover knowledge/runbooks".
     knowledge_dir: str = ""
 
+    # --- Prometheus / anomaly detection ---
+    prometheus_url: str = "http://localhost:9090"
+    prometheus_timeout: float = 3.0
+    # Empty means backend/models/isolation_forest.joblib (next to this package).
+    anomaly_model_path: str = ""
+    anomaly_poller_enabled: bool = False
+    anomaly_poll_interval_seconds: int = 30
+    anomaly_window_seconds: int = 180
+    anomaly_step_seconds: int = 15
+    # When set, overrides the threshold stored in the model artifact.
+    anomaly_score_threshold: float | None = None
+
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
 
@@ -61,6 +73,12 @@ class Settings(BaseSettings):
             return Path(self.knowledge_dir).expanduser().resolve()
         here = Path(__file__).resolve()
         return here.parents[2] / "knowledge" / "runbooks"
+
+    def resolved_anomaly_model_path(self) -> Path:
+        if self.anomaly_model_path:
+            return Path(self.anomaly_model_path).expanduser().resolve()
+        # backend/models/isolation_forest.joblib
+        return Path(__file__).resolve().parents[1] / "models" / "isolation_forest.joblib"
 
 
 @lru_cache
