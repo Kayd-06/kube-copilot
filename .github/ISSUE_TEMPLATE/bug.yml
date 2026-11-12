@@ -1,0 +1,44 @@
+name: Bug report
+description: Something is not working the way the docs say it should.
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for taking the time to report this. Please fill in as much as you can.
+  - type: textarea
+    id: expected
+    attributes:
+      label: What should have happened?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What actually happened?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: "v0.4.0 or a short SHA"
+  - type: dropdown
+    id: install
+    attributes:
+      label: How did you run it?
+      options:
+        - make backend-dev / frontend-dev (host)
+        - make helm-install (kind)
+        - docker compose
+        - something else
