@@ -1,0 +1,37 @@
+{
+  "model": "isolation_forest",
+  "artifact_version": "1.0",
+  "seed": 42,
+  "trained_at": "2026-11-12T13:20:15Z",
+  "n_estimators": 200,
+  "contamination": "auto",
+  "threshold_percentile": 90.0,
+  "threshold": 0.013066874916047992,
+  "n_train_normal": 1170,
+  "n_test_normal": 390,
+  "n_test_anomaly": 389,
+  "precision": 0.8963730569948186,
+  "recall": 0.8894601542416453,
+  "f1": 0.8929032258064517,
+  "accuracy": 0.8934531450577664,
+  "true_negatives": 350,
+  "false_positives": 40,
+  "false_negatives": 43,
+  "true_positives": 346,
+  "recall_by_label": {
+    "normal": 0.8974358974358975,
+    "memory_leak": 0.7916666666666666,
+    "cpu_spike": 0.8859649122807017,
+    "restart_storm": 1.0
+  },
+  "feature_names": [
+    "cpu_last",
+    "cpu_mean",
+    "mem_zscore",
+    "mem_slope_mib_per_min",
+    "mem_to_limit_ratio",
+    "restart_delta",
+    "restart_rate_per_min"
+  ],
+  "notes": "Trained on synthetic normal windows only. Threshold is the 90th percentile of training anomaly scores. recall_by_label['normal'] is specificity (1 - false-positive rate)."
+}

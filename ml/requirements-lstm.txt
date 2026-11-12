@@ -1,0 +1,4 @@
+# Optional extra for `python -m ml.train --model lstm`.
+# Pulls in CPU PyTorch, which is several hundred MB — skip this on a low-spec laptop.
+-r requirements.txt
+torch>=2.4.0
