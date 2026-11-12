@@ -29,7 +29,7 @@ flowchart LR
     Anoms["GET /anomalies"]
     MetricsEp["GET /metrics"]
     Incidents["POST /incidents"]
-    K8S["Kubernetes client\n(in-cluster or kubeconfig)"]
+    K8S["Kubernetes client<br/>(in-cluster or kubeconfig)"]
     RAG["Retriever"]
     Prom["Prometheus client"]
     Scorer["Anomaly scorer"]
@@ -47,23 +47,23 @@ flowchart LR
     PromSvc["Prometheus"]
     KSM["kube-state-metrics"]
     Grafana["Grafana dashboard"]
-    HelmRel["Helm release\nbackend + frontend + optional Qdrant"]
+    HelmRel["Helm release<br/>backend + frontend + optional Qdrant"]
   end
 
   subgraph ML["ML"]
-    Train["ml.train\n(synthetic data + Isolation Forest)"]
-    MLflow["MLflow\n(local mlruns/ file store)"]
+    Train["ml.train<br/>(synthetic data + Isolation Forest)"]
+    MLflow["MLflow<br/>(local mlruns/ file store)"]
     Model["isolation_forest.joblib"]
   end
 
   subgraph Packaging["Packaging"]
-    Actions["GitHub Actions\nCI + GHCR + Trivy + kind e2e"]
-    TF["Terraform\nEC2 + k3s + helm_release"]
+    Actions["GitHub Actions<br/>CI + GHCR + Trivy + kind e2e"]
+    TF["Terraform<br/>EC2 + k3s + helm_release"]
   end
 
   subgraph Models["Models"]
-    Groq["Groq llama-3.3-70b-versatile\n(default)"]
-    Embed["FastEmbed BAAI/bge-small-en-v1.5\n(CPU-only)"]
+    Groq["Groq llama-3.3-70b-versatile<br/>(default)"]
+    Embed["FastEmbed BAAI/bge-small-en-v1.5<br/>(CPU-only)"]
   end
 
   Dash --> List
@@ -97,6 +97,7 @@ flowchart LR
   LLM --> Groq
   Actions --> HelmRel
   TF --> HelmRel
+```
 
 
 The backend talks to the cluster with the official Python `kubernetes` client, to Prometheus over its HTTP API (`PROMETHEUS_URL`), and to the model via an OpenAI-compatible API (`LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`). Groq is the default because it is fast and has a free tier that is enough for local demos; swapping in OpenAI or a local Ollama instance is a three-line `.env` change.
