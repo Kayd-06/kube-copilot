@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { diagnosePod, fetchUnhealthyPods } from "@/lib/api";
-import type { DiagnoseResponse, PodSummary } from "@/lib/types";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { diagnosePodStream, fetchUnhealthyPods, saveIncident } from "@/lib/api";
+import type { Citation, DiagnoseResponse, Diagnosis, PodSummary } from "@/lib/types";
 
 function reasonTone(reason: string | null): string {
   const value = (reason || "").toLowerCase();
@@ -44,6 +44,13 @@ export default function HomePage() {
   const [result, setResult] = useState<DiagnoseResponse | null>(null);
   const [diagError, setDiagError] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const [liveText, setLiveText] = useState("");
+  const [citations, setCitations] = useState<Citation[]>([]);
+  const [knowledgeUnavailable, setKnowledgeUnavailable] = useState(false);
+  const [savingIncident, setSavingIncident] = useState(false);
+  const [incidentSaved, setIncidentSaved] = useState(false);
+  const [incidentError, setIncidentError] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -61,20 +68,98 @@ export default function HomePage() {
 
   useEffect(() => {
     void load();
+    return () => abortRef.current?.abort();
   }, [load]);
 
   const onDiagnose = async (pod: PodSummary) => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setSelectedKey(podKey(pod));
     setDiagnosing(true);
     setDiagError(null);
     setResult(null);
+    setLiveText("");
+    setCitations([]);
+    setKnowledgeUnavailable(false);
+    setIncidentSaved(false);
+    setIncidentError(null);
+
+    let nextDiagnosis: Diagnosis | null = null;
+    let nextPod = pod;
+    let nextEvents: DiagnoseResponse["events"] = [];
+    let nextLogs: DiagnoseResponse["logs"] = { current: "", previous: null, container: null };
+    let nextCitations: Citation[] = [];
+    let nextUnavailable = false;
+
     try {
-      const data = await diagnosePod(pod.namespace, pod.name);
-      setResult(data);
+      await diagnosePodStream(
+        pod.namespace,
+        pod.name,
+        {
+          onContext: (data) => {
+            nextPod = data.pod;
+            nextEvents = data.events;
+            nextLogs = data.logs;
+          },
+          onCitations: (data) => {
+            nextCitations = data.citations || [];
+            nextUnavailable = Boolean(data.knowledge_unavailable);
+            setCitations(nextCitations);
+            setKnowledgeUnavailable(nextUnavailable);
+          },
+          onToken: (text) => {
+            setLiveText((current) => current + text);
+          },
+          onDiagnosis: (data) => {
+            nextDiagnosis = data;
+          },
+          onWarning: () => {
+            nextUnavailable = true;
+            setKnowledgeUnavailable(true);
+          },
+          onError: (detail) => {
+            setDiagError(detail);
+          },
+        },
+        controller.signal,
+      );
+      if (nextDiagnosis) {
+        setResult({
+          pod: nextPod,
+          events: nextEvents,
+          logs: nextLogs,
+          diagnosis: nextDiagnosis,
+          citations: nextCitations,
+          knowledge_unavailable: nextUnavailable,
+        });
+      }
     } catch (err) {
+      if (controller.signal.aborted) return;
       setDiagError(err instanceof Error ? err.message : "Diagnosis failed");
     } finally {
-      setDiagnosing(false);
+      if (!controller.signal.aborted) setDiagnosing(false);
+    }
+  };
+
+  const onSaveIncident = async () => {
+    if (!result) return;
+    setSavingIncident(true);
+    setIncidentError(null);
+    try {
+      await saveIncident({
+        pod_name: result.pod.name,
+        namespace: result.pod.namespace,
+        reason: result.pod.reason,
+        root_cause: result.diagnosis.likely_root_cause,
+        fix: result.diagnosis.suggested_fix,
+      });
+      setIncidentSaved(true);
+    } catch (err) {
+      setIncidentError(err instanceof Error ? err.message : "Could not save the incident");
+    } finally {
+      setSavingIncident(false);
     }
   };
 
@@ -89,18 +174,20 @@ export default function HomePage() {
   };
 
   const selectedLabel = useMemo(() => selectedKey, [selectedKey]);
+  const shownCitations = result?.citations?.length ? result.citations : citations;
 
   return (
     <div className="mx-auto flex min-h-screen max-w-6xl flex-col px-6 py-8">
       <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="mb-1 text-xs font-medium uppercase tracking-[0.2em] text-emerald-400">
-            Phase 1
+            Phase 2 · RAG
           </p>
           <h1 className="text-3xl font-semibold tracking-tight text-white">Kube Copilot</h1>
           <p className="mt-2 max-w-xl text-sm text-slate-400">
-            Unhealthy pods from your cluster, explained by an LLM. Connect a kind cluster,
-            break a few demo workloads, and press Diagnose.
+            Unhealthy pods from your cluster, explained by an LLM that cites runbooks
+            and past incidents. Connect a kind cluster, ingest the knowledge base, and
+            press Diagnose.
           </p>
         </div>
         <button
@@ -194,15 +281,24 @@ export default function HomePage() {
           <div className="px-5 py-5">
             {!selectedKey && !diagnosing && !result && !diagError && (
               <p className="text-sm text-slate-400">
-                Pick a pod and press Diagnose. The copilot will send status, events, and
-                recent logs to the LLM and return a root cause plus kubectl commands.
+                Pick a pod and press Diagnose. The copilot will stream a root-cause
+                explanation, then list the runbooks and past incidents it cited.
               </p>
             )}
 
             {diagnosing && (
-              <p className="text-sm text-slate-300">
-                Collecting logs and events, then asking the model…
-              </p>
+              <div className="space-y-3">
+                <p className="text-sm text-slate-300">
+                  Collecting logs and events, retrieving runbooks, then asking the model…
+                </p>
+                {liveText ? (
+                  <pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded-lg bg-black/40 px-3 py-2 font-mono text-[11px] leading-5 text-emerald-100/90 ring-1 ring-white/8">
+                    {liveText}
+                  </pre>
+                ) : (
+                  <p className="text-xs text-slate-500">Waiting for the first tokens…</p>
+                )}
+              </div>
             )}
 
             {diagError && (
@@ -217,6 +313,15 @@ export default function HomePage() {
                   </p>
                   <ConfidenceBar value={result.diagnosis.confidence} />
                 </div>
+
+                {(knowledgeUnavailable || result.knowledge_unavailable) && (
+                  <p className="rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-200 ring-1 ring-amber-500/20">
+                    Knowledge store was unavailable. This diagnosis was made from pod
+                    evidence only, without runbook citations. Start Qdrant with{" "}
+                    <code className="font-mono">make qdrant-up</code> and ingest runbooks
+                    with <code className="font-mono">make ingest</code>.
+                  </p>
+                )}
 
                 <Block title="Summary" body={result.diagnosis.summary} />
                 <Block title="Likely root cause" body={result.diagnosis.likely_root_cause} />
@@ -245,6 +350,26 @@ export default function HomePage() {
                   </ul>
                 </div>
 
+                <CitationsList citations={shownCitations} />
+
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => void onSaveIncident()}
+                    disabled={savingIncident || incidentSaved}
+                    className="rounded-lg bg-white/5 px-3 py-1.5 text-xs text-slate-200 ring-1 ring-white/10 transition hover:bg-white/10 disabled:opacity-60"
+                  >
+                    {incidentSaved
+                      ? "Saved to incident memory"
+                      : savingIncident
+                        ? "Saving…"
+                        : "Save as resolved incident"}
+                  </button>
+                  {incidentError ? (
+                    <p className="mt-2 text-xs text-rose-300">{incidentError}</p>
+                  ) : null}
+                </div>
+
                 {result.logs.previous && (
                   <details className="rounded-lg bg-black/30 ring-1 ring-white/8">
                     <summary className="cursor-pointer px-3 py-2 text-xs text-slate-400">
@@ -271,6 +396,48 @@ function Block({ title, body }: { title: string; body: string }) {
         {title}
       </h3>
       <p className="text-sm leading-6 text-slate-200">{body}</p>
+    </div>
+  );
+}
+
+function CitationsList({ citations }: { citations: Citation[] }) {
+  if (!citations.length) {
+    return (
+      <div>
+        <h3 className="mb-1.5 text-xs font-medium uppercase tracking-wider text-slate-500">
+          Citations
+        </h3>
+        <p className="text-xs text-slate-500">
+          No runbook or incident matches were retrieved for this diagnosis.
+        </p>
+      </div>
+    );
+  }
+  return (
+    <div>
+      <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-slate-500">
+        Citations
+      </h3>
+      <ul className="space-y-2">
+        {citations.map((citation, index) => (
+          <li
+            key={`${citation.source}-${citation.section}-${index}`}
+            className="rounded-lg bg-black/30 px-3 py-2 ring-1 ring-white/8"
+          >
+            <p className="text-sm text-slate-200">
+              {citation.title}
+              {citation.section && citation.section !== citation.title ? (
+                <span className="text-slate-400"> — {citation.section}</span>
+              ) : null}
+            </p>
+            <p className="mt-1 font-mono text-[11px] text-slate-500">
+              {citation.source}
+              {citation.kind ? ` · ${citation.kind}` : ""}
+              {typeof citation.score === "number" ? ` · score ${citation.score.toFixed(2)}` : ""}
+            </p>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

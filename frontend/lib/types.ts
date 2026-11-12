@@ -46,6 +46,14 @@ export type Diagnosis = {
   confidence: number;
 };
 
+export type Citation = {
+  title: string;
+  source: string;
+  section: string;
+  score: number;
+  kind?: string;
+};
+
 export type UnhealthyPodsResponse = {
   pods: PodSummary[];
   count: number;
@@ -56,4 +64,12 @@ export type DiagnoseResponse = {
   events: PodEvent[];
   logs: PodLogs;
   diagnosis: Diagnosis;
+  citations: Citation[];
+  knowledge_unavailable?: boolean;
+};
+
+export type IncidentSaved = {
+  id: string;
+  title: string;
+  collection: string;
 };
