@@ -1,7 +1,9 @@
 import type { AnomaliesResponse, DiagnoseResponse, IncidentSaved, UnhealthyPodsResponse } from "./types";
 
+// Same-origin `/api` is proxied by app/api/[...path] to BACKEND_URL (or localhost:8000).
+// Set NEXT_PUBLIC_API_URL to talk to the API directly (local `make backend-dev` still works).
 export const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "http://localhost:8000";
+  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "/api";
 
 async function readError(response: Response): Promise<string> {
   try {
