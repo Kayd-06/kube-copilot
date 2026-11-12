@@ -26,7 +26,7 @@ from ml.synthetic import generate_dataset
 from ml.train import (
     REPO_ROOT,
     EvalReport,
-    _metrics,
+    metrics as _metrics,
     _recall_by_label,
     _split_samples,
     save_report,

@@ -15,24 +15,12 @@ import httpx
 
 from app.config import Settings, get_settings
 from ml.features import MetricPoint
+from ml.promql import REQUIRED_CHANNELS, pod_queries
 
 logger = logging.getLogger(__name__)
 
-# Exclude the pause/POD sandbox and empty container labels.
-_CONTAINER = 'container!="", container!="POD"'
-
-
 class PrometheusUnavailableError(Exception):
     """Raised when Prometheus cannot be reached or returned an error."""
-
-
-def _promql_pod(namespace: str | None, name: str | None) -> str:
-    parts = [_CONTAINER]
-    if namespace:
-        parts.append(f'namespace="{namespace}"')
-    if name:
-        parts.append(f'pod="{name}"')
-    return ",".join(parts)
 
 
 class PrometheusClient:
@@ -142,28 +130,7 @@ class PrometheusClient:
         step = step_seconds or self._settings.anomaly_step_seconds
         end = time.time()
         start = end - window
-        selector = _promql_pod(namespace, name)
-        # rate() needs a look-behind window; 2m is short enough for a 15s scrape.
-        queries = {
-            "cpu": f"sum by (namespace, pod) (rate(container_cpu_usage_seconds_total{{{selector}}}[2m]))",
-            "memory": f"sum by (namespace, pod) (container_memory_working_set_bytes{{{selector}}})",
-            "restarts": (
-                "sum by (namespace, pod) ("
-                f"kube_pod_container_status_restarts_total{{"
-                f'{_namespace_pod_only(namespace, name)}'
-                "})"
-                ")"
-            ),
-            "limit": (
-                "sum by (namespace, pod) ("
-                f"kube_pod_container_resource_limits{{"
-                f'{_namespace_pod_only(namespace, name)}resource="memory"'
-                "})"
-                ")"
-            ),
-            "rx": f"sum by (namespace, pod) (rate(container_network_receive_bytes_total{{{_namespace_pod_only(namespace, name)}}}[2m]))",
-            "tx": f"sum by (namespace, pod) (rate(container_network_transmit_bytes_total{{{_namespace_pod_only(namespace, name)}}}[2m]))",
-        }
+        queries = pod_queries(namespace, name)
 
         series_map: dict[tuple[str, str], dict[str, dict[int, float]]] = defaultdict(
             lambda: defaultdict(dict)
@@ -172,7 +139,7 @@ class PrometheusClient:
             try:
                 results = self.query_range(expr, start, end, step)
             except PrometheusUnavailableError:
-                if key in {"cpu", "memory"}:
+                if key in REQUIRED_CHANNELS:
                     raise
                 logger.info("Optional Prometheus metric %s is unavailable", key)
                 continue
@@ -226,13 +193,3 @@ class PrometheusClient:
                 out[pod_key] = points
         return out
 
-
-def _namespace_pod_only(namespace: str | None, name: str | None) -> str:
-    """Label selector without the cAdvisor container filter (kube-state-metrics / net)."""
-    parts = []
-    if namespace:
-        parts.append(f'namespace="{namespace}"')
-    if name:
-        parts.append(f'pod="{name}"')
-    joined = ",".join(parts)
-    return f"{joined}," if joined else ""
