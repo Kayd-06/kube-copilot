@@ -13,10 +13,12 @@ from datetime import datetime, timezone
 import pytest
 from fastapi.testclient import TestClient
 
-from app.deps import get_k8s_client, get_llm_explainer, get_retriever
+from app.deps import get_anomaly_scorer, get_k8s_client, get_llm_explainer, get_prometheus_client, get_retriever
 from app.main import app
 from app.models import Diagnosis, PodEvent, PodLogs, PodSummary
 from app.rag.retriever import RetrievedChunk, RetrieveResult
+from app.anomaly.scorer import AnomalyModelMissingError, ScoreResult
+from app.metrics.prometheus import PrometheusUnavailableError
 from app.rag.store import KnowledgeUnavailableError
 
 
@@ -123,18 +125,18 @@ class FakeLLM:
         self.stream_chunks = stream_chunks
         self.calls = []
 
-    def explain(self, pod, events, logs, retrieved=None):
+    def explain(self, pod, events, logs, retrieved=None, anomaly=None):
         from app.llm_explainer import LLMError
 
-        self.calls.append(("explain", pod, events, logs, retrieved))
+        self.calls.append(("explain", pod, events, logs, retrieved, anomaly))
         if self.error:
             raise LLMError(self.error)
         return self.diagnosis
 
-    def explain_stream(self, pod, events, logs, retrieved=None):
+    def explain_stream(self, pod, events, logs, retrieved=None, anomaly=None):
         from app.llm_explainer import LLMError
 
-        self.calls.append(("stream", pod, events, logs, retrieved))
+        self.calls.append(("stream", pod, events, logs, retrieved, anomaly))
         if self.error:
             raise LLMError(self.error)
         chunks = self.stream_chunks
@@ -143,8 +145,8 @@ class FakeLLM:
         for piece in chunks or []:
             yield piece
 
-    async def aexplain_stream(self, pod, events, logs, retrieved=None):
-        for piece in self.explain_stream(pod, events, logs, retrieved):
+    async def aexplain_stream(self, pod, events, logs, retrieved=None, anomaly=None):
+        for piece in self.explain_stream(pod, events, logs, retrieved, anomaly):
             yield piece
 
 
@@ -202,11 +204,63 @@ def sample_chunk() -> RetrievedChunk:
     )
 
 
+
+class FakePrometheus:
+    def __init__(self, series=None, unavailable=False):
+        self.series = dict(series or {})
+        self.unavailable = unavailable
+
+    def is_available(self):
+        return not self.unavailable
+
+    def pod_metric_series(self, namespace, name, window_seconds=None, step_seconds=None):
+        if self.unavailable:
+            raise PrometheusUnavailableError("prometheus unreachable")
+        return list(self.series.get((namespace, name), []))
+
+    def list_pod_series(self, namespace=None, window_seconds=None, step_seconds=None):
+        if self.unavailable:
+            raise PrometheusUnavailableError("prometheus unreachable")
+        items = dict(self.series)
+        if namespace:
+            items = {key: value for key, value in items.items() if key[0] == namespace}
+        return items
+
+
+class FakeScorer:
+    def __init__(self, results=None, loaded=True, message="Anomaly model not found."):
+        self.results = dict(results or {})
+        self.loaded = loaded
+        self.missing_message = message
+        self.calls = []
+
+    def require_loaded(self):
+        if not self.loaded:
+            raise AnomalyModelMissingError(self.missing_message)
+        return {}
+
+    def score_window(self, namespace, name, points):
+        self.calls.append((namespace, name, points))
+        if not self.loaded:
+            raise AnomalyModelMissingError(self.missing_message)
+        if (namespace, name) in self.results:
+            return self.results[(namespace, name)]
+        return ScoreResult(
+            namespace=namespace,
+            name=name,
+            score=0.2,
+            is_anomaly=False,
+            threshold=0.5,
+            raw_score=-0.1,
+            points=points,
+        )
+
+
 @pytest.fixture
 def client_factory():
     """Build a TestClient with k8s and LLM dependencies overridden."""
 
-    def _make(k8s=None, llm=None, retriever=None) -> TestClient:
+    def _make(k8s=None, llm=None, retriever=None, scorer=None, prometheus=None) -> TestClient:
         if k8s is not None:
             app.dependency_overrides[get_k8s_client] = lambda: k8s
         if llm is not None:
@@ -216,6 +270,11 @@ def client_factory():
         else:
             # Default: available store with no hits, so existing tests stay deterministic.
             app.dependency_overrides[get_retriever] = lambda: FakeRetriever()
+        # Default: no model and no Prometheus, so diagnose tests do not hit the network.
+        app.dependency_overrides[get_anomaly_scorer] = lambda: scorer if scorer is not None else FakeScorer(loaded=False)
+        app.dependency_overrides[get_prometheus_client] = (
+            lambda: prometheus if prometheus is not None else FakePrometheus()
+        )
         test_client = TestClient(app)
         return test_client
 
