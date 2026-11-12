@@ -1,0 +1,106 @@
+{
+  "run_id": "run-box-02",
+  "namespace": "chaos-lab",
+  "step_seconds": 15,
+  "phases": [
+    {
+      "kind": "baseline",
+      "start": 1794497335.5041387,
+      "end": 1794497935.505186,
+      "scenario": null,
+      "target_prefix": null,
+      "injected": null,
+      "note": ""
+    },
+    {
+      "kind": "chaos",
+      "start": 1794497935.5076866,
+      "end": 1794498235.8087018,
+      "scenario": "cpu_stress",
+      "target_prefix": "victim-cpu-",
+      "injected": true,
+      "note": ""
+    },
+    {
+      "kind": "recovery",
+      "start": 1794498235.8087018,
+      "end": 1794498355.8096857,
+      "scenario": "cpu_stress",
+      "target_prefix": null,
+      "injected": null,
+      "note": ""
+    },
+    {
+      "kind": "chaos",
+      "start": 1794498355.810588,
+      "end": 1794498655.9631085,
+      "scenario": "memory_leak",
+      "target_prefix": "victim-leak-",
+      "injected": null,
+      "note": ""
+    },
+    {
+      "kind": "recovery",
+      "start": 1794498655.9631085,
+      "end": 1794498775.9641976,
+      "scenario": "memory_leak",
+      "target_prefix": null,
+      "injected": null,
+      "note": ""
+    },
+    {
+      "kind": "chaos",
+      "start": 1794498775.9647615,
+      "end": 1794499076.178342,
+      "scenario": "restart_storm",
+      "target_prefix": "victim-restart-",
+      "injected": null,
+      "note": ""
+    },
+    {
+      "kind": "recovery",
+      "start": 1794499076.178342,
+      "end": 1794499196.1791718,
+      "scenario": "restart_storm",
+      "target_prefix": null,
+      "injected": null,
+      "note": ""
+    },
+    {
+      "kind": "chaos",
+      "start": 1794499196.1799269,
+      "end": 1794499496.443704,
+      "scenario": "memory_stress",
+      "target_prefix": "victim-mem-",
+      "injected": true,
+      "note": ""
+    },
+    {
+      "kind": "recovery",
+      "start": 1794499496.443704,
+      "end": 1794499616.4448137,
+      "scenario": "memory_stress",
+      "target_prefix": null,
+      "injected": null,
+      "note": ""
+    },
+    {
+      "kind": "chaos",
+      "start": 1794499616.4455483,
+      "end": 1794499916.9074457,
+      "scenario": "pod_kill",
+      "target_prefix": "victim-kill-",
+      "injected": null,
+      "note": ""
+    },
+    {
+      "kind": "recovery",
+      "start": 1794499916.9074457,
+      "end": 1794500036.9083269,
+      "scenario": "pod_kill",
+      "target_prefix": null,
+      "injected": null,
+      "note": ""
+    }
+  ]
+}

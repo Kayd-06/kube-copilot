@@ -62,3 +62,32 @@ def test_short_window_returns_warning(tmp_path):
     result = scorer.score_window("ns", "short", [point])
     assert result.is_anomaly is False
     assert result.warning and "Insufficient" in result.warning
+
+
+def _idle_window(cpu: float) -> list[MetricPoint]:
+    return [
+        MetricPoint(
+            ts=1_800_000_000.0 + i * 15, cpu=cpu, memory_bytes=8 * 2**20, memory_limit_bytes=128 * 2**20,
+            restarts=0.0, net_rx_bytes=1000.0 * i, net_tx_bytes=500.0 * i,
+        )
+        for i in range(12)
+    ]
+
+
+def test_range_guard_flags_pegged_cpu_on_idle_trained_model():
+    from ml.features import extract_feature_matrix
+    from ml.train import fit_isolation_forest
+
+    rng = np.random.default_rng(3)
+    windows = [_idle_window(float(rng.uniform(0.001, 0.004))) for _ in range(120)]
+    x = extract_feature_matrix(windows)
+    with_guard = AnomalyScorer(settings=Settings(), artifact=fit_isolation_forest(x, n_estimators=30, range_guard=True))
+    without = AnomalyScorer(settings=Settings(), artifact=fit_isolation_forest(x, n_estimators=30))
+
+    pegged = _idle_window(0.8)
+    guarded = with_guard.score_window("ns", "busy", pegged)
+    assert guarded.is_anomaly and guarded.score > 0.5
+    # A healthy idle window stays unflagged by the guard.
+    assert with_guard.score_window("ns", "idle", _idle_window(0.002)).score < 0.99
+    # The plain forest is the same model minus the guard; it must still score.
+    assert without.score_window("ns", "busy", pegged).raw_score is not None

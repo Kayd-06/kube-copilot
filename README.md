@@ -119,14 +119,15 @@ kube-copilot/
 ├── backend/              FastAPI app, anomaly scorer, RAG helpers, tests, Dockerfile
 ├── backend/models/       Trained Isolation Forest artifact (committed)
 ├── frontend/             Next.js (App Router, TypeScript, Tailwind)
-├── ml/                   Synthetic data, feature engineering, training, eval reports
+├── ml/                   Features, synthetic + real-data training, chaos collector, eval reports
+├── ml/data/real/         Labelled real kind + Chaos Mesh metrics (two runs) and a data card
 ├── knowledge/runbooks    Markdown runbooks ingested into Qdrant
-├── demo/                 kind config, broken manifests, Prometheus + Grafana
+├── demo/                 kind config, broken manifests, Prometheus + Grafana, Chaos Mesh experiments
 ├── deploy/helm/          Helm chart (backend, frontend, optional Qdrant)
 ├── deploy/terraform/     Single-node k3s on a cheap AWS VM + helm_release
 ├── docs/                 DEMO recording script and resume bullets
 ├── .github/workflows/    CI, GHCR publish, Dependabot, issue/PR templates
-├── Makefile              cluster, metrics, grafana, helm, train, ingest, dev, test
+├── Makefile              cluster, metrics, grafana, chaos, collect, helm, train, ingest, dev, test
 ├── docker-compose.yml    Qdrant + optional API + UI containers
 └── .env.example          Groq defaults, Qdrant, Prometheus, and OpenAI / Ollama examples
 ```
@@ -311,6 +312,37 @@ Confusion matrix: TN=350, FP=40, FN=43, TP=346. Train windows (normal only): 117
 | `memory_leak` | 0.792 |
 | `cpu_spike` | 0.886 |
 | `restart_storm` | 1.000 |
+
+### Evaluation on real cluster metrics
+
+The synthetic numbers above don't carry over to a real cluster, so the detector was also trained and tested on **real Prometheus data** from a single-node kind cluster while [Chaos Mesh](https://chaos-mesh.org/) injected CPU stress, memory stress, a slow memory leak, a restart storm and pod kills (`make chaos-up`, `make collect`, `make train-real`). There are two runs: `run-box-01` (67 min) for training and an in-run time split, and `run-box-02` (45 min), collected after the code was frozen and used only for testing. The data card is [`ml/data/real/README.md`](ml/data/real/README.md) and the full report is [`ml/reports/real_metrics.md`](ml/reports/real_metrics.md).
+
+Held-out run `run-box-02`. Every model was trained on normal windows only, with its threshold set at the 90th percentile of its own training scores.
+
+| Model (training data) | Scope | Precision | Recall | F1 | Specificity |
+|---|---|---|---|---|---|
+| `synthetic` (the model above) | all pods | 0.051 | 1.000 | 0.098 | 0.001 |
+| `real` | all pods | 0.162 | 0.410 | 0.232 | 0.885 |
+| `real+guard` | all pods | 0.227 | 0.632 | 0.334 | 0.884 |
+| `real+guard` | app pods | 0.480 | 0.791 | 0.598 | 0.898 |
+| `synthetic+real+guard` | app pods | **0.847** | 0.590 | **0.695** | 0.987 |
+
+Recall on app pods in the held-out run, by scenario:
+
+| Scenario | `real+guard` | `synthetic+real+guard` |
+|---|---|---|
+| `cpu_stress` | 1.000 | 1.000 |
+| `memory_leak` | 1.000 | 0.867 |
+| `memory_stress` | 1.000 | 0.595 |
+| `restart_storm` | 1.000 | 1.000 |
+| `pod_kill` | 0.372 | 0.038 |
+
+What changed and why:
+- **The synthetic model flags almost everything on real pods.** Its idea of "normal" (50 to 100 MiB, about 0.05 cores) doesn't match idle nginx pods, so it is not usable on a real cluster without real training data.
+- **Range guard.** Isolation Forest can't score a point far outside its training range any higher than the most extreme training point, so pegged CPU went undetected (cpu_stress recall was 0.05 on run 1). The guard flags any model feature more than one training-range width outside its [p0.5, p99.5] band.
+- **App-namespace scope.** Most false positives were in `chaos-mesh`, `kube-system` and `observability`. Those pods are cluster plumbing, and the chaos experiments themselves drive their load. Scoring only app pods raised precision the most.
+
+Caveats: the guard and the app scope were chosen after seeing run 1, and the held-out run is the honest test of them. This is about 1.9 hours from one laptop-sized node, the windows overlap, and anomalies are only 5 to 11% of test windows. The held-out numbers come from a single run, so read them as directional. `pod_kill` stays mostly undetected because a 3-minute per-pod window never sees its own pod being deleted, and `network_delay` couldn't be collected on the box (its kernel has no `netem`). The API still serves the synthetic model by default. To try the real-data model, run `make train-real` and set `ANOMALY_MODEL_PATH=backend/models/isolation_forest_real.joblib`.
 
 An optional LSTM autoencoder lives in `ml/lstm.py` behind a heavy extra (`pip install -r ml/requirements-lstm.txt`, then `python -m ml.train --model lstm`). It is **not** served by the API and is skipped on a low-spec laptop; Isolation Forest is the default model.
 

@@ -4,7 +4,8 @@
 .PHONY: cluster-up cluster-down demo-break demo-clean backend-dev frontend-dev test \
 	ingest qdrant-up metrics-up metrics-forward train mlflow-ui \
 	images kind-load helm-lint helm-install helm-uninstall \
-	grafana-up grafana-forward help
+	grafana-up grafana-forward chaos-up chaos-run chaos-stop chaos-down \
+	collect collect-dry-run train-real help
 
 KIND_CLUSTER ?= kube-copilot
 IMAGE_TAG ?= dev
@@ -13,6 +14,12 @@ HELM_NAMESPACE ?= kube-copilot
 CHART := deploy/helm/kube-copilot
 BACKEND_IMAGE ?= ghcr.io/kayd-06/kube-copilot-backend
 FRONTEND_IMAGE ?= ghcr.io/kayd-06/kube-copilot-frontend
+CHAOS_MESH_VERSION ?= 2.8.8
+SCENARIO ?= cpu_stress
+# Extra flags for ml.collect, e.g. COLLECT_ARGS="--skip network_delay --baseline-minutes 10"
+COLLECT_ARGS ?=
+# Repo-root targets (train, collect, ...) use the backend venv when it exists.
+ROOT_PY := $(shell if [ -x backend/.venv/bin/python ]; then echo backend/.venv/bin/python; else echo python3; fi)
 
 help:
 	@echo "Targets:"
@@ -26,7 +33,15 @@ help:
 	@echo "  metrics-forward  Port-forward Prometheus to http://localhost:9090"
 	@echo "  grafana-up       Install Grafana (and the metrics stack) with the Kube Copilot dashboard"
 	@echo "  grafana-forward  Port-forward Grafana to http://localhost:3001 (admin/admin, anonymous viewer)"
+	@echo "  chaos-up         Install a minimal Chaos Mesh + the chaos-lab target workloads"
+	@echo "  chaos-run        Start one experiment: make chaos-run SCENARIO=cpu_stress"
+	@echo "                   (pod_kill cpu_stress memory_stress memory_leak network_delay restart_storm)"
+	@echo "  chaos-stop       Stop every running experiment"
+	@echo "  chaos-down       Uninstall Chaos Mesh and delete the chaos-lab namespace"
+	@echo "  collect          Run the ~60 min chaos timeline and write labelled metrics to ml/data/real/"
+	@echo "  collect-dry-run  Print the collection timeline without touching the cluster"
 	@echo "  train            Train the Isolation Forest on synthetic data (MLflow + report)"
+	@echo "  train-real       Train/evaluate on the newest real run (time split, MLflow + report)"
 	@echo "  mlflow-ui        Open the local MLflow tracking UI on :5000"
 	@echo "  images           Build backend and frontend Docker images tagged $(IMAGE_TAG)"
 	@echo "  kind-load        Build images and load them into the kind cluster"
@@ -107,18 +122,17 @@ grafana-forward:
 	@echo "Forwarding observability/grafana to http://localhost:3001 (Ctrl-C to stop)"
 	kubectl -n observability port-forward svc/grafana 3001:3000
 
-# PY is the backend venv when present, so training deps live next to the API deps.
+# ROOT_PY is the backend venv when present, so training deps live next to the API deps.
 train:
-	cd backend && \
-	if [ -x .venv/bin/python ]; then PY=.venv/bin/python; else PY=python3; fi && \
-	cd .. && \
-	PYTHONPATH=. MLFLOW_DISABLE_AGENT_HINT=1 MLFLOW_ALLOW_FILE_STORE=true $$PY -m ml.train
+	PYTHONPATH=. MLFLOW_DISABLE_AGENT_HINT=1 MLFLOW_ALLOW_FILE_STORE=true $(ROOT_PY) -m ml.train
+
+# Train on real collected metrics (see ml/data/real/README.md). Writes
+# ml/reports/real_metrics.{json,md} and backend/models/isolation_forest_real.joblib.
+train-real:
+	PYTHONPATH=. MLFLOW_DISABLE_AGENT_HINT=1 MLFLOW_ALLOW_FILE_STORE=true $(ROOT_PY) -m ml.train_real
 
 mlflow-ui:
-	cd backend && \
-	if [ -x .venv/bin/python ]; then PY=.venv/bin/python; else PY=python3; fi && \
-	cd .. && \
-	MLFLOW_DISABLE_AGENT_HINT=1 MLFLOW_ALLOW_FILE_STORE=true $$PY -m mlflow ui --backend-store-uri ./mlruns --host 127.0.0.1 --port 5000
+	MLFLOW_DISABLE_AGENT_HINT=1 MLFLOW_ALLOW_FILE_STORE=true $(ROOT_PY) -m mlflow ui --backend-store-uri ./mlruns --host 127.0.0.1 --port 5000
 
 images:
 	docker build -t $(BACKEND_IMAGE):$(IMAGE_TAG) -f backend/Dockerfile .
@@ -170,3 +184,44 @@ helm-install: kind-load
 helm-uninstall:
 	helm uninstall $(HELM_RELEASE) -n $(HELM_NAMESPACE) || true
 	kubectl -n $(HELM_NAMESPACE) delete secret kube-copilot-llm --ignore-not-found
+
+# --- Chaos experiments + real data collection --------------------------------
+# Chaos Mesh with one controller replica, no dashboard and no DNS server.
+chaos-up:
+	helm repo add chaos-mesh https://charts.chaos-mesh.org >/dev/null 2>&1 || true
+	helm repo update chaos-mesh >/dev/null
+	helm upgrade --install chaos-mesh chaos-mesh/chaos-mesh --version $(CHAOS_MESH_VERSION) \
+	  --namespace chaos-mesh --create-namespace \
+	  -f demo/chaos/values-kind.yaml --wait --timeout 5m
+	kubectl apply -f demo/chaos/workloads.yaml
+	kubectl apply -f demo/chaos/experiments/memory-leak.yaml
+	kubectl -n chaos-lab rollout status deploy --timeout=180s
+	@echo "Chaos Mesh is ready. Try: make chaos-run SCENARIO=cpu_stress, then make chaos-stop"
+
+chaos-run:
+	@case "$(SCENARIO)" in \
+	  memory_leak) kubectl -n chaos-lab scale deploy/victim-leak --replicas=2 ;; \
+	  pod_kill|cpu_stress|memory_stress|network_delay|restart_storm) \
+	    kubectl apply -f demo/chaos/experiments/$$(echo $(SCENARIO) | tr _ -).yaml ;; \
+	  *) echo "unknown SCENARIO=$(SCENARIO)"; exit 2 ;; \
+	esac
+	@echo "Started $(SCENARIO). Stop it with: make chaos-stop"
+
+chaos-stop:
+	kubectl -n chaos-lab scale deploy/victim-leak --replicas=0 2>/dev/null || true
+	for f in demo/chaos/experiments/*.yaml; do \
+	  case $$f in *memory-leak.yaml) continue ;; esac; \
+	  kubectl delete -f $$f --ignore-not-found --wait=false; \
+	done
+
+chaos-down: chaos-stop
+	kubectl delete namespace chaos-lab --ignore-not-found
+	helm uninstall chaos-mesh -n chaos-mesh || true
+
+collect-dry-run:
+	PYTHONPATH=. $(ROOT_PY) -m ml.collect --dry-run $(COLLECT_ARGS)
+
+# Needs: make cluster-up metrics-up chaos-up. Port-forwards Prometheus itself
+# unless PROMETHEUS_URL is set.
+collect:
+	PYTHONPATH=. $(ROOT_PY) -m ml.collect $(COLLECT_ARGS)

@@ -38,7 +38,14 @@ from sklearn.metrics import (
 )
 from sklearn.preprocessing import StandardScaler
 
-from ml.features import FEATURE_NAMES, MODEL_FEATURE_NAMES, extract_feature_matrix, select_model_features
+from ml.features import (
+    FEATURE_NAMES,
+    MODEL_FEATURE_NAMES,
+    extract_feature_matrix,
+    fit_range_guard,
+    range_guard_scores,
+    select_model_features,
+)
 from ml.synthetic import ANOMALY_LABELS, LABEL_NORMAL, WindowSample, generate_dataset
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -95,7 +102,7 @@ def _raw_scores(model: IsolationForest, x_scaled: np.ndarray) -> np.ndarray:
     return -model.decision_function(x_scaled)
 
 
-def _metrics(y_true: np.ndarray, y_pred: np.ndarray) -> dict[str, float | int]:
+def metrics(y_true: np.ndarray, y_pred: np.ndarray) -> dict[str, float | int]:
     tn, fp, fn, tp = confusion_matrix(y_true, y_pred, labels=[0, 1]).ravel()
     return {
         "precision": float(precision_score(y_true, y_pred, zero_division=0)),
@@ -126,6 +133,76 @@ def _recall_by_label(
     return out
 
 
+def fit_isolation_forest(
+    x_train_full: np.ndarray,
+    seed: int = 42,
+    n_estimators: int = 200,
+    max_samples: str | int = "auto",
+    threshold_percentile: float = 90.0,
+    window_size: int = 12,
+    step_seconds: int = 15,
+    range_guard: bool = False,
+) -> dict:
+    """Fit scaler + Isolation Forest on full feature rows of normal windows.
+
+    Returns the artifact dict the API's AnomalyScorer loads. The decision
+    threshold is a percentile of the training scores, so it never sees test data.
+    """
+    x_train = select_model_features(x_train_full)
+    scaler = StandardScaler()
+    x_train_scaled = scaler.fit_transform(x_train)
+
+    # Fit a scaler on the full vector too, so the API can rank contributing features.
+    full_scaler = StandardScaler()
+    full_scaler.fit(x_train_full)
+
+    model = IsolationForest(
+        n_estimators=n_estimators,
+        max_samples=max_samples,
+        max_features=1,
+        contamination="auto",
+        random_state=seed,
+        n_jobs=1,
+    )
+    model.fit(x_train_scaled)
+
+    train_raw = _raw_scores(model, x_train_scaled)
+    threshold = float(np.percentile(train_raw, threshold_percentile))
+    artifact = {
+        "model": model,
+        "scaler": scaler,
+        "full_scaler": full_scaler,
+        "feature_names": list(FEATURE_NAMES),
+        "model_feature_names": list(MODEL_FEATURE_NAMES),
+        "threshold": threshold,
+        "threshold_percentile": threshold_percentile,
+        "train_raw_mean": float(np.mean(train_raw)),
+        "train_raw_std": float(np.std(train_raw)),
+        "window_size": window_size,
+        "step_seconds": step_seconds,
+        "version": ARTIFACT_VERSION,
+        "seed": seed,
+    }
+    if range_guard:
+        artifact["range_guard"] = fit_range_guard(x_train_full)
+    return artifact
+
+
+def raw_scores(artifact: dict, x_full: np.ndarray) -> np.ndarray:
+    """Anomaly scores (higher = more anomalous) for full feature rows."""
+    x_scaled = artifact["scaler"].transform(select_model_features(x_full))
+    return _raw_scores(artifact["model"], x_scaled)
+
+
+def predict(artifact: dict, x_full: np.ndarray, threshold: float | None = None) -> np.ndarray:
+    cut = float(artifact["threshold"] if threshold is None else threshold)
+    flags = raw_scores(artifact, x_full) >= cut
+    guard = artifact.get("range_guard")
+    if guard is not None:
+        flags |= range_guard_scores(guard, x_full) > guard["limit"]
+    return flags.astype(np.int32)
+
+
 def train(
     seed: int = 42,
     n_estimators: int = 200,
@@ -150,34 +227,21 @@ def train(
     train_normal, test = _split_samples(samples, seed=seed)
     x_train_full = extract_feature_matrix([s.points for s in train_normal])
     x_test_full = extract_feature_matrix([s.points for s in test])
-    x_train = select_model_features(x_train_full)
-    x_test = select_model_features(x_test_full)
     y_test = np.array([1 if s.is_anomaly else 0 for s in test], dtype=np.int32)
 
-    scaler = StandardScaler()
-    x_train_scaled = scaler.fit_transform(x_train)
-    x_test_scaled = scaler.transform(x_test)
-
-    # Fit a scaler on the full vector too, so the API can rank contributing features.
-    full_scaler = StandardScaler()
-    full_scaler.fit(x_train_full)
-
-    model = IsolationForest(
+    artifact = fit_isolation_forest(
+        x_train_full,
+        seed=seed,
         n_estimators=n_estimators,
         max_samples=max_samples,
-        max_features=1,
-        contamination="auto",
-        random_state=seed,
-        n_jobs=1,
+        threshold_percentile=threshold_percentile,
+        window_size=window_size,
+        step_seconds=step_seconds,
     )
-    model.fit(x_train_scaled)
+    threshold = float(artifact["threshold"])
+    y_pred = predict(artifact, x_test_full)
 
-    train_raw = _raw_scores(model, x_train_scaled)
-    threshold = float(np.percentile(train_raw, threshold_percentile))
-    test_raw = _raw_scores(model, x_test_scaled)
-    y_pred = (test_raw >= threshold).astype(np.int32)
-
-    metrics = _metrics(y_test, y_pred)
+    scores = metrics(y_test, y_pred)
     report = EvalReport(
         model="isolation_forest",
         artifact_version=ARTIFACT_VERSION,
@@ -190,14 +254,14 @@ def train(
         n_train_normal=int(len(train_normal)),
         n_test_normal=int(sum(1 for s in test if not s.is_anomaly)),
         n_test_anomaly=int(sum(1 for s in test if s.is_anomaly)),
-        precision=float(metrics["precision"]),
-        recall=float(metrics["recall"]),
-        f1=float(metrics["f1"]),
-        accuracy=float(metrics["accuracy"]),
-        true_negatives=int(metrics["true_negatives"]),
-        false_positives=int(metrics["false_positives"]),
-        false_negatives=int(metrics["false_negatives"]),
-        true_positives=int(metrics["true_positives"]),
+        precision=float(scores["precision"]),
+        recall=float(scores["recall"]),
+        f1=float(scores["f1"]),
+        accuracy=float(scores["accuracy"]),
+        true_negatives=int(scores["true_negatives"]),
+        false_positives=int(scores["false_positives"]),
+        false_negatives=int(scores["false_negatives"]),
+        true_positives=int(scores["true_positives"]),
         recall_by_label={k: float(v) for k, v in _recall_by_label(test, y_pred).items()},
         feature_names=list(MODEL_FEATURE_NAMES),
         notes=(
@@ -206,21 +270,6 @@ def train(
             "recall_by_label['normal'] is specificity (1 - false-positive rate)."
         ),
     )
-    artifact = {
-        "model": model,
-        "scaler": scaler,
-        "full_scaler": full_scaler,
-        "feature_names": list(FEATURE_NAMES),
-        "model_feature_names": list(MODEL_FEATURE_NAMES),
-        "threshold": threshold,
-        "threshold_percentile": threshold_percentile,
-        "train_raw_mean": float(np.mean(train_raw)),
-        "train_raw_std": float(np.std(train_raw)),
-        "window_size": window_size,
-        "step_seconds": step_seconds,
-        "version": ARTIFACT_VERSION,
-        "seed": seed,
-    }
     return artifact, report, train_normal, test
 
 

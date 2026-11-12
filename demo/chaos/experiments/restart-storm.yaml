@@ -1,0 +1,20 @@
+# restart_storm: kill the web container of every victim-restart pod every 30s,
+# so restart counts climb on the same pods (like a crash loop).
+apiVersion: chaos-mesh.org/v1alpha1
+kind: Schedule
+metadata:
+  name: restart-storm
+  namespace: chaos-lab
+  labels: {kube-copilot/scenario: restart_storm}
+spec:
+  schedule: "@every 30s"
+  type: PodChaos
+  historyLimit: 2
+  concurrencyPolicy: Forbid
+  podChaos:
+    action: container-kill
+    mode: all
+    containerNames: [web]
+    selector:
+      namespaces: [chaos-lab]
+      labelSelectors: {app: victim-restart}

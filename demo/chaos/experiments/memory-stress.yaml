@@ -1,0 +1,18 @@
+# memory_stress: one stress-ng vm worker holding ~96MB in each victim-mem
+# container (limit 128Mi). This is a sudden, sustained jump in working set.
+apiVersion: chaos-mesh.org/v1alpha1
+kind: StressChaos
+metadata:
+  name: memory-stress
+  namespace: chaos-lab
+  labels: {kube-copilot/scenario: memory_stress}
+spec:
+  mode: all
+  selector:
+    namespaces: [chaos-lab]
+    labelSelectors: {app: victim-mem}
+  stressors:
+    memory:
+      workers: 1
+      size: "96MB"
+  duration: "10m"
