@@ -1,0 +1,31 @@
+# Points at an image that does not exist, so the pod stays Pending / ImagePullBackOff.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bad-image-app
+  namespace: copilot-demo
+  labels:
+    app: bad-image-app
+    demo: kube-copilot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bad-image-app
+  template:
+    metadata:
+      labels:
+        app: bad-image-app
+        demo: kube-copilot
+    spec:
+      containers:
+        - name: missing
+          image: this-image-does-not-exist.invalid/missing:v9.9.9
+          imagePullPolicy: Always
+          resources:
+            requests:
+              cpu: 10m
+              memory: 8Mi
+            limits:
+              cpu: 50m
+              memory: 16Mi

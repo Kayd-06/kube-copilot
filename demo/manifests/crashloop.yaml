@@ -1,0 +1,33 @@
+# A tiny busybox container that prints a line and exits 1 — classic CrashLoopBackOff.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crashloop-app
+  namespace: copilot-demo
+  labels:
+    app: crashloop-app
+    demo: kube-copilot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: crashloop-app
+  template:
+    metadata:
+      labels:
+        app: crashloop-app
+        demo: kube-copilot
+    spec:
+      containers:
+        - name: crash
+          image: busybox:1.36
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c", "echo 'I am about to crash because the demo command ends with exit 1'; sleep 2; exit 1"]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 8Mi
+            limits:
+              cpu: 50m
+              memory: 16Mi
+      restartPolicy: Always

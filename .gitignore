@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+.env
+.pytest_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# Node / Next.js
+node_modules/
+frontend/.next/
+frontend/out/
+frontend/tsconfig.tsbuildinfo
+npm-debug.log*
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Kubernetes local bits
+*.kubeconfig
+
+# Packaging
+*.zip

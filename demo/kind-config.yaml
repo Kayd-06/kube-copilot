@@ -1,0 +1,7 @@
+# Single-node kind cluster. Intentionally small so it is usable on a low-spec laptop.
+# kind will pull a node image on first run (~1 GB); after that, restarts are cheap.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: kube-copilot
+nodes:
+  - role: control-plane

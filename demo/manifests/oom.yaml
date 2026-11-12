@@ -1,0 +1,42 @@
+# Allocates more memory than its 16Mi limit, so the runtime OOMKills it.
+# Uses busybox only — no heavy images — to stay laptop-friendly.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oom-app
+  namespace: copilot-demo
+  labels:
+    app: oom-app
+    demo: kube-copilot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: oom-app
+  template:
+    metadata:
+      labels:
+        app: oom-app
+        demo: kube-copilot
+    spec:
+      containers:
+        - name: hungry
+          image: busybox:1.36
+          imagePullPolicy: IfNotPresent
+          # Tight 16Mi limit; the loop concatenates a string until it is killed.
+          command:
+            - sh
+            - -c
+            - |
+              echo "going to allocate until OOM"
+              x=x
+              while true; do
+                x=$x$x$x$x
+              done
+          resources:
+            requests:
+              cpu: 10m
+              memory: 8Mi
+            limits:
+              cpu: 50m
+              memory: 16Mi

@@ -1,0 +1,38 @@
+# Runs the Phase 1 API and UI. The backend expects a kubeconfig so it can
+# reach the kind cluster on your machine — mount is read-only.
+#
+#   cp .env.example .env   # then add your Groq API key
+#   docker compose up --build
+#
+# The browser talks to the API at http://localhost:8000 (published on the host).
+
+services:
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      # Inside the container, use the mounted kubeconfig path.
+      K8S_KUBECONFIG: /root/.kube/config
+    volumes:
+      - ${HOME}/.kube:/root/.kube:ro
+    # kind's API server is often advertised as 127.0.0.1 — reach the host from the container.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    depends_on:
+      - backend
+    restart: unless-stopped
