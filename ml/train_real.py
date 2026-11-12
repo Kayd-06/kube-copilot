@@ -53,6 +53,20 @@ DEFAULT_REPORT_JSON = REPO_ROOT / "ml" / "reports" / "real_metrics.json"
 DEFAULT_REPORT_MD = REPO_ROOT / "ml" / "reports" / "real_metrics.md"
 DEFAULT_MLRUNS = REPO_ROOT / "mlruns"
 SWEEP_PERCENTILES = (90.0, 95.0, 99.0)
+# Cluster plumbing, not user workloads. The chaos tooling itself lives in
+# chaos-mesh and its activity is caused by the experiments, Prometheus grows
+# its TSDB all run, and control-plane pods have bursty, unlimited usage.
+INFRA_NAMESPACES = frozenset({"chaos-mesh", "kube-system", "observability", "local-path-storage"})
+SCOPES = ("all", "apps")
+
+
+def apply_scope(windows: list[RealWindow], scope: str) -> list[RealWindow]:
+    """`all` keeps every pod; `apps` drops pods in INFRA_NAMESPACES (train and test)."""
+    if scope == "all":
+        return windows
+    if scope == "apps":
+        return [w for w in windows if w.namespace not in INFRA_NAMESPACES]
+    raise ValueError(f"unknown scope {scope!r}")
 
 
 def latest_run_dir(root: Path = DEFAULT_OUTPUT_ROOT) -> Path:
@@ -302,6 +316,16 @@ Models:
 - `synthetic`: the existing synthetic-trained model (`make train` defaults).
 - `synthetic+guard`, `synthetic+real+guard`: synthetic-only, and synthetic plus real normal windows, with the guard.
 
+Scopes (applied to training and test windows alike):
+
+- **all namespaces**: every pod in the cluster.
+- **app namespaces only**: drops `chaos-mesh`, `kube-system`, `observability` and
+  `local-path-storage`. Those are cluster plumbing rather than workloads a user
+  asks the copilot about, and their behaviour is driven by the experiments
+  themselves (the chaos daemon works hardest while injecting) or grows all run
+  (Prometheus' TSDB). This scope was also chosen after the first in-run results;
+  it was fixed before the held-out run was scored.
+
 {body}"""
 
 
@@ -351,6 +375,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="later run used only for testing (default: the next collected run, if any)",
     )
     parser.add_argument("--no-heldout", action="store_true")
+    parser.add_argument("--scopes", default=",".join(SCOPES), help="comma-separated: all, apps")
+    parser.add_argument(
+        "--ship-scope", default="apps", choices=SCOPES,
+        help="which scope's real+guard model is written to --output",
+    )
     parser.add_argument("--window-size", type=int, default=12)
     parser.add_argument("--stride", type=int, default=1)
     parser.add_argument("--seed", type=int, default=42)
@@ -391,42 +420,60 @@ def main(argv: list[str] | None = None) -> int:
         heldout_dir = later[0] if later else None
 
     windows, split_ts, meta = _load(run_dir, args)
+    h_windows, h_meta = None, None
+    if heldout_dir is not None:
+        h_windows, _, h_meta = _load(heldout_dir, args)
     kwargs = {
         "seed": args.seed,
         "n_estimators": args.n_estimators,
         "threshold_percentile": args.threshold_percentile,
         "include_synthetic": not args.no_synthetic,
     }
-    artifact, in_run = train_and_evaluate(windows, split_ts, **kwargs)
-    in_run["data"] = meta.get("run_id")
-    sections = [(f"In-run time split (`{meta.get('run_id')}`)", in_run)]
-    run_metas = [meta]
-    payload: dict = {"in_run": in_run}
-    if heldout_dir is not None:
-        h_windows, _, h_meta = _load(heldout_dir, args)
-        artifact, heldout = train_and_evaluate(windows, split_ts, heldout=h_windows, **kwargs)
-        heldout["data"] = {"train": meta.get("run_id"), "test": h_meta.get("run_id")}
-        sections.append((f"Held-out run (train `{meta.get('run_id')}`, test `{h_meta.get('run_id')}`)", heldout))
-        run_metas.append(h_meta)
-        payload["heldout"] = heldout
+    sections: list[tuple[str, str, dict]] = []
+    payload: dict = {}
+    artifact: dict = {}
+    scope_names = {"all": "all namespaces", "apps": "app namespaces only"}
+    for scope in args.scopes.split(","):
+        art, in_run = train_and_evaluate(apply_scope(windows, scope), split_ts, **kwargs)
+        in_run["scope"] = scope
+        key = f"in_run_{scope}"
+        payload[key] = in_run
+        sections.append((key, f"In-run time split (`{meta.get('run_id')}`), {scope_names[scope]}", in_run))
+        if scope == args.ship_scope:
+            artifact = art
+        if h_windows is not None:
+            art, heldout = train_and_evaluate(
+                apply_scope(windows, scope), split_ts, heldout=apply_scope(h_windows, scope), **kwargs
+            )
+            heldout["scope"] = scope
+            key = f"heldout_{scope}"
+            payload[key] = heldout
+            sections.append((
+                key,
+                f"Held-out run (train `{meta.get('run_id')}`, test `{h_meta.get('run_id')}`), {scope_names[scope]}",
+                heldout,
+            ))
+            if scope == args.ship_scope:
+                artifact = art
+    run_metas = [meta] + ([h_meta] if h_meta else [])
     payload["runs"] = run_metas
 
     artifact["training_data"] = f"real:{meta.get('run_id')}"
     save_artifact(artifact, args.output)
     args.report_json.parent.mkdir(parents=True, exist_ok=True)
     args.report_json.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-    args.report_md.write_text(render_markdown(sections, run_metas), encoding="utf-8")
+    args.report_md.write_text(render_markdown([(t, r) for _, t, r in sections], run_metas), encoding="utf-8")
 
     if not args.no_mlflow:
         try:
             run_ids = []
-            for key, (_, report) in zip(("in_run", "heldout"), sections, strict=False):
+            for key, _, report in sections:
                 run_ids += _log_mlflow(report, key, run_metas, args.report_json, args.output, args.mlflow_uri)
             print(f"MLflow runs: {', '.join(run_ids)}  (ui: make mlflow-ui)")
         except Exception as exc:  # noqa: BLE001 — reports are still written
             print(f"MLflow logging failed (reports were still written): {exc}", file=sys.stderr)
 
-    for title, report in sections:
+    for _, title, report in sections:
         print(title)
         for name, result in report["models"].items():
             print(f"  {name:22s} precision={_fmt(result['precision'])} recall={_fmt(result['recall'])} f1={_fmt(result['f1'])}")

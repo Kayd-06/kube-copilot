@@ -160,8 +160,10 @@ def test_main_writes_reports_and_model(run_dir, tmp_path):
     )
     assert rc == 0
     payload = json.loads((out / "r.json").read_text())
-    assert set(payload) == {"in_run", "runs"}  # explicit --run-dir: no held-out run
-    assert set(payload["in_run"]["models"]) == {
+    # explicit --run-dir: no held-out run, one section per scope
+    assert set(payload) == {"in_run_all", "in_run_apps", "runs"}
+    assert payload["in_run_apps"]["train_windows"] < payload["in_run_all"]["train_windows"]
+    assert set(payload["in_run_all"]["models"]) == {
         "real", "real+guard", "synthetic", "synthetic+guard", "synthetic+real+guard"
     }
     md = (out / "r.md").read_text()
@@ -186,10 +188,11 @@ def test_main_scores_a_heldout_run(run_dir, tmp_path):
     )
     assert rc == 0
     payload = json.loads((out / "r.json").read_text())
-    heldout = payload["heldout"]
+    heldout = payload["heldout_all"]
     assert "held-out" in heldout["split"]
     # Every normal window of the training run is used, more than the in-run split.
-    assert heldout["train_windows"] > payload["in_run"]["train_windows"]
+    assert heldout["train_windows"] > payload["in_run_all"]["train_windows"]
+    assert "heldout_apps" in payload
     assert heldout["models"]["real+guard"]["per_scenario"]["cpu_stress"]["recall"] >= 0.9
     assert "Held-out run" in (out / "r.md").read_text()
 
@@ -216,3 +219,15 @@ def test_latest_run_dir(tmp_path, run_dir):
     assert train_real.latest_run_dir(run_dir.parent) == run_dir
     with pytest.raises(FileNotFoundError):
         train_real.latest_run_dir(tmp_path / "empty")
+
+
+def test_apply_scope_drops_infra_namespaces(run_dir):
+    from ml.real_data import load_run
+
+    points, _ = load_run(run_dir)
+    windows = build_windows(points, window_size=12, stride=4, step_seconds=STEP)
+    apps = train_real.apply_scope(windows, "apps")
+    assert apps and all(w.namespace not in train_real.INFRA_NAMESPACES for w in apps)
+    assert any(w.namespace == "kube-system" for w in train_real.apply_scope(windows, "all"))
+    with pytest.raises(ValueError):
+        train_real.apply_scope(windows, "nope")
