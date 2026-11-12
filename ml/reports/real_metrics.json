@@ -1,0 +1,1338 @@
+{
+  "in_run_all": {
+    "trained_at": "2026-11-12T16:14:43Z",
+    "seed": 42,
+    "n_estimators": 200,
+    "threshold_percentile": 90.0,
+    "window_size": 12,
+    "split": "time split inside one run at 2026-11-12T14:37:19Z",
+    "train_windows": 1435,
+    "train_windows_synthetic": 1170,
+    "test_windows": {
+      "cpu_stress": 38,
+      "memory_leak": 36,
+      "memory_stress": 50,
+      "normal": 4189,
+      "pod_kill": 102,
+      "restart_storm": 50
+    },
+    "models": {
+      "real": {
+        "threshold": 0.032942789342929005,
+        "precision": 0.1129,
+        "recall": 0.3297,
+        "f1": 0.1682,
+        "accuracy": 0.7984,
+        "specificity": 0.8293,
+        "confusion": {
+          "true_negatives": 3474,
+          "false_positives": 715,
+          "false_negatives": 185,
+          "true_positives": 91
+        },
+        "per_scenario": {
+          "cpu_stress": {
+            "windows": 38,
+            "detected": 2,
+            "recall": 0.0526,
+            "precision": 0.0028,
+            "f1": 0.0053
+          },
+          "memory_leak": {
+            "windows": 36,
+            "detected": 26,
+            "recall": 0.7222,
+            "precision": 0.0351,
+            "f1": 0.0669
+          },
+          "memory_stress": {
+            "windows": 50,
+            "detected": 22,
+            "recall": 0.44,
+            "precision": 0.0299,
+            "f1": 0.0559
+          },
+          "pod_kill": {
+            "windows": 102,
+            "detected": 0,
+            "recall": 0.0,
+            "precision": 0.0,
+            "f1": 0.0
+          },
+          "restart_storm": {
+            "windows": 50,
+            "detected": 41,
+            "recall": 0.82,
+            "precision": 0.0542,
+            "f1": 0.1017
+          }
+        },
+        "false_positive_rate_by_namespace": {
+          "chaos-lab": 0.0299,
+          "chaos-mesh": 0.4924,
+          "kube-system": 0.2504,
+          "local-path-storage": 0.0,
+          "observability": 0.3327
+        }
+      },
+      "real+guard": {
+        "threshold": 0.032942789342929005,
+        "precision": 0.1851,
+        "recall": 0.5942,
+        "f1": 0.2823,
+        "accuracy": 0.8132,
+        "specificity": 0.8276,
+        "confusion": {
+          "true_negatives": 3467,
+          "false_positives": 722,
+          "false_negatives": 112,
+          "true_positives": 164
+        },
+        "per_scenario": {
+          "cpu_stress": {
+            "windows": 38,
+            "detected": 38,
+            "recall": 1.0,
+            "precision": 0.05,
+            "f1": 0.0952
+          },
+          "memory_leak": {
+            "windows": 36,
+            "detected": 26,
+            "recall": 0.7222,
+            "precision": 0.0348,
+            "f1": 0.0663
+          },
+          "memory_stress": {
+            "windows": 50,
+            "detected": 50,
+            "recall": 1.0,
+            "precision": 0.0648,
+            "f1": 0.1217
+          },
+          "pod_kill": {
+            "windows": 102,
+            "detected": 0,
+            "recall": 0.0,
+            "precision": 0.0,
+            "f1": 0.0
+          },
+          "restart_storm": {
+            "windows": 50,
+            "detected": 50,
+            "recall": 1.0,
+            "precision": 0.0648,
+            "f1": 0.1217
+          }
+        },
+        "false_positive_rate_by_namespace": {
+          "chaos-lab": 0.0336,
+          "chaos-mesh": 0.4924,
+          "kube-system": 0.2504,
+          "local-path-storage": 0.0,
+          "observability": 0.3327
+        }
+      },
+      "synthetic": {
+        "threshold": 0.013066874916047992,
+        "precision": 0.0611,
+        "recall": 0.9855,
+        "f1": 0.1151,
+        "accuracy": 0.0636,
+        "specificity": 0.0029,
+        "confusion": {
+          "true_negatives": 12,
+          "false_positives": 4177,
+          "false_negatives": 4,
+          "true_positives": 272
+        },
+        "per_scenario": {
+          "cpu_stress": {
+            "windows": 38,
+            "detected": 38,
+            "recall": 1.0,
+            "precision": 0.009,
+            "f1": 0.0179
+          },
+          "memory_leak": {
+            "windows": 36,
+            "detected": 32,
+            "recall": 0.8889,
+            "precision": 0.0076,
+            "f1": 0.0151
+          },
+          "memory_stress": {
+            "windows": 50,
+            "detected": 50,
+            "recall": 1.0,
+            "precision": 0.0118,
+            "f1": 0.0234
+          },
+          "pod_kill": {
+            "windows": 102,
+            "detected": 102,
+            "recall": 1.0,
+            "precision": 0.0238,
+            "f1": 0.0466
+          },
+          "restart_storm": {
+            "windows": 50,
+            "detected": 50,
+            "recall": 1.0,
+            "precision": 0.0118,
+            "f1": 0.0234
+          }
+        },
+        "false_positive_rate_by_namespace": {
+          "chaos-lab": 0.9973,
+          "chaos-mesh": 1.0,
+          "kube-system": 1.0,
+          "local-path-storage": 1.0,
+          "observability": 0.9859
+        }
+      },
+      "synthetic+guard": {
+        "threshold": 0.013066874916047992,
+        "precision": 0.0611,
+        "recall": 0.9855,
+        "f1": 0.1151,
+        "accuracy": 0.0636,
+        "specificity": 0.0029,
+        "confusion": {
+          "true_negatives": 12,
+          "false_positives": 4177,
+          "false_negatives": 4,
+          "true_positives": 272
+        },
+        "per_scenario": {
+          "cpu_stress": {
+            "windows": 38,
+            "detected": 38,
+            "recall": 1.0,
+            "precision": 0.009,
+            "f1": 0.0179
+          },
+          "memory_leak": {
+            "windows": 36,
+            "detected": 32,
+            "recall": 0.8889,
+            "precision": 0.0076,
+            "f1": 0.0151
+          },
+          "memory_stress": {
+            "windows": 50,
+            "detected": 50,
+            "recall": 1.0,
+            "precision": 0.0118,
+            "f1": 0.0234
+          },
+          "pod_kill": {
+            "windows": 102,
+            "detected": 102,
+            "recall": 1.0,
+            "precision": 0.0238,
+            "f1": 0.0466
+          },
+          "restart_storm": {
+            "windows": 50,
+            "detected": 50,
+            "recall": 1.0,
+            "precision": 0.0118,
+            "f1": 0.0234
+          }
+        },
+        "false_positive_rate_by_namespace": {
+          "chaos-lab": 0.9973,
+          "chaos-mesh": 1.0,
+          "kube-system": 1.0,
+          "local-path-storage": 1.0,
+          "observability": 0.9859
+        }
+      },
+      "synthetic+real+guard": {
+        "threshold": 0.017103332758938595,
+        "precision": 0.2404,
+        "recall": 0.4964,
+        "f1": 0.3239,
+        "accuracy": 0.8719,
+        "specificity": 0.8966,
+        "confusion": {
+          "true_negatives": 3756,
+          "false_positives": 433,
+          "false_negatives": 139,
+          "true_positives": 137
+        },
+        "per_scenario": {
+          "cpu_stress": {
+            "windows": 38,
+            "detected": 38,
+            "recall": 1.0,
+            "precision": 0.0807,
+            "f1": 0.1493
+          },
+          "memory_leak": {
+            "windows": 36,
+            "detected": 24,
+            "recall": 0.6667,
+            "precision": 0.0525,
+            "f1": 0.0974
+          },
+          "memory_stress": {
+            "windows": 50,
+            "detected": 25,
+            "recall": 0.5,
+            "precision": 0.0546,
+            "f1": 0.0984
+          },
+          "pod_kill": {
+            "windows": 102,
+            "detected": 0,
+            "recall": 0.0,
+            "precision": 0.0,
+            "f1": 0.0
+          },
+          "restart_storm": {
+            "windows": 50,
+            "detected": 50,
+            "recall": 1.0,
+            "precision": 0.1035,
+            "f1": 0.1876
+          }
+        },
+        "false_positive_rate_by_namespace": {
+          "chaos-lab": 0.0144,
+          "chaos-mesh": 0.2749,
+          "kube-system": 0.1959,
+          "local-path-storage": 0.0,
+          "observability": 0.1129
+        }
+      }
+    },
+    "threshold_sweep_real": {
+      "p90": {
+        "threshold": 0.032942789342929005,
+        "precision": 0.1129,
+        "recall": 0.3297,
+        "f1": 0.1682,
+        "specificity": 0.8293
+      },
+      "p95": {
+        "threshold": 0.05049562907057685,
+        "precision": 0.1306,
+        "recall": 0.221,
+        "f1": 0.1642,
+        "specificity": 0.9031
+      },
+      "p99": {
+        "threshold": 0.08123256330165186,
+        "precision": 0.2065,
+        "recall": 0.1377,
+        "f1": 0.1652,
+        "specificity": 0.9651
+      }
+    },
+    "scope": "all"
+  },
+  "heldout_all": {
+    "trained_at": "2026-11-12T16:14:47Z",
+    "seed": 42,
+    "n_estimators": 200,
+    "threshold_percentile": 90.0,
+    "window_size": 12,
+    "split": "train on every normal window of the training run, test on a later held-out run",
+    "train_windows": 5624,
+    "train_windows_synthetic": 1170,
+    "test_windows": {
+      "cpu_stress": 42,
+      "memory_leak": 30,
+      "memory_stress": 42,
+      "normal": 4335,
+      "pod_kill": 78,
+      "restart_storm": 42
+    },
+    "models": {
+      "real": {
+        "threshold": 0.022342654859992626,
+        "precision": 0.1619,
+        "recall": 0.4103,
+        "f1": 0.2322,
+        "accuracy": 0.861,
+        "specificity": 0.8854,
+        "confusion": {
+          "true_negatives": 3838,
+          "false_positives": 497,
+          "false_negatives": 138,
+          "true_positives": 96
+        },
+        "per_scenario": {
+          "cpu_stress": {
+            "windows": 42,
+            "detected": 23,
+            "recall": 0.5476,
+            "precision": 0.0442,
+            "f1": 0.0819
+          },
+          "memory_leak": {
+            "windows": 30,
+            "detected": 23,
+            "recall": 0.7667,
+            "precision": 0.0442,
+            "f1": 0.0836
+          },
+          "memory_stress": {
+            "windows": 42,
+            "detected": 16,
+            "recall": 0.381,
+            "precision": 0.0312,
+            "f1": 0.0577
+          },
+          "pod_kill": {
+            "windows": 78,
+            "detected": 0,
+            "recall": 0.0,
+            "precision": 0.0,
+            "f1": 0.0
+          },
+          "restart_storm": {
+            "windows": 42,
+            "detected": 34,
+            "recall": 0.8095,
+            "precision": 0.064,
+            "f1": 0.1187
+          }
+        },
+        "false_positive_rate_by_namespace": {
+          "chaos-lab": 0.0307,
+          "chaos-mesh": 0.2206,
+          "kube-system": 0.1735,
+          "local-path-storage": 0.0,
+          "observability": 0.2471
+        }
+      },
+      "real+guard": {
+        "threshold": 0.022342654859992626,
+        "precision": 0.227,
+        "recall": 0.6325,
+        "f1": 0.3341,
+        "accuracy": 0.8709,
+        "specificity": 0.8837,
+        "confusion": {
+          "true_negatives": 3831,
+          "false_positives": 504,
+          "false_negatives": 86,
+          "true_positives": 148
+        },
+        "per_scenario": {
+          "cpu_stress": {
+            "windows": 42,
+            "detected": 42,
+            "recall": 1.0,
+            "precision": 0.0769,
+            "f1": 0.1429
+          },
+          "memory_leak": {
+            "windows": 30,
+            "detected": 23,
+            "recall": 0.7667,
+            "precision": 0.0436,
+            "f1": 0.0826
+          },
+          "memory_stress": {
+            "windows": 42,
+            "detected": 41,
+            "recall": 0.9762,
+            "precision": 0.0752,
+            "f1": 0.1397
+          },
+          "pod_kill": {
+            "windows": 78,
+            "detected": 0,
+            "recall": 0.0,
+            "precision": 0.0,
+            "f1": 0.0
+          },
+          "restart_storm": {
+            "windows": 42,
+            "detected": 42,
+            "recall": 1.0,
+            "precision": 0.0769,
+            "f1": 0.1429
+          }
+        },
+        "false_positive_rate_by_namespace": {
+          "chaos-lab": 0.0343,
+          "chaos-mesh": 0.2206,
+          "kube-system": 0.1735,
+          "local-path-storage": 0.0,
+          "observability": 0.2471
+        }
+      },
+      "synthetic": {
+        "threshold": 0.013066874916047992,
+        "precision": 0.0513,
+        "recall": 1.0,
+        "f1": 0.0975,
+        "accuracy": 0.0523,
+        "specificity": 0.0012,
+        "confusion": {
+          "true_negatives": 5,
+          "false_positives": 4330,
+          "false_negatives": 0,
+          "true_positives": 234
+        },
+        "per_scenario": {
+          "cpu_stress": {
+            "windows": 42,
+            "detected": 42,
+            "recall": 1.0,
+            "precision": 0.0096,
+            "f1": 0.019
+          },
+          "memory_leak": {
+            "windows": 30,
+            "detected": 30,
+            "recall": 1.0,
+            "precision": 0.0069,
+            "f1": 0.0137
+          },
+          "memory_stress": {
+            "windows": 42,
+            "detected": 42,
+            "recall": 1.0,
+            "precision": 0.0096,
+            "f1": 0.019
+          },
+          "pod_kill": {
+            "windows": 78,
+            "detected": 78,
+            "recall": 1.0,
+            "precision": 0.0177,
+            "f1": 0.0348
+          },
+          "restart_storm": {
+            "windows": 42,
+            "detected": 42,
+            "recall": 1.0,
+            "precision": 0.0096,
+            "f1": 0.019
+          }
+        },
+        "false_positive_rate_by_namespace": {
+          "chaos-lab": 1.0,
+          "chaos-mesh": 1.0,
+          "kube-system": 0.9985,
+          "local-path-storage": 1.0,
+          "observability": 0.9941
+        }
+      },
+      "synthetic+guard": {
+        "threshold": 0.013066874916047992,
+        "precision": 0.0513,
+        "recall": 1.0,
+        "f1": 0.0975,
+        "accuracy": 0.0523,
+        "specificity": 0.0012,
+        "confusion": {
+          "true_negatives": 5,
+          "false_positives": 4330,
+          "false_negatives": 0,
+          "true_positives": 234
+        },
+        "per_scenario": {
+          "cpu_stress": {
+            "windows": 42,
+            "detected": 42,
+            "recall": 1.0,
+            "precision": 0.0096,
+            "f1": 0.019
+          },
+          "memory_leak": {
+            "windows": 30,
+            "detected": 30,
+            "recall": 1.0,
+            "precision": 0.0069,
+            "f1": 0.0137
+          },
+          "memory_stress": {
+            "windows": 42,
+            "detected": 42,
+            "recall": 1.0,
+            "precision": 0.0096,
+            "f1": 0.019
+          },
+          "pod_kill": {
+            "windows": 78,
+            "detected": 78,
+            "recall": 1.0,
+            "precision": 0.0177,
+            "f1": 0.0348
+          },
+          "restart_storm": {
+            "windows": 42,
+            "detected": 42,
+            "recall": 1.0,
+            "precision": 0.0096,
+            "f1": 0.019
+          }
+        },
+        "false_positive_rate_by_namespace": {
+          "chaos-lab": 1.0,
+          "chaos-mesh": 1.0,
+          "kube-system": 0.9985,
+          "local-path-storage": 1.0,
+          "observability": 0.9941
+        }
+      },
+      "synthetic+real+guard": {
+        "threshold": 0.02150511390955684,
+        "precision": 0.3853,
+        "recall": 0.5385,
+        "f1": 0.4492,
+        "accuracy": 0.9324,
+        "specificity": 0.9536,
+        "confusion": {
+          "true_negatives": 4134,
+          "false_positives": 201,
+          "false_negatives": 108,
+          "true_positives": 126
+        },
+        "per_scenario": {
+          "cpu_stress": {
+            "windows": 42,
+            "detected": 42,
+            "recall": 1.0,
+            "precision": 0.1728,
+            "f1": 0.2947
+          },
+          "memory_leak": {
+            "windows": 30,
+            "detected": 21,
+            "recall": 0.7,
+            "precision": 0.0946,
+            "f1": 0.1667
+          },
+          "memory_stress": {
+            "windows": 42,
+            "detected": 23,
+            "recall": 0.5476,
+            "precision": 0.1027,
+            "f1": 0.1729
+          },
+          "pod_kill": {
+            "windows": 78,
+            "detected": 0,
+            "recall": 0.0,
+            "precision": 0.0,
+            "f1": 0.0
+          },
+          "restart_storm": {
+            "windows": 42,
+            "detected": 40,
+            "recall": 0.9524,
+            "precision": 0.166,
+            "f1": 0.2827
+          }
+        },
+        "false_positive_rate_by_namespace": {
+          "chaos-lab": 0.0061,
+          "chaos-mesh": 0.0147,
+          "kube-system": 0.1265,
+          "local-path-storage": 0.0,
+          "observability": 0.0235
+        }
+      }
+    },
+    "threshold_sweep_real": {
+      "p90": {
+        "threshold": 0.022342654859992626,
+        "precision": 0.1619,
+        "recall": 0.4103,
+        "f1": 0.2322,
+        "specificity": 0.8854
+      },
+      "p95": {
+        "threshold": 0.04331623618977452,
+        "precision": 0.2434,
+        "recall": 0.3547,
+        "f1": 0.2887,
+        "specificity": 0.9405
+      },
+      "p99": {
+        "threshold": 0.07882979863669035,
+        "precision": 0.3016,
+        "recall": 0.1624,
+        "f1": 0.2111,
+        "specificity": 0.9797
+      }
+    },
+    "scope": "all"
+  },
+  "in_run_apps": {
+    "trained_at": "2026-11-12T16:14:50Z",
+    "seed": 42,
+    "n_estimators": 200,
+    "threshold_percentile": 90.0,
+    "window_size": 12,
+    "split": "time split inside one run at 2026-11-12T14:37:19Z",
+    "train_windows": 690,
+    "train_windows_synthetic": 1170,
+    "test_windows": {
+      "cpu_stress": 38,
+      "memory_leak": 36,
+      "memory_stress": 50,
+      "normal": 1875,
+      "pod_kill": 102,
+      "restart_storm": 50
+    },
+    "models": {
+      "real": {
+        "threshold": -0.022130927021516138,
+        "precision": 0.495,
+        "recall": 0.721,
+        "f1": 0.587,
+        "accuracy": 0.8698,
+        "specificity": 0.8917,
+        "confusion": {
+          "true_negatives": 1672,
+          "false_positives": 203,
+          "false_negatives": 77,
+          "true_positives": 199
+        },
+        "per_scenario": {
+          "cpu_stress": {
+            "windows": 38,
+            "detected": 37,
+            "recall": 0.9737,
+            "precision": 0.1542,
+            "f1": 0.2662
+          },
+          "memory_leak": {
+            "windows": 36,
+            "detected": 36,
+            "recall": 1.0,
+            "precision": 0.1506,
+            "f1": 0.2618
+          },
+          "memory_stress": {
+            "windows": 50,
+            "detected": 43,
+            "recall": 0.86,
+            "precision": 0.1748,
+            "f1": 0.2905
+          },
+          "pod_kill": {
+            "windows": 102,
+            "detected": 33,
+            "recall": 0.3235,
+            "precision": 0.1398,
+            "f1": 0.1953
+          },
+          "restart_storm": {
+            "windows": 50,
+            "detected": 50,
+            "recall": 1.0,
+            "precision": 0.1976,
+            "f1": 0.33
+          }
+        },
+        "false_positive_rate_by_namespace": {
+          "chaos-lab": 0.1083
+        }
+      },
+      "real+guard": {
+        "threshold": -0.022130927021516138,
+        "precision": 0.5049,
+        "recall": 0.75,
+        "f1": 0.6035,
+        "accuracy": 0.8735,
+        "specificity": 0.8917,
+        "confusion": {
+          "true_negatives": 1672,
+          "false_positives": 203,
+          "false_negatives": 69,
+          "true_positives": 207
+        },
+        "per_scenario": {
+          "cpu_stress": {
+            "windows": 38,
+            "detected": 38,
+            "recall": 1.0,
+            "precision": 0.1577,
+            "f1": 0.2724
+          },
+          "memory_leak": {
+            "windows": 36,
+            "detected": 36,
+            "recall": 1.0,
+            "precision": 0.1506,
+            "f1": 0.2618
+          },
+          "memory_stress": {
+            "windows": 50,
+            "detected": 50,
+            "recall": 1.0,
+            "precision": 0.1976,
+            "f1": 0.33
+          },
+          "pod_kill": {
+            "windows": 102,
+            "detected": 33,
+            "recall": 0.3235,
+            "precision": 0.1398,
+            "f1": 0.1953
+          },
+          "restart_storm": {
+            "windows": 50,
+            "detected": 50,
+            "recall": 1.0,
+            "precision": 0.1976,
+            "f1": 0.33
+          }
+        },
+        "false_positive_rate_by_namespace": {
+          "chaos-lab": 0.1083
+        }
+      },
+      "synthetic": {
+        "threshold": 0.013066874916047992,
+        "precision": 0.127,
+        "recall": 0.9855,
+        "f1": 0.225,
+        "accuracy": 0.1288,
+        "specificity": 0.0027,
+        "confusion": {
+          "true_negatives": 5,
+          "false_positives": 1870,
+          "false_negatives": 4,
+          "true_positives": 272
+        },
+        "per_scenario": {
+          "cpu_stress": {
+            "windows": 38,
+            "detected": 38,
+            "recall": 1.0,
+            "precision": 0.0199,
+            "f1": 0.0391
+          },
+          "memory_leak": {
+            "windows": 36,
+            "detected": 32,
+            "recall": 0.8889,
+            "precision": 0.0168,
+            "f1": 0.033
+          },
+          "memory_stress": {
+            "windows": 50,
+            "detected": 50,
+            "recall": 1.0,
+            "precision": 0.026,
+            "f1": 0.0508
+          },
+          "pod_kill": {
+            "windows": 102,
+            "detected": 102,
+            "recall": 1.0,
+            "precision": 0.0517,
+            "f1": 0.0984
+          },
+          "restart_storm": {
+            "windows": 50,
+            "detected": 50,
+            "recall": 1.0,
+            "precision": 0.026,
+            "f1": 0.0508
+          }
+        },
+        "false_positive_rate_by_namespace": {
+          "chaos-lab": 0.9973
+        }
+      },
+      "synthetic+guard": {
+        "threshold": 0.013066874916047992,
+        "precision": 0.127,
+        "recall": 0.9855,
+        "f1": 0.225,
+        "accuracy": 0.1288,
+        "specificity": 0.0027,
+        "confusion": {
+          "true_negatives": 5,
+          "false_positives": 1870,
+          "false_negatives": 4,
+          "true_positives": 272
+        },
+        "per_scenario": {
+          "cpu_stress": {
+            "windows": 38,
+            "detected": 38,
+            "recall": 1.0,
+            "precision": 0.0199,
+            "f1": 0.0391
+          },
+          "memory_leak": {
+            "windows": 36,
+            "detected": 32,
+            "recall": 0.8889,
+            "precision": 0.0168,
+            "f1": 0.033
+          },
+          "memory_stress": {
+            "windows": 50,
+            "detected": 50,
+            "recall": 1.0,
+            "precision": 0.026,
+            "f1": 0.0508
+          },
+          "pod_kill": {
+            "windows": 102,
+            "detected": 102,
+            "recall": 1.0,
+            "precision": 0.0517,
+            "f1": 0.0984
+          },
+          "restart_storm": {
+            "windows": 50,
+            "detected": 50,
+            "recall": 1.0,
+            "precision": 0.026,
+            "f1": 0.0508
+          }
+        },
+        "false_positive_rate_by_namespace": {
+          "chaos-lab": 0.9973
+        }
+      },
+      "synthetic+real+guard": {
+        "threshold": 0.017128908228021978,
+        "precision": 0.7327,
+        "recall": 0.5362,
+        "f1": 0.6192,
+        "accuracy": 0.9154,
+        "specificity": 0.9712,
+        "confusion": {
+          "true_negatives": 1821,
+          "false_positives": 54,
+          "false_negatives": 128,
+          "true_positives": 148
+        },
+        "per_scenario": {
+          "cpu_stress": {
+            "windows": 38,
+            "detected": 38,
+            "recall": 1.0,
+            "precision": 0.413,
+            "f1": 0.5846
+          },
+          "memory_leak": {
+            "windows": 36,
+            "detected": 25,
+            "recall": 0.6944,
+            "precision": 0.3165,
+            "f1": 0.4348
+          },
+          "memory_stress": {
+            "windows": 50,
+            "detected": 26,
+            "recall": 0.52,
+            "precision": 0.325,
+            "f1": 0.4
+          },
+          "pod_kill": {
+            "windows": 102,
+            "detected": 9,
+            "recall": 0.0882,
+            "precision": 0.1429,
+            "f1": 0.1091
+          },
+          "restart_storm": {
+            "windows": 50,
+            "detected": 50,
+            "recall": 1.0,
+            "precision": 0.4808,
+            "f1": 0.6494
+          }
+        },
+        "false_positive_rate_by_namespace": {
+          "chaos-lab": 0.0288
+        }
+      }
+    },
+    "threshold_sweep_real": {
+      "p90": {
+        "threshold": -0.022130927021516138,
+        "precision": 0.495,
+        "recall": 0.721,
+        "f1": 0.587,
+        "specificity": 0.8917
+      },
+      "p95": {
+        "threshold": 0.05018523731060351,
+        "precision": 0.4373,
+        "recall": 0.442,
+        "f1": 0.4396,
+        "specificity": 0.9163
+      },
+      "p99": {
+        "threshold": 0.11382726544262746,
+        "precision": 0.6111,
+        "recall": 0.1993,
+        "f1": 0.3005,
+        "specificity": 0.9813
+      }
+    },
+    "scope": "apps"
+  },
+  "heldout_apps": {
+    "trained_at": "2026-11-12T16:14:53Z",
+    "seed": 42,
+    "n_estimators": 200,
+    "threshold_percentile": 90.0,
+    "window_size": 12,
+    "split": "train on every normal window of the training run, test on a later held-out run",
+    "train_windows": 2565,
+    "train_windows_synthetic": 1170,
+    "test_windows": {
+      "cpu_stress": 42,
+      "memory_leak": 30,
+      "memory_stress": 42,
+      "normal": 1955,
+      "pod_kill": 78,
+      "restart_storm": 42
+    },
+    "models": {
+      "real": {
+        "threshold": -0.019921768988997536,
+        "precision": 0.4778,
+        "recall": 0.7821,
+        "f1": 0.5932,
+        "accuracy": 0.8853,
+        "specificity": 0.8977,
+        "confusion": {
+          "true_negatives": 1755,
+          "false_positives": 200,
+          "false_negatives": 51,
+          "true_positives": 183
+        },
+        "per_scenario": {
+          "cpu_stress": {
+            "windows": 42,
+            "detected": 42,
+            "recall": 1.0,
+            "precision": 0.1736,
+            "f1": 0.2958
+          },
+          "memory_leak": {
+            "windows": 30,
+            "detected": 30,
+            "recall": 1.0,
+            "precision": 0.1304,
+            "f1": 0.2308
+          },
+          "memory_stress": {
+            "windows": 42,
+            "detected": 40,
+            "recall": 0.9524,
+            "precision": 0.1667,
+            "f1": 0.2837
+          },
+          "pod_kill": {
+            "windows": 78,
+            "detected": 29,
+            "recall": 0.3718,
+            "precision": 0.1266,
+            "f1": 0.1889
+          },
+          "restart_storm": {
+            "windows": 42,
+            "detected": 42,
+            "recall": 1.0,
+            "precision": 0.1736,
+            "f1": 0.2958
+          }
+        },
+        "false_positive_rate_by_namespace": {
+          "chaos-lab": 0.1023
+        }
+      },
+      "real+guard": {
+        "threshold": -0.019921768988997536,
+        "precision": 0.4805,
+        "recall": 0.7906,
+        "f1": 0.5977,
+        "accuracy": 0.8862,
+        "specificity": 0.8977,
+        "confusion": {
+          "true_negatives": 1755,
+          "false_positives": 200,
+          "false_negatives": 49,
+          "true_positives": 185
+        },
+        "per_scenario": {
+          "cpu_stress": {
+            "windows": 42,
+            "detected": 42,
+            "recall": 1.0,
+            "precision": 0.1736,
+            "f1": 0.2958
+          },
+          "memory_leak": {
+            "windows": 30,
+            "detected": 30,
+            "recall": 1.0,
+            "precision": 0.1304,
+            "f1": 0.2308
+          },
+          "memory_stress": {
+            "windows": 42,
+            "detected": 42,
+            "recall": 1.0,
+            "precision": 0.1736,
+            "f1": 0.2958
+          },
+          "pod_kill": {
+            "windows": 78,
+            "detected": 29,
+            "recall": 0.3718,
+            "precision": 0.1266,
+            "f1": 0.1889
+          },
+          "restart_storm": {
+            "windows": 42,
+            "detected": 42,
+            "recall": 1.0,
+            "precision": 0.1736,
+            "f1": 0.2958
+          }
+        },
+        "false_positive_rate_by_namespace": {
+          "chaos-lab": 0.1023
+        }
+      },
+      "synthetic": {
+        "threshold": 0.013066874916047992,
+        "precision": 0.1069,
+        "recall": 1.0,
+        "f1": 0.1931,
+        "accuracy": 0.1069,
+        "specificity": 0.0,
+        "confusion": {
+          "true_negatives": 0,
+          "false_positives": 1955,
+          "false_negatives": 0,
+          "true_positives": 234
+        },
+        "per_scenario": {
+          "cpu_stress": {
+            "windows": 42,
+            "detected": 42,
+            "recall": 1.0,
+            "precision": 0.021,
+            "f1": 0.0412
+          },
+          "memory_leak": {
+            "windows": 30,
+            "detected": 30,
+            "recall": 1.0,
+            "precision": 0.0151,
+            "f1": 0.0298
+          },
+          "memory_stress": {
+            "windows": 42,
+            "detected": 42,
+            "recall": 1.0,
+            "precision": 0.021,
+            "f1": 0.0412
+          },
+          "pod_kill": {
+            "windows": 78,
+            "detected": 78,
+            "recall": 1.0,
+            "precision": 0.0384,
+            "f1": 0.0739
+          },
+          "restart_storm": {
+            "windows": 42,
+            "detected": 42,
+            "recall": 1.0,
+            "precision": 0.021,
+            "f1": 0.0412
+          }
+        },
+        "false_positive_rate_by_namespace": {
+          "chaos-lab": 1.0
+        }
+      },
+      "synthetic+guard": {
+        "threshold": 0.013066874916047992,
+        "precision": 0.1069,
+        "recall": 1.0,
+        "f1": 0.1931,
+        "accuracy": 0.1069,
+        "specificity": 0.0,
+        "confusion": {
+          "true_negatives": 0,
+          "false_positives": 1955,
+          "false_negatives": 0,
+          "true_positives": 234
+        },
+        "per_scenario": {
+          "cpu_stress": {
+            "windows": 42,
+            "detected": 42,
+            "recall": 1.0,
+            "precision": 0.021,
+            "f1": 0.0412
+          },
+          "memory_leak": {
+            "windows": 30,
+            "detected": 30,
+            "recall": 1.0,
+            "precision": 0.0151,
+            "f1": 0.0298
+          },
+          "memory_stress": {
+            "windows": 42,
+            "detected": 42,
+            "recall": 1.0,
+            "precision": 0.021,
+            "f1": 0.0412
+          },
+          "pod_kill": {
+            "windows": 78,
+            "detected": 78,
+            "recall": 1.0,
+            "precision": 0.0384,
+            "f1": 0.0739
+          },
+          "restart_storm": {
+            "windows": 42,
+            "detected": 42,
+            "recall": 1.0,
+            "precision": 0.021,
+            "f1": 0.0412
+          }
+        },
+        "false_positive_rate_by_namespace": {
+          "chaos-lab": 1.0
+        }
+      },
+      "synthetic+real+guard": {
+        "threshold": 0.0371201732997191,
+        "precision": 0.8466,
+        "recall": 0.5897,
+        "f1": 0.6952,
+        "accuracy": 0.9447,
+        "specificity": 0.9872,
+        "confusion": {
+          "true_negatives": 1930,
+          "false_positives": 25,
+          "false_negatives": 96,
+          "true_positives": 138
+        },
+        "per_scenario": {
+          "cpu_stress": {
+            "windows": 42,
+            "detected": 42,
+            "recall": 1.0,
+            "precision": 0.6269,
+            "f1": 0.7706
+          },
+          "memory_leak": {
+            "windows": 30,
+            "detected": 26,
+            "recall": 0.8667,
+            "precision": 0.5098,
+            "f1": 0.642
+          },
+          "memory_stress": {
+            "windows": 42,
+            "detected": 25,
+            "recall": 0.5952,
+            "precision": 0.5,
+            "f1": 0.5435
+          },
+          "pod_kill": {
+            "windows": 78,
+            "detected": 3,
+            "recall": 0.0385,
+            "precision": 0.1071,
+            "f1": 0.0566
+          },
+          "restart_storm": {
+            "windows": 42,
+            "detected": 42,
+            "recall": 1.0,
+            "precision": 0.6269,
+            "f1": 0.7706
+          }
+        },
+        "false_positive_rate_by_namespace": {
+          "chaos-lab": 0.0128
+        }
+      }
+    },
+    "threshold_sweep_real": {
+      "p90": {
+        "threshold": -0.019921768988997536,
+        "precision": 0.4778,
+        "recall": 0.7821,
+        "f1": 0.5932,
+        "specificity": 0.8977
+      },
+      "p95": {
+        "threshold": 0.06463999071584504,
+        "precision": 0.49,
+        "recall": 0.5214,
+        "f1": 0.5052,
+        "specificity": 0.935
+      },
+      "p99": {
+        "threshold": 0.10910905094393376,
+        "precision": 0.8189,
+        "recall": 0.4444,
+        "f1": 0.5762,
+        "specificity": 0.9882
+      }
+    },
+    "scope": "apps"
+  },
+  "runs": [
+    {
+      "run_id": "run-box-01",
+      "rows": 7106,
+      "pods": 43,
+      "rows_by_label": {
+        "cpu_stress": 48,
+        "memory_leak": 46,
+        "memory_stress": 48,
+        "normal": 6672,
+        "pod_kill": 166,
+        "recovery": 78,
+        "restart_storm": 48
+      },
+      "start_utc": "2026-11-12T14:20:12.001885+00:00",
+      "end_utc": "2026-11-12T15:27:35.800853+00:00",
+      "minutes": 67.4,
+      "step_seconds": 15,
+      "grace_seconds": 60.0
+    },
+    {
+      "run_id": "run-box-02",
+      "rows": 5118,
+      "pods": 41,
+      "rows_by_label": {
+        "cpu_stress": 40,
+        "memory_leak": 40,
+        "memory_stress": 40,
+        "normal": 4760,
+        "pod_kill": 120,
+        "recovery": 78,
+        "restart_storm": 40
+      },
+      "start_utc": "2026-11-12T15:28:55.504139+00:00",
+      "end_utc": "2026-11-12T16:13:56.908327+00:00",
+      "minutes": 45.0,
+      "step_seconds": 15,
+      "grace_seconds": 60.0
+    }
+  ]
+}
