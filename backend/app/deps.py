@@ -2,6 +2,10 @@
 
 from functools import lru_cache
 
+from app.actions.cluster import ActionsCluster
+from app.actions.proposer import ActionProposer
+from app.actions.service import ActionService
+from app.actions.store import ActionStore
 from app.config import Settings, get_settings
 from app.anomaly.lifecycle import LifecycleDetector
 from app.anomaly.scorer import AnomalyScorer
@@ -53,6 +57,21 @@ def get_lifecycle_detector() -> LifecycleDetector:
     return LifecycleDetector(get_k8s_client(), settings=get_settings())
 
 
+@lru_cache
+def get_action_service() -> ActionService:
+    settings = get_settings()
+    return ActionService(
+        settings=settings,
+        cluster=ActionsCluster(get_k8s_client()),
+        proposer=ActionProposer(settings=settings),
+        store=ActionStore(settings.resolved_actions_audit_path()),
+        k8s=get_k8s_client(),
+        lifecycle=get_lifecycle_detector(),
+        scorer=get_anomaly_scorer(),
+        prometheus=get_prometheus_client(),
+    )
+
+
 def clear_caches() -> None:
     """Drop cached settings and clients. Useful in tests."""
     get_settings.cache_clear()
@@ -64,6 +83,7 @@ def clear_caches() -> None:
     get_prometheus_client.cache_clear()
     get_anomaly_scorer.cache_clear()
     get_lifecycle_detector.cache_clear()
+    get_action_service.cache_clear()
 
 
 def settings() -> Settings:

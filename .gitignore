@@ -54,3 +54,4 @@ deploy/terraform/*.kubeconfig
 
 # Real-data model is reproducible with `make train-real`; keep it out of git.
 backend/models/isolation_forest_real.joblib
+backend/data/
