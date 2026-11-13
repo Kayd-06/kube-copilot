@@ -131,3 +131,100 @@ export type IncidentSaved = {
   title: string;
   collection: string;
 };
+
+// ---- Safe actions ----
+export type ActionStatus =
+  | "proposed"
+  | "blocked"
+  | "rejected"
+  | "expired"
+  | "executing"
+  | "verifying"
+  | "resolved"
+  | "not_resolved"
+  | "failed";
+
+export type ActionPreview = {
+  dry_run_ok: boolean;
+  dry_run_error: string | null;
+  before: Record<string, unknown>;
+  after: Record<string, unknown>;
+  diff: string;
+};
+
+export type VerificationSample = {
+  t: number;
+  desired: number;
+  ready: number;
+  available: number;
+  updated: number;
+  unhealthy_pods: string[];
+  healthy: boolean;
+};
+
+export type Verification = {
+  started_at: string;
+  finished_at: string | null;
+  window_seconds: number;
+  stable_seconds: number;
+  resolved: boolean | null;
+  time_to_recovery_seconds: number | null;
+  reason: string;
+  samples: VerificationSample[];
+  disruption_signals: string[];
+  metric_anomalies: string[] | null;
+};
+
+export type AuditEvent = {
+  id: number;
+  ts: string;
+  action_id: string | null;
+  event: string;
+  actor: string;
+  detail: Record<string, unknown>;
+};
+
+export type ActionRecord = {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  kind: string;
+  params: Record<string, unknown>;
+  namespace: string;
+  target: string;
+  target_kind: string;
+  workload: string;
+  incident_pod: string | null;
+  rationale: string;
+  source: string;
+  reverts_action_id: string | null;
+  status: ActionStatus;
+  violations: string[];
+  preview: ActionPreview | null;
+  decided_by: string | null;
+  decided_at: string | null;
+  decision_comment: string | null;
+  executed_at: string | null;
+  error: string | null;
+  verification: Verification | null;
+  revertible: boolean;
+  revert_params: Record<string, unknown> | null;
+};
+
+export type ActionDetail = ActionRecord & { timeline: AuditEvent[] };
+
+export type ProposeResponse = { actions: ActionRecord[]; note: string; kill_switch: boolean };
+
+export type ActionsConfig = {
+  enabled: boolean;
+  kill_switch: boolean;
+  allowed_namespaces: string[];
+  denied_namespaces: string[];
+  allowed_actions: string[];
+  scale_min: number;
+  scale_max: number;
+  cooldown_seconds: number;
+  max_per_hour: number;
+  proposal_ttl_seconds: number;
+  verify_window_seconds: number;
+};

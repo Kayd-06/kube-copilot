@@ -1,3 +1,4 @@
+import type { ActionDetail, ActionRecord, ActionsConfig, AuditEvent, ProposeResponse } from "./types";
 import type { AnomaliesResponse, DiagnoseResponse, IncidentSaved, UnhealthyPodsResponse } from "./types";
 
 // Same-origin `/api` is proxied by app/api/[...path] to BACKEND_URL (or localhost:8000).
@@ -168,3 +169,45 @@ export async function saveIncident(payload: {
   if (!response.ok) throw new Error(await readError(response));
   return response.json();
 }
+
+// ---- Safe actions ----
+
+async function postJson<T>(path: string, body?: unknown): Promise<T> {
+  const response = await fetch(`${API_BASE}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: body === undefined ? undefined : JSON.stringify(body),
+    cache: "no-store",
+  });
+  if (!response.ok) throw new Error(await readError(response));
+  return response.json();
+}
+
+async function getJson<T>(path: string): Promise<T> {
+  const response = await fetch(`${API_BASE}${path}`, { cache: "no-store" });
+  if (!response.ok) throw new Error(await readError(response));
+  return response.json();
+}
+
+export const fetchActionsConfig = () => getJson<ActionsConfig>("/actions/config");
+
+export const proposeActions = (namespace: string, name: string, actor: string) =>
+  postJson<ProposeResponse>(
+    `/pods/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}/actions/propose`,
+    { actor },
+  );
+
+export const fetchAction = (id: string) => getJson<ActionDetail>(`/actions/${encodeURIComponent(id)}`);
+
+export const fetchActions = (limit = 100) => getJson<{ actions: ActionRecord[]; count: number }>(`/actions?limit=${limit}`);
+
+export const fetchAudit = (limit = 300) => getJson<{ events: AuditEvent[]; count: number }>(`/audit?limit=${limit}`);
+
+export const approveAction = (id: string, actor: string, comment?: string) =>
+  postJson<ActionRecord>(`/actions/${encodeURIComponent(id)}/approve`, { actor, comment });
+
+export const rejectAction = (id: string, actor: string, comment?: string) =>
+  postJson<ActionRecord>(`/actions/${encodeURIComponent(id)}/reject`, { actor, comment });
+
+export const revertAction = (id: string, actor: string) =>
+  postJson<ActionRecord>(`/actions/${encodeURIComponent(id)}/revert`, { actor });

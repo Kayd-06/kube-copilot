@@ -11,6 +11,8 @@ import type {
   PodSummary,
   WorkloadDisruption,
 } from "@/lib/types";
+import { SafeActionsPanel } from "@/components/SafeActions";
+import Link from "next/link";
 
 function reasonTone(reason: string | null): string {
   const value = (reason || "").toLowerCase();
@@ -226,7 +228,7 @@ export default function HomePage() {
       <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="mb-1 text-xs font-medium uppercase tracking-[0.2em] text-emerald-400">
-            Phase 3 · Anomaly detection
+            AI incident copilot
           </p>
           <h1 className="text-3xl font-semibold tracking-tight text-white">Kube Copilot</h1>
           <p className="mt-2 max-w-xl text-sm text-slate-400">
@@ -235,13 +237,21 @@ export default function HomePage() {
             before a pod enters a terminal wait reason.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => void load()}
-          className="rounded-lg bg-white/5 px-3 py-2 text-sm text-slate-200 ring-1 ring-white/10 transition hover:bg-white/10"
-        >
-          Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/audit"
+            className="rounded-lg bg-white/5 px-3 py-2 text-sm text-slate-200 ring-1 ring-white/10 transition hover:bg-white/10"
+          >
+            Audit log
+          </Link>
+          <button
+            type="button"
+            onClick={() => void load()}
+            className="rounded-lg bg-white/5 px-3 py-2 text-sm text-slate-200 ring-1 ring-white/10 transition hover:bg-white/10"
+          >
+            Refresh
+          </button>
+        </div>
       </header>
 
       <AnomaliesPanel
@@ -410,6 +420,8 @@ export default function HomePage() {
                 </div>
 
                 <CitationsList citations={shownCitations} />
+
+                <SafeActionsPanel namespace={result.pod.namespace} pod={result.pod.name} />
 
                 <div>
                   <button
