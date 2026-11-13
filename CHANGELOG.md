@@ -9,6 +9,18 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 
 ### Added
 
+- **LLM evaluation harness** (`ml/llm_eval`, `make eval`). 38 incidents reproduced on kind with hand labels written from the injected fault: category, acceptable safe-actions tool, matching runbooks and difficulty. 11 are hard. They are frozen as JSON fixtures (`ml/data/llm_eval/cases`) holding exactly what Diagnose and the proposer receive. The harness reports deterministic root-cause and remediation scoring, a JSON schema check, RAG hit@k/MRR, a kubectl hallucination check, p50/p95 latency, tokens and cost, model-free baselines, Wilson intervals, `--variants no_rag,no_signals` ablations, rate-limit pacing with `--resume`, and `--rescore`. An optional LLM judge (`make eval-judge`) has a fixed rubric and is compared against hand checks (`ml/data/llm_eval/hand_checks.json`). `make eval-capture` re-creates the incidents in throwaway `kc-eval-NN` namespaces.
+- First results (`ml/reports/llm_eval/README.md`). On `openai/gpt-oss-120b`: root cause 30/38 hand-checked (27/38 by regex), remediation 30/38, schema 97.4%, no hallucinated resources, Diagnose p50 1.8 s. On `openai/gpt-oss-20b`: 31/38 hand-checked (27/38 by regex), remediation 29/38. The regex matcher agreed with the hand check on 34/37 and 33/37 diagnoses, the judge (`qwen/qwen3.8-27b`) on 33/37 and 35/37.
+- Offline CI tests for the fixtures and scorers (`backend/tests/test_llm_eval.py`), and a manual `LLM eval` workflow that uses a `GROQ_API_KEY` secret.
+- `LLMExplainer.explain_detailed()` returns the raw text, parse status and token usage. `ProposalResult` carries token usage.
+
+### Known issues found by the eval
+
+- The safe-actions proposer only sees image and command for the current and previous revision, so rollouts that break env, probes, resources or nodeSelector look identical and are not rolled back (7 of 11 rollout cases).
+- Diagnose ignores pod-kill lifecycle signals (0/3), is misled by false-positive metric anomalies on healthy pods, and has no log-size cap: one prompt exceeded Groq's free-tier 8K TPM.
+
+### Added (earlier in this cycle)
+
 - **Safe actions (human-in-the-loop remediation)**, off by default (`ACTIONS_ENABLED=false`). `POST /pods/{ns}/{pod}/actions/propose` asks the LLM via function calling for one of four actions: `rollback_deployment`, `restart_deployment`, `scale_deployment` (bounded) or `delete_pod` (crashlooping, Deployment-owned only), or `no_action`. Policy in code (`backend/app/actions/policy.py`): tool allowlist, exact parameters, namespace allow/deny list with `kube-system` always refused, incident scope, scale bounds, live target checks. Every proposal is dry-run on the API server (`dryRun=All`) and shown as a diff. Approve/reject endpoints record the approver; approval re-checks policy on fresh state and enforces a global kill switch, proposal TTL, one action in flight per workload, a per-workload cooldown and an hourly cap. After execution the backend verifies recovery (replicas, bad pods, restarts, lifecycle signals) and records time to recovery; scale and rollback can be reverted through a new proposal.
 - SQLite audit log of every proposal, block, decision, execution and verification: `GET /audit`, `GET /actions`, `GET /actions/{id}`.
 - Dashboard: a Safe actions panel on the diagnosis view (proposal cards with dry-run diff, Approve/Reject, verification status, timeline, revert) and an `/audit` page.

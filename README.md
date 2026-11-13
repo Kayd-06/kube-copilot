@@ -127,6 +127,8 @@ kube-copilot/
 ├── frontend/             Next.js (App Router, TypeScript, Tailwind)
 ├── ml/                   Features, synthetic + real-data training, chaos collector, eval reports
 ├── ml/data/real/         Labelled real kind + Chaos Mesh metrics (two runs) and a data card
+├── ml/llm_eval/          LLM eval: incident scenarios, kind capture, scorers, runner, optional judge
+├── ml/data/llm_eval/     38 frozen incident fixtures, hand checks and a data card
 ├── knowledge/runbooks    Markdown runbooks ingested into Qdrant
 ├── demo/                 kind config, broken manifests, Prometheus + Grafana, Chaos Mesh experiments
 ├── deploy/helm/          Helm chart (backend, frontend, optional Qdrant)
@@ -134,7 +136,7 @@ kube-copilot/
 ├── backend/app/actions/  Safe actions: policy, LLM tool calling, dry run, executor, verifier, SQLite audit
 ├── docs/                 DEMO recording script, safe-actions design, resume bullets, e2e reports
 ├── .github/workflows/    CI, GHCR publish, Dependabot, issue/PR templates
-├── Makefile              cluster, metrics, grafana, chaos, collect, helm, train, ingest, dev, test
+├── Makefile              cluster, metrics, grafana, chaos, collect, helm, train, ingest, eval, dev, test
 ├── docker-compose.yml    Qdrant + optional API + UI containers
 └── .env.example          Groq defaults, Qdrant, Prometheus, and OpenAI / Ollama examples
 ```
@@ -384,6 +386,56 @@ Helm only grants write RBAC when `actions.enabled=true`, as one namespaced `Role
 
 **Measured on kind** ([report](docs/reports/safe_actions_e2e.md), 12 trials): for a bad image tag, a bad command and a bad image with `Recreate` (full outage), the LLM proposed `rollback_deployment` 9/9 times and all 9 approved rollbacks were verified as resolved. In the full-outage case the Deployment was healthy again 3.3 to 11.7 s after approval (median 3.4 s). Proposals took about 1 s. For a crashloop caused by a config value that had already been fixed, the model declined all 3 times (`no_action`), which was a miss: a restart would have helped. These runs used Groq `openai/gpt-oss-120b`, which is now the project default.
 
+## LLM evaluation
+
+`make eval` scores Diagnose and the safe-actions proposer on 38 incidents that
+were reproduced on the kind cluster and frozen as JSON fixtures
+([dataset card](ml/data/llm_eval/README.md), [results](ml/reports/llm_eval/README.md)).
+The incidents cover image pulls, crashes, bad config values, missing
+ConfigMaps/Secrets, OOM kills, probes, CPU throttling, scheduling, PVCs,
+Service/DNS problems, Chaos Mesh pod kills and healthy pods. 11 are hard
+cases. Each fixture holds exactly the context the API sends to the LLM, so
+replays need no cluster. Labels come from the injected fault, not from model
+output.
+
+| Groq model | Root cause (hand-checked) | Root cause (regex) | Remediation correct | Schema valid | p50 / p95 Diagnose |
+|---|---|---|---|---|---|
+| `openai/gpt-oss-120b` (default) | 30/38 (78.9%) | 27/38 (71.1%) | 30/38 (78.9%) | 97.4% | 1.8 s / 3.4 s |
+| `openai/gpt-oss-20b` | 31/38 (81.6%) | 27/38 (71.1%) | 29/38 (76.3%) | 97.4% | 1.3 s / 2.3 s |
+
+Both models are within each other's 95% interval. No kubectl command named a
+resource that wasn't in the context (0 of about 300 references), no proposal
+was blocked by the policy engine, and correct runbooks were in the top 5 for
+86% of the cases that have one.
+
+The eval also found real problems:
+
+- **The proposer can't see config diffs.** The proposer only sees image and
+  command for the current and previous revision, so 7 rollouts that broke env,
+  probes, resources or nodeSelector looked "identical", and the models
+  declined to roll back. A plain "roll back if there's a previous revision"
+  rule scores 86.8% here.
+- **Pod kills are missed:** 0/3. The models ignore the lifecycle signals in
+  the prompt.
+- **False-positive anomalies mislead Diagnose.** They led the models to
+  invent memory leaks on healthy pods.
+- **Long logs break the free tier.** A probe-restart loop produced a prompt
+  too large for Groq's free 8K tokens per minute.
+
+```bash
+make eval                                  # LLM_MODEL=... to pick a model; needs LLM_API_KEY or GROQ_API_KEY
+make eval-ablations                        # + without RAG and without lifecycle signals
+make eval-dry-run                          # no API calls: fixtures, prompt sizes, model-free baselines
+make eval-judge RESULTS=ml/reports/llm_eval/openai_gpt-oss-120b.json   # optional LLM judge vs hand checks
+make eval-capture                          # re-create the incidents on kind (about 10 min)
+```
+
+CI runs only offline tests: fixture schema, labels, leak checks, scorers.
+A manual `LLM eval` workflow (`workflow_dispatch`) runs the real eval when a
+`GROQ_API_KEY` repository secret exists. The ablations are implemented but not
+run yet, because one full run uses about 180K of the free tier's 200K daily
+tokens per model.
+
 ## API
 
 | Method | Path | Description |
@@ -472,7 +524,7 @@ If you really want Compose to reach kind, change the server URL in the mounted k
 
 **Phase 4 — DevOps polish.** Helm chart, GitHub Actions (tests, Helm lint, kind e2e, GHCR publish, Trivy), Terraform for a single-node k3s VM, Grafana dashboards, and `/metrics` on the API. Next steps that are *not* in this repo yet: evaluating the detector on real cluster metrics, and a published live demo environment.
 
-**Since then.** Real-data training on Chaos Mesh runs, a pod-disruption detector driven by Kubernetes events, and human-in-the-loop safe actions (LLM tool calling restricted to four actions, policy in code, server-side dry run, approval, verification, audit log). Not done yet: authentication for approvers, StatefulSet/DaemonSet actions, and a published live demo.
+**Since then.** Real-data training on Chaos Mesh runs, a pod-disruption detector driven by Kubernetes events, and human-in-the-loop safe actions (LLM tool calling restricted to four actions, policy in code, server-side dry run, approval, verification, audit log), and an LLM evaluation harness on 38 frozen kind incidents. Not done yet: authentication for approvers, StatefulSet/DaemonSet actions, and a published live demo.
 
 ## License
 
