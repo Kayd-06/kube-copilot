@@ -57,6 +57,9 @@ spec:
             {{- with .Values.backend.extraEnv }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
+          volumeMounts:
+            - name: actions-data
+              mountPath: /data
           {{- with .Values.backend.livenessProbe }}
           livenessProbe:
             {{- toYaml . | nindent 12 }}
@@ -68,6 +71,14 @@ spec:
           {{- with .Values.backend.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: actions-data
+          {{- if and .Values.actions.enabled .Values.actions.audit.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "kube-copilot.fullname" . }}-actions
+          {{- else }}
+          emptyDir: {}
           {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:

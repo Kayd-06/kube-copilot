@@ -149,6 +149,33 @@ rbac:
   clusterRole:
     create: true
 
+# Human-in-the-loop safe actions. OFF by default: the chart is read-only
+# unless you set actions.enabled=true. When enabled, write RBAC is granted
+# only in the namespaces listed below (a Role per namespace, no ClusterRole),
+# and only for: patch deployments, patch deployments/scale, delete pods.
+actions:
+  enabled: false
+  # Global kill switch: proposals still work, nothing is ever executed.
+  killSwitch: false
+  # Namespaces the agent may act in. Required when enabled.
+  namespaces: []
+  # Always refused, even if listed above (kube-system is refused in code too).
+  deniedNamespaces: "kube-system,kube-public,kube-node-lease,chaos-mesh,observability,kube-copilot"
+  scale:
+    min: 1
+    max: 5
+  cooldownSeconds: 120
+  maxPerHour: 10
+  proposalTtlSeconds: 900
+  verifyWindowSeconds: 180
+  # SQLite audit log at /data/actions.sqlite. Without persistence it lives in
+  # an emptyDir and is lost when the pod is replaced.
+  audit:
+    persistence:
+      enabled: false
+      size: 256Mi
+      storageClass: ""
+
 podAnnotations: {}
 nodeSelector: {}
 tolerations: []
