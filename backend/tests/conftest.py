@@ -13,7 +13,15 @@ from datetime import datetime, timezone
 import pytest
 from fastapi.testclient import TestClient
 
-from app.deps import get_anomaly_scorer, get_k8s_client, get_llm_explainer, get_prometheus_client, get_retriever
+from app.anomaly.lifecycle import LifecycleReport
+from app.deps import (
+    get_anomaly_scorer,
+    get_k8s_client,
+    get_lifecycle_detector,
+    get_llm_explainer,
+    get_prometheus_client,
+    get_retriever,
+)
 from app.main import app
 from app.models import Diagnosis, PodEvent, PodLogs, PodSummary
 from app.rag.retriever import RetrievedChunk, RetrieveResult
@@ -256,11 +264,31 @@ class FakeScorer:
         )
 
 
+class FakeLifecycle:
+    """Stands in for LifecycleDetector so tests never read a real cluster."""
+
+    def __init__(self, signals=None, pod_workloads=None, unavailable=False, lookback_s=180.0):
+        self.signals = list(signals or [])
+        self.pod_workloads = dict(pod_workloads or {})
+        self.unavailable = unavailable
+        self.lookback_s = lookback_s
+        self.calls = []
+
+    def snapshot(self, namespace=None, now=None):
+        from app.k8s_client import K8sUnavailableError
+
+        self.calls.append(namespace)
+        if self.unavailable:
+            raise K8sUnavailableError("cluster unreachable")
+        signals = [s for s in self.signals if namespace is None or s.namespace == namespace]
+        return LifecycleReport(signals=signals, pod_workloads=self.pod_workloads, lookback_s=self.lookback_s)
+
+
 @pytest.fixture
 def client_factory():
     """Build a TestClient with k8s and LLM dependencies overridden."""
 
-    def _make(k8s=None, llm=None, retriever=None, scorer=None, prometheus=None) -> TestClient:
+    def _make(k8s=None, llm=None, retriever=None, scorer=None, prometheus=None, lifecycle=None) -> TestClient:
         if k8s is not None:
             app.dependency_overrides[get_k8s_client] = lambda: k8s
         if llm is not None:
@@ -274,6 +302,9 @@ def client_factory():
         app.dependency_overrides[get_anomaly_scorer] = lambda: scorer if scorer is not None else FakeScorer(loaded=False)
         app.dependency_overrides[get_prometheus_client] = (
             lambda: prometheus if prometheus is not None else FakePrometheus()
+        )
+        app.dependency_overrides[get_lifecycle_detector] = (
+            lambda: lifecycle if lifecycle is not None else FakeLifecycle()
         )
         test_client = TestClient(app)
         return test_client

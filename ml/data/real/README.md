@@ -11,6 +11,8 @@ sample: it is a few hundred KB gzipped.
 | `<run>/points.csv.gz` | one row per (pod, 15s timestamp) |
 | `<run>/timeline.json` | the scripted phases (baseline / chaos / recovery) with unix start/end and whether Chaos Mesh reported the injection |
 | `<run>/summary.json` | row/pod counts per label and the run's time range |
+| `<run>/events.jsonl.gz` | (run-box-03 on) every Kubernetes event seen during the run, polled with `kubectl get events -A` every 15s. Events about Chaos Mesh's own objects (`PodChaos`, `Schedule`, ...) are dropped at capture so the detector can't read the answer. |
+| `<run>/lifecycle.csv.gz` | (run-box-03 on) kube-state-metrics lifecycle series in long format (`ts, series, namespace, name, extra, value`): Deployment desired/available/generation, pod creation time, pod owner, last-terminated reason, pod ready. PromQL in `ml/promql.py:lifecycle_queries`. |
 
 ## Columns (`points.csv.gz`)
 
@@ -56,10 +58,24 @@ background traffic.
 |-----|-----------|------|------|----------|
 | `run-box-01` | 67.4 min (14:20 to 15:27 UTC, 19:50 to 20:57 IST, 12 Nov 2026) | 7,106 | 43 | 15 min baseline, then 5 scenarios x (6 min chaos + 3 min recovery) |
 | `run-box-02` | 45.0 min (15:28 to 16:13 UTC, 20:58 to 21:43 IST, 12 Nov 2026) | 5,118 | 41 | 10 min baseline, then 5 scenarios x (5 min chaos + 2 min recovery) |
+| `run-box-03` | 63.1 min (14:10 to 15:13 UTC, 19:40 to 20:43 IST, 13 Nov 2026) | 7,235 | 51 | 8 min baseline, then 7 windows of 4 min chaos + 2 min recovery: `pod_kill`, `cpu_stress`, `restart_storm`, `pod_kill`, `memory_leak`, `memory_stress`, `pod_kill`. Also has events (218) and lifecycle series. |
 
 `run-box-01` is the training run. `run-box-02` was collected after the
 training and evaluation code was frozen and is used only as a held-out test
-set.
+set. `run-box-03` is the held-out run for the event/lifecycle detector
+(`ml/lifecycle.py`, `make eval-lifecycle`). The detector rules (`ml/lifecycle.py`) were last
+changed in commit `f59e5ed`, while the run was still collecting and before any of its
+data was exported or read. Nothing was tuned on it. The only change to the
+evaluation after seeing results was adding the labelled post-hoc
+`NodeNotReady` sensitivity table.
+
+In `run-box-03`, VM pauses stretched some phases past their scripted length
+(`cpu_stress` 6.1 min, the second `pod_kill` 9.4 min, two recoveries 4.5 to
+5 min). `timeline.json` records the real boundaries and the labels use them.
+One pause made the node report `NotReady` at 14:53:20 UTC (20:23:20 IST), which
+emitted a `NodeNotReady` event on every pod. That is a real node disruption,
+but the chaos labels call it normal, and it accounts for 132 of the
+lifecycle detector's 134 false-positive windows on app pods.
 
 ## Known limitations (read before quoting numbers)
 
@@ -80,7 +96,11 @@ set.
   DNS inside the kind node could not reach the registries.
 - `pod_kill` replaces pods every minute, so each replacement lives about 4
   samples. A per-pod 3-minute window can't see a deletion, which shows up as
-  0 recall for `pod_kill`. It needs deployment-level or event features.
+  near-0 Isolation Forest recall for `pod_kill`. The event/lifecycle
+  detector (`ml/lifecycle.py`) covers it from `run-box-03` on.
+- The `pod_kill` Schedule fires its first kill about 60s into the window, so
+  the earliest `pod_kill`-labelled windows contain no kill yet. That caps the
+  lifecycle detector's `pod_kill` recall below 1.0.
 - The very first sample of a run can show `phase=outside` because Prometheus
   timestamps are whole seconds. Its label is still correct (`normal`).
 
@@ -91,4 +111,5 @@ make cluster-up metrics-up chaos-up
 make collect-dry-run COLLECT_ARGS="--skip network_delay"   # print the plan
 make collect                                                # ~60 min, writes ml/data/real/run-*/
 make train-real                                             # reports + MLflow
+make eval-lifecycle                                         # events/lifecycle detector vs forest (run-box-03)
 ```

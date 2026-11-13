@@ -176,7 +176,8 @@ def build_user_prompt(
         parts.append(
             f"- score: {anomaly.score:.3f} (0.5 is the decision boundary; higher is more anomalous)"
         )
-        parts.append(f"- flagged_as_anomaly: {str(anomaly.is_anomaly).lower()}")
+        metric_flag = anomaly.is_anomaly if anomaly.metric_anomaly is None else anomaly.metric_anomaly
+        parts.append(f"- flagged_as_anomaly: {str(metric_flag).lower()}")
         if anomaly.contributing_features:
             parts.append("- contributing features (z-score vs the healthy training distribution):")
             for feat in anomaly.contributing_features:
@@ -186,6 +187,15 @@ def build_user_prompt(
         if anomaly.warning:
             parts.append(f"- warning: {anomaly.warning}")
         parts.append("")
+        if anomaly.lifecycle_signals:
+            parts.append(
+                "Lifecycle detector (Kubernetes events, pod replacements, replica counts, restarts "
+                f"for workload {anomaly.lifecycle_signals[0].workload}, recent first):"
+            )
+            for sig in reversed(anomaly.lifecycle_signals):
+                pod = f" pod={sig.pod}" if sig.pod else ""
+                parts.append(f"- {sig.at.isoformat()} {sig.kind}{pod} {sig.detail}".rstrip())
+            parts.append("")
     return "\n".join(parts)
 
 

@@ -2,7 +2,15 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { diagnosePodStream, fetchAnomalies, fetchUnhealthyPods, saveIncident } from "@/lib/api";
-import type { AnomalyScore, Citation, DiagnoseResponse, Diagnosis, PodSummary } from "@/lib/types";
+import type {
+  AnomalyScore,
+  Citation,
+  DiagnoseResponse,
+  Diagnosis,
+  LifecycleSignal,
+  PodSummary,
+  WorkloadDisruption,
+} from "@/lib/types";
 
 function reasonTone(reason: string | null): string {
   const value = (reason || "").toLowerCase();
@@ -57,6 +65,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [listError, setListError] = useState<string | null>(null);
   const [anomalies, setAnomalies] = useState<AnomalyScore[]>([]);
+  const [disruptions, setDisruptions] = useState<WorkloadDisruption[]>([]);
   const [anomalyError, setAnomalyError] = useState<string | null>(null);
   const [anomaliesLoading, setAnomaliesLoading] = useState(true);
   const [diagnosisAnomaly, setDiagnosisAnomaly] = useState<AnomalyScore | null>(null);
@@ -90,9 +99,11 @@ export default function HomePage() {
     try {
       const data = await fetchAnomalies();
       setAnomalies(data.pods);
+      setDisruptions(data.disruptions ?? []);
     } catch (err) {
       setAnomalyError(err instanceof Error ? err.message : "Failed to load anomalies");
       setAnomalies([]);
+      setDisruptions([]);
     } finally {
       setAnomaliesLoading(false);
     }
@@ -235,6 +246,7 @@ export default function HomePage() {
 
       <AnomaliesPanel
         items={anomalies}
+        disruptions={disruptions}
         loading={anomaliesLoading}
         error={anomalyError}
         diagnosing={diagnosing}
@@ -523,8 +535,37 @@ function Sparkline({ series }: { series: AnomalyScore["series"] }) {
   );
 }
 
+function signalLabel(signal: LifecycleSignal): string {
+  return signal.kind.replace(/^event:/, "").replace(/_/g, " ");
+}
+
+function DisruptionsList({ items }: { items: WorkloadDisruption[] }) {
+  if (items.length === 0) return null;
+  return (
+    <div className="border-b border-white/8 px-5 py-4">
+      <h3 className="text-xs font-medium uppercase tracking-wider text-slate-500">
+        Workload disruptions (events and pod lifecycle)
+      </h3>
+      <ul className="mt-2 space-y-2">
+        {items.map((item) => (
+          <li key={`${item.namespace}/${item.workload}`} className="rounded-lg bg-rose-500/5 px-3 py-2 ring-1 ring-rose-500/20">
+            <p className="font-mono text-sm text-rose-100">
+              {item.namespace}/{item.workload}
+            </p>
+            <p className="mt-1 text-xs text-slate-400">{item.summary}</p>
+            {item.pods.length > 0 && (
+              <p className="mt-1 truncate font-mono text-[11px] text-slate-500">pods: {item.pods.join(", ")}</p>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function AnomaliesPanel({
   items,
+  disruptions,
   loading,
   error,
   diagnosing,
@@ -532,6 +573,7 @@ function AnomaliesPanel({
   onDiagnose,
 }: {
   items: AnomalyScore[];
+  disruptions: WorkloadDisruption[];
   loading: boolean;
   error: string | null;
   diagnosing: boolean;
@@ -545,13 +587,16 @@ function AnomaliesPanel({
         <div>
           <h2 className="text-sm font-medium text-slate-200">Anomalies</h2>
           <p className="mt-1 text-xs text-slate-500">
-            Isolation Forest scores over the last few minutes of CPU, memory, and restarts.
+            Isolation Forest scores over the last few minutes of CPU, memory, and restarts, plus
+            pod kills, replacements and replica dips from Kubernetes events.
           </p>
         </div>
         <span className="font-mono text-xs text-slate-500">
           {flagged} flagged · {items.length} scored
         </span>
       </div>
+
+      {!loading && !error && <DisruptionsList items={disruptions} />}
 
       {loading && <p className="px-5 py-8 text-sm text-slate-400">Scoring recent pod metrics…</p>}
 
@@ -582,6 +627,7 @@ function AnomaliesPanel({
             const key = podKey(item);
             const active = key === selectedKey;
             const top = item.contributing_features[0];
+            const lastSignal = item.lifecycle_signals?.[item.lifecycle_signals.length - 1];
             return (
               <li
                 key={key}
@@ -592,9 +638,11 @@ function AnomaliesPanel({
                     {item.namespace}/{item.name}
                   </p>
                   <p className="mt-1 text-xs text-slate-500">
-                    {top
-                      ? `${top.name} ${top.direction} (z=${top.zscore.toFixed(1)})`
-                      : item.warning || "No standout feature"}
+                    {lastSignal
+                      ? `${signalLabel(lastSignal)}${lastSignal.pod ? ` · ${lastSignal.pod}` : ""}`
+                      : top
+                        ? `${top.name} ${top.direction} (z=${top.zscore.toFixed(1)})`
+                        : item.warning || "No standout feature"}
                   </p>
                 </div>
                 <Sparkline series={item.series} />
@@ -633,6 +681,13 @@ function AnomalyDetails({ item }: { item: AnomalyScore }) {
           {item.contributing_features.slice(0, 3).map((feat) => (
             <li key={feat.name}>
               {feat.name}: {feat.value.toFixed(2)} ({feat.direction}, z={feat.zscore.toFixed(1)})
+            </li>
+          ))}
+          {(item.lifecycle_signals ?? []).slice(-3).map((signal) => (
+            <li key={`${signal.kind}-${signal.at}-${signal.pod ?? ""}`} className="text-rose-200/80">
+              {signalLabel(signal)}
+              {signal.pod ? ` · ${signal.pod}` : ""}
+              {signal.detail ? ` — ${signal.detail}` : ""}
             </li>
           ))}
         </ul>

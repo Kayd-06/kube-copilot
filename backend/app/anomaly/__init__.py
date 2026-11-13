@@ -1,4 +1,4 @@
-"""Anomaly scoring: load the Isolation Forest artifact and score pod windows."""
+"""Anomaly scoring: the Isolation Forest on metric windows, plus lifecycle signals."""
 
 from app.anomaly.scorer import (
     AnomalyModelMissingError,

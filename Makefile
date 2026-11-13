@@ -5,7 +5,7 @@
 	ingest qdrant-up metrics-up metrics-forward train mlflow-ui \
 	images kind-load helm-lint helm-install helm-uninstall \
 	grafana-up grafana-forward chaos-up chaos-run chaos-stop chaos-down \
-	collect collect-dry-run train-real help
+	collect collect-dry-run train-real eval-lifecycle help
 
 KIND_CLUSTER ?= kube-copilot
 IMAGE_TAG ?= dev
@@ -42,6 +42,7 @@ help:
 	@echo "  collect-dry-run  Print the collection timeline without touching the cluster"
 	@echo "  train            Train the Isolation Forest on synthetic data (MLflow + report)"
 	@echo "  train-real       Train/evaluate on the newest real run (time split, MLflow + report)"
+	@echo "  eval-lifecycle   Score the event/lifecycle detector + Isolation Forest on run-box-03/04"
 	@echo "  mlflow-ui        Open the local MLflow tracking UI on :5000"
 	@echo "  images           Build backend and frontend Docker images tagged $(IMAGE_TAG)"
 	@echo "  kind-load        Build images and load them into the kind cluster"
@@ -130,6 +131,11 @@ train:
 # ml/reports/real_metrics.{json,md} and backend/models/isolation_forest_real.joblib.
 train-real:
 	PYTHONPATH=. MLFLOW_DISABLE_AGENT_HINT=1 MLFLOW_ALLOW_FILE_STORE=true $(ROOT_PY) -m ml.train_real
+
+# Pod-disruption detector from events / lifecycle state, next to the forest.
+# Needs runs collected with events (run-box-03 and later, see ml/data/real/README.md).
+eval-lifecycle:
+	PYTHONPATH=. MLFLOW_DISABLE_AGENT_HINT=1 MLFLOW_ALLOW_FILE_STORE=true $(ROOT_PY) -m ml.eval_lifecycle
 
 mlflow-ui:
 	MLFLOW_DISABLE_AGENT_HINT=1 MLFLOW_ALLOW_FILE_STORE=true $(ROOT_PY) -m mlflow ui --backend-store-uri ./mlruns --host 127.0.0.1 --port 5000

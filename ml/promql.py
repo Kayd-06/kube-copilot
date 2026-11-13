@@ -52,3 +52,27 @@ def pod_queries(namespace: str | None = None, name: str | None = None) -> dict[s
 
 # cpu and memory are required; the rest degrade to zeros when missing.
 REQUIRED_CHANNELS = ("cpu", "memory")
+
+
+def lifecycle_queries(namespace: str | None = None) -> dict[str, str]:
+    """kube-state-metrics series for workload / pod lifecycle (ml/lifecycle.py).
+
+    Keys starting with `deploy_` are grouped by (namespace, deployment); the
+    rest by (namespace, pod) plus the extra label named in the key's comment.
+    """
+    ns = f'namespace="{namespace}"' if namespace else ""
+    return {
+        "deploy_desired": f"sum by (namespace, deployment) (kube_deployment_spec_replicas{{{ns}}})",
+        "deploy_available": f"sum by (namespace, deployment) (kube_deployment_status_replicas_available{{{ns}}})",
+        "deploy_generation": f"max by (namespace, deployment) (kube_deployment_metadata_generation{{{ns}}})",
+        # value = pod creation time (unix seconds); a new pod name with a fresh
+        # value is a replacement, a series that stops is a pod that went away.
+        "pod_created": f"max by (namespace, pod) (kube_pod_created{{{ns}}})",
+        # extra label: owner_name (the ReplicaSet for Deployment pods)
+        "pod_owner": f'max by (namespace, pod, owner_kind, owner_name) (kube_pod_owner{{{ns}}})',
+        # extra label: reason (OOMKilled, Error, Completed, ...)
+        "pod_last_terminated": (
+            f"max by (namespace, pod, reason) (kube_pod_container_status_last_terminated_reason{{{ns}}})"
+        ),
+        "pod_ready": f'min by (namespace, pod) (kube_pod_status_ready{{{ns}{"," if ns else ""}condition="true"}})',
+    }

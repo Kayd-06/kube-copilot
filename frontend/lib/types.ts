@@ -74,12 +74,32 @@ export type MetricSample = {
   restarts: number;
 };
 
+export type LifecycleSignal = {
+  kind: string;
+  at: string;
+  workload: string;
+  pod?: string | null;
+  detail: string;
+};
+
+export type WorkloadDisruption = {
+  namespace: string;
+  workload: string;
+  signals: LifecycleSignal[];
+  pods: string[];
+  summary: string;
+};
+
 export type AnomalyScore = {
   namespace: string;
   name: string;
   score: number;
+  /** Union of the metric and lifecycle detectors. */
   is_anomaly: boolean;
   threshold: number;
+  metric_anomaly?: boolean | null;
+  detectors?: string[];
+  lifecycle_signals?: LifecycleSignal[];
   contributing_features: FeatureContribution[];
   series: MetricSample[];
   warning?: string | null;
@@ -90,6 +110,8 @@ export type AnomaliesResponse = {
   count: number;
   model_loaded: boolean;
   prometheus_unavailable?: boolean;
+  disruptions?: WorkloadDisruption[];
+  lifecycle_unavailable?: boolean;
   warning?: string | null;
 };
 
