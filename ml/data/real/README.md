@@ -63,8 +63,11 @@ background traffic.
 `run-box-01` is the training run. `run-box-02` was collected after the
 training and evaluation code was frozen and is used only as a held-out test
 set. `run-box-03` is the held-out run for the event/lifecycle detector
-(`ml/lifecycle.py`, `make eval-lifecycle`). The detector rules were frozen
-(commit `e00a3dd`) before it finished collecting, and nothing was tuned on it.
+(`ml/lifecycle.py`, `make eval-lifecycle`). The detector rules (`ml/lifecycle.py`) were last
+changed in commit `f59e5ed`, while the run was still collecting and before any of its
+data was exported or read. Nothing was tuned on it. The only change to the
+evaluation after seeing results was adding the labelled post-hoc
+`NodeNotReady` sensitivity table.
 
 In `run-box-03`, VM pauses stretched some phases past their scripted length
 (`cpu_stress` 6.1 min, the second `pod_kill` 9.4 min, two recoveries 4.5 to
