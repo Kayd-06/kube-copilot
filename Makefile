@@ -5,7 +5,8 @@
 	ingest qdrant-up metrics-up metrics-forward train mlflow-ui \
 	images kind-load helm-lint helm-install helm-uninstall \
 	grafana-up grafana-forward chaos-up chaos-run chaos-stop chaos-down \
-	collect collect-dry-run train-real eval-lifecycle help
+	collect collect-dry-run train-real eval-lifecycle \
+	actions-demo-up backend-dev-actions actions-e2e help
 
 KIND_CLUSTER ?= kube-copilot
 IMAGE_TAG ?= dev
@@ -52,6 +53,9 @@ help:
 	@echo "  backend-dev      Run the FastAPI app with reload on :8000"
 	@echo "  frontend-dev     Run the Next.js UI on :3000"
 	@echo "  test             Run backend unit tests"
+	@echo "  actions-demo-up  Deploy the healthy copilot-demo/web target for safe actions"
+	@echo "  backend-dev-actions  Run the API on :8000 with safe actions enabled for copilot-demo"
+	@echo "  actions-e2e      Inject faults, propose, approve and verify via the API (needs backend-dev-actions)"
 
 cluster-up:
 	kind create cluster --config demo/kind-config.yaml
@@ -76,6 +80,20 @@ backend-dev:
 
 frontend-dev:
 	cd frontend && npm run dev
+
+actions-demo-up:
+	kubectl apply -f demo/actions/web.yaml
+	kubectl -n copilot-demo rollout status deploy/web --timeout=120s
+
+backend-dev-actions:
+	cd backend && \
+	if [ -x .venv/bin/python ]; then PY=.venv/bin/python; else PY=python3; fi && \
+	ACTIONS_ENABLED=true ACTIONS_ALLOWED_NAMESPACES=copilot-demo \
+	$$PY -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+ACTIONS_API ?= http://localhost:8000
+actions-e2e: actions-demo-up
+	$(ROOT_PY) scripts/e2e_safe_actions.py --api $(ACTIONS_API) --out docs/reports/safe_actions_e2e.json
 
 test:
 	cd backend && \

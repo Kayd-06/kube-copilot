@@ -8,6 +8,8 @@
 
 Phase 4 (this repo state) packages that stack: a Helm chart that runs the API *inside* the cluster, GitHub Actions CI (pytest, Helm lint, a kind smoke test, GHCR publish, Trivy), a Terraform module for a small k3s VM, and a Grafana dashboard. Diagnoses still work if Prometheus, Qdrant, or the model is missing; you just get an `anomaly_unavailable` or `knowledge_unavailable` flag.
 
+It can also **propose and run a fix with a human in the loop**: the LLM picks from four allowlisted actions (rollback, rolling restart, bounded scale, delete one crashlooping pod) via function calling, policy is enforced in code, every change is dry-run on the API server and shown as a diff, nothing runs until someone approves it, and the backend then verifies recovery and writes an audit log. This is **off by default**; see [Safe actions](#safe-actions-human-in-the-loop-remediation).
+
 See [CONTRIBUTING.md](CONTRIBUTING.md) for how to develop, [docs/DEMO.md](docs/DEMO.md) for a recording script, and [CHANGELOG.md](CHANGELOG.md) for what landed in each phase.
 
 ## The problem
@@ -29,6 +31,7 @@ flowchart LR
     Anoms["GET /anomalies"]
     MetricsEp["GET /metrics"]
     Incidents["POST /incidents"]
+    SafeAct["Safe actions<br/>propose / approve / verify / audit"]
     K8S["Kubernetes client<br/>(in-cluster or kubeconfig)"]
     RAG["Retriever"]
     Prom["Prometheus client"]
@@ -70,6 +73,9 @@ flowchart LR
   Dash --> Diag
   Dash --> Anoms
   Dash --> Incidents
+  Dash --> SafeAct
+  SafeAct --> LLM
+  SafeAct --> K8S
   List --> K8S
   Diag --> K8S
   Diag --> RAG
@@ -125,7 +131,8 @@ kube-copilot/
 ├── demo/                 kind config, broken manifests, Prometheus + Grafana, Chaos Mesh experiments
 ├── deploy/helm/          Helm chart (backend, frontend, optional Qdrant)
 ├── deploy/terraform/     Single-node k3s on a cheap AWS VM + helm_release
-├── docs/                 DEMO recording script and resume bullets
+├── backend/app/actions/  Safe actions: policy, LLM tool calling, dry run, executor, verifier, SQLite audit
+├── docs/                 DEMO recording script, safe-actions design, resume bullets, e2e reports
 ├── .github/workflows/    CI, GHCR publish, Dependabot, issue/PR templates
 ├── Makefile              cluster, metrics, grafana, chaos, collect, helm, train, ingest, dev, test
 ├── docker-compose.yml    Qdrant + optional API + UI containers
@@ -362,6 +369,21 @@ An optional LSTM autoencoder lives in `ml/lstm.py` behind a heavy extra (`pip in
 
 MLflow tracking uses a local file store at `./mlruns` (gitignored). MLflow 3.x needs `MLFLOW_ALLOW_FILE_STORE=true`, which `make train` and `make mlflow-ui` already set.
 
+## Safe actions (human-in-the-loop remediation)
+
+Off by default. Turn it on with `ACTIONS_ENABLED=true` (host) or `--set actions.enabled=true --set 'actions.namespaces={copilot-demo}'` (Helm). Design and every guardrail: [docs/SAFE_ACTIONS.md](docs/SAFE_ACTIONS.md).
+
+1. On a diagnosis, press **Propose remediation**. The backend sends the evidence and the owning Deployment's current and previous revision to the LLM with five tools: `rollback_deployment`, `restart_deployment`, `scale_deployment`, `delete_pod`, `no_action`.
+2. Each tool call is checked in code: allowlisted tool, exact parameters, namespace allow/deny list (`kube-system` and `chaos-mesh` are never allowed by default), target must be the incident pod or its Deployment, replicas within `[ACTIONS_SCALE_MIN, ACTIONS_SCALE_MAX]`, rollback needs a previous revision, `delete_pod` only for a crashlooping, Deployment-owned pod. Anything else is shown as **blocked** with the reason.
+3. Allowed proposals are dry-run on the API server (`dryRun=All`) and shown as a before/after diff.
+4. **Approve** or **Reject**. Approval re-checks the policy on fresh state and enforces the kill switch (`ACTIONS_KILL_SWITCH`), a 15-minute TTL, one action in flight per workload, a 120 s per-workload cooldown and an hourly cap.
+5. After execution the backend watches the Deployment (ready/available/updated replicas, bad pods, new restarts, lifecycle disruption signals) for up to 180 s and marks it **resolved** after 20 s of stable health, with the time to recovery. Scale and rollback can be reverted through a new proposal that needs its own approval.
+6. Every step lands in a SQLite audit log: `GET /audit`, `GET /actions/{id}` and the `/audit` page.
+
+Helm only grants write RBAC when `actions.enabled=true`, as one namespaced `Role` per entry in `actions.namespaces` with exactly `patch deployments`, `get/patch deployments/scale` and `delete pods`. The chart refuses to render with `kube-system` or another denied namespace.
+
+**Measured on kind** ([report](docs/reports/safe_actions_e2e.md), 12 trials): for a bad image tag, a bad command and a bad image with `Recreate` (full outage), the LLM proposed `rollback_deployment` 9/9 times and all 9 approved rollbacks were verified as resolved. In the full-outage case the Deployment was healthy again 3.3 to 11.7 s after approval (median 3.4 s). Proposals took about 1 s. For a crashloop caused by a config value that had already been fixed, the model declined all 3 times (`no_action`), which was a miss: a restart would have helped. These runs used Groq `openai/gpt-oss-120b`, because `llama-3.3-70b-versatile` returned 404 for the test key.
+
 ## API
 
 | Method | Path | Description |
@@ -376,6 +398,12 @@ MLflow tracking uses a local file store at `./mlruns` (gitignored). MLflow 3.x n
 | `GET`  | `/pods/{namespace}/{name}/anomaly` | Score one pod. HTTP 404 if Prometheus has no series for it yet. |
 | `POST` | `/incidents` | Save a resolved incident (`pod_name`, `namespace`, `reason`, `root_cause`, `fix`, optional `notes`) into the incidents collection. |
 | `GET`  | `/knowledge/search?q=` | Debug search over runbooks and incidents. Optional `&k=5`. |
+| `GET`  | `/actions/config` | Safe-actions settings: enabled, kill switch, namespaces, scale bounds, cooldown. |
+| `POST` | `/pods/{namespace}/{name}/actions/propose` | Ask the LLM for remediation; returns policy-checked, dry-run proposals. HTTP 403 when actions are disabled. |
+| `GET`  | `/actions`, `/actions/{id}` | Proposals and their status; the detail includes the audit timeline and verification samples. |
+| `POST` | `/actions/{id}/approve`, `/actions/{id}/reject` | Body `{"actor": "...", "comment": "..."}`. 409 if not approvable, 423 kill switch, 429 cooldown or hourly cap. |
+| `POST` | `/actions/{id}/revert` | Creates a new proposal that undoes a scale or rollback. Needs its own approval. |
+| `GET`  | `/audit` | Append-only audit log. Optional `?action_id=` and `?limit=`. |
 
 A diagnosis looks like:
 
@@ -442,7 +470,9 @@ If you really want Compose to reach kind, change the server URL in the mounted k
 
 **Phase 3 — ML anomaly detection.** Scrape Prometheus metrics, train an Isolation Forest on synthetic pod behaviour, track experiments with MLflow, and serve scores from the API so the copilot can flag issues *before* a pod enters a terminal wait reason. An optional LSTM autoencoder is documented but not required.
 
-**Phase 4 — DevOps polish (current).** Helm chart, GitHub Actions (tests, Helm lint, kind e2e, GHCR publish, Trivy), Terraform for a single-node k3s VM, Grafana dashboards, and `/metrics` on the API. Next steps that are *not* in this repo yet: evaluating the detector on real cluster metrics, and a published live demo environment.
+**Phase 4 — DevOps polish.** Helm chart, GitHub Actions (tests, Helm lint, kind e2e, GHCR publish, Trivy), Terraform for a single-node k3s VM, Grafana dashboards, and `/metrics` on the API. Next steps that are *not* in this repo yet: evaluating the detector on real cluster metrics, and a published live demo environment.
+
+**Since then.** Real-data training on Chaos Mesh runs, a pod-disruption detector driven by Kubernetes events, and human-in-the-loop safe actions (LLM tool calling restricted to four actions, policy in code, server-side dry run, approval, verification, audit log). Not done yet: authentication for approvers, StatefulSet/DaemonSet actions, and a published live demo.
 
 ## License
 
