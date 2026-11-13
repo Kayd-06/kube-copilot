@@ -5,6 +5,20 @@ All notable changes to Kube Copilot are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Pod-disruption detector from Kubernetes events and lifecycle state (`ml/lifecycle.py`). It flags pod replacements and disappearances that no scale-up or rollout explains, available < desired replicas, container restarts, and disruption events (`Killing`, `BackOff`, `OOMKilling`, `Evicted`, `NodeNotReady`, ...) on pods and ReplicaSets. Events about Chaos Mesh objects are ignored.
+- `/anomalies` merges it with the Isolation Forest: `is_anomaly` is now the union, with new `metric_anomaly`, `detectors`, `lifecycle_signals`, workload `disruptions` and `lifecycle_unavailable` fields. The new `GET /disruptions` endpoint reads the Kubernetes API only. Diagnose passes lifecycle signals to the LLM prompt. The dashboard shows workload disruptions and per-pod signals.
+- `make collect` now records Kubernetes events (`events.jsonl.gz`) and kube-state-metrics lifecycle series (`lifecycle.csv.gz`) during a run.
+- Held-out run `ml/data/real/run-box-03` (63 min, 3 pod-kill windows plus CPU, memory, leak and restart faults), and `make eval-lifecycle` with its report at `ml/reports/lifecycle_metrics.md`. On app pods, pod-kill recall went from 0.037 (forest) to 0.851, and union P/R/F1 is 0.570 / 0.824 / 0.674, against 0.555 / 0.330 / 0.413 for the forest alone.
+
+### Changed
+
+- The Helm ClusterRole can also get/list/watch `deployments` and `replicasets`. Without that permission, lifecycle signals still work from events and pods.
+- `ml.train_real.evaluate_predictions` scores predictions from any detector with the same report format.
+
 ## [0.4.0] — 2026-11-12
 
 Phase 4 — DevOps polish.

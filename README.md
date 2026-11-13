@@ -344,6 +344,20 @@ What changed and why:
 
 Caveats: the guard and the app scope were chosen after seeing run 1, and the held-out run is the honest test of them. This is about 1.9 hours from one laptop-sized node, the windows overlap, and anomalies are only 5 to 11% of test windows. The held-out numbers come from a single run, so read them as directional. `pod_kill` stays mostly undetected because a 3-minute per-pod window never sees its own pod being deleted, and `network_delay` couldn't be collected on the box (its kernel has no `netem`). The API still serves the synthetic model by default. To try the real-data model, run `make train-real` and set `ANOMALY_MODEL_PATH=backend/models/isolation_forest_real.joblib`.
 
+### Pod kills: events and lifecycle state
+
+A killed pod just stops reporting metrics, so the forest caught about 4% of `pod_kill` windows. A second, rule-based detector ([`ml/lifecycle.py`](ml/lifecycle.py)) reads what the cluster says happened instead. It looks for pod replacements and disappearances that no scale-up or rollout explains, available replicas below desired, container restarts, and disruption events on pods and ReplicaSets (`Killing`, `BackOff`, `OOMKilling`, `Evicted`, `NodeNotReady`, ...). Events about Chaos Mesh's own objects are never used. The API marks a pod anomalous when either detector fires. `/anomalies` returns `metric_anomaly`, `detectors` and `lifecycle_signals` for each pod, plus workload-level `disruptions` that still show pods which no longer exist.
+
+The detector was scored on `run-box-03` (63 min, 3 pod-kill windows plus the other faults, with Kubernetes events and kube-state-metrics lifecycle series recorded). That run was collected after the rules were frozen. Results on app pods, 3-minute windows ([`ml/reports/lifecycle_metrics.md`](ml/reports/lifecycle_metrics.md)):
+
+| Detector | Precision | Recall | F1 | `pod_kill` recall |
+|---|---|---|---|---|
+| Isolation Forest (`synthetic+real+guard`) | 0.555 | 0.330 | 0.413 | 0.037 |
+| Lifecycle rules | 0.617 | 0.614 | 0.615 | 0.851 |
+| **Union** | 0.570 | **0.824** | **0.674** | **0.851** |
+
+Overall recall here is lower than on `run-box-02` because pod-kill windows make up 214 of the 352 anomalous windows. The lifecycle rules catch none of the CPU, memory-stress or memory-leak windows, so the forest is still needed for those. Most of the lifecycle false positives (132 of 134 windows) come from one real `NodeNotReady` episode, when the box VM paused. If you drop those windows, which is a post-hoc check and not the headline number, union precision goes to 0.751 and F1 to 0.779. Pod-kill recall stops at 0.85 because the chaos schedule's first kill lands about 60s into each window. This is one run on one node, so treat it as directional.
+
 An optional LSTM autoencoder lives in `ml/lstm.py` behind a heavy extra (`pip install -r ml/requirements-lstm.txt`, then `python -m ml.train --model lstm`). It is **not** served by the API and is skipped on a low-spec laptop; Isolation Forest is the default model.
 
 MLflow tracking uses a local file store at `./mlruns` (gitignored). MLflow 3.x needs `MLFLOW_ALLOW_FILE_STORE=true`, which `make train` and `make mlflow-ui` already set.
@@ -357,7 +371,8 @@ MLflow tracking uses a local file store at `./mlruns` (gitignored). MLflow 3.x n
 | `GET`  | `/pods/unhealthy` | Pods in a bad state (`CrashLoopBackOff`, `Error`, `Pending`, `OOMKilled`, `ImagePullBackOff`, …). Optional `?namespace=`. |
 | `GET`  | `/pods/{namespace}/{name}/diagnose` | Collects status, events, and ~200 lines of logs, retrieves top-k runbook/incident chunks, scores recent metrics, and returns a structured diagnosis plus `citations` and `anomaly`. |
 | `GET`  | `/pods/{namespace}/{name}/diagnose?stream=true` | Same, as server-sent events (`context`, `citations`, `token`, `diagnosis`, `done`; `warning` if Qdrant or the anomaly path is down). |
-| `GET`  | `/anomalies` | Score recent per-pod Prometheus metrics. Optional `?namespace=` and `?flagged_only=true`. HTTP 503 if the model file or Prometheus is missing. |
+| `GET`  | `/anomalies` | Score recent per-pod Prometheus metrics and merge lifecycle signals (`is_anomaly` = forest OR lifecycle; also `metric_anomaly`, `detectors`, `lifecycle_signals`, and workload `disruptions`). Optional `?namespace=` and `?flagged_only=true`. HTTP 503 if the model file or Prometheus is missing; `lifecycle_unavailable: true` if the Kubernetes API can't be read. |
+| `GET`  | `/disruptions` | Workloads with pod kills, replacements, replica dips, restarts or disruption events in the last `ANOMALY_WINDOW_SECONDS` (default 180). Kubernetes API only, so it works without Prometheus or a model. Optional `?namespace=`. |
 | `GET`  | `/pods/{namespace}/{name}/anomaly` | Score one pod. HTTP 404 if Prometheus has no series for it yet. |
 | `POST` | `/incidents` | Save a resolved incident (`pod_name`, `namespace`, `reason`, `root_cause`, `fix`, optional `notes`) into the incidents collection. |
 | `GET`  | `/knowledge/search?q=` | Debug search over runbooks and incidents. Optional `&k=5`. |
@@ -423,7 +438,7 @@ If you really want Compose to reach kind, change the server URL in the mounted k
 
 **Phase 1 — working core.** List unhealthy pods, gather evidence, LLM diagnosis, Next.js UI, kind demo cluster.
 
-**Phase 2 — RAG with Qdrant.** Embed official-style runbooks and past incident write-ups in Qdrant. The explainer retrieves the closest fixes, streams the answer, and cites them instead of guessing from logs alone.
+**Phase 2 — RAG with Qdrant.** Embed hand-written troubleshooting runbooks and past incident write-ups in Qdrant. The explainer retrieves the closest fixes, streams the answer, and cites them instead of guessing from logs alone.
 
 **Phase 3 — ML anomaly detection.** Scrape Prometheus metrics, train an Isolation Forest on synthetic pod behaviour, track experiments with MLflow, and serve scores from the API so the copilot can flag issues *before* a pod enters a terminal wait reason. An optional LSTM autoencoder is documented but not required.
 
