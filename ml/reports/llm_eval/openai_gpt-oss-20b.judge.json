@@ -1,0 +1,190 @@
+{
+  "results": "ml/reports/llm_eval/openai_gpt-oss-20b.json",
+  "model": "openai/gpt-oss-20b",
+  "judge_model": "qwen/qwen3.8-27b",
+  "hand_checked_cases": 37,
+  "matcher_accuracy": 73.0,
+  "hand_accuracy": 83.8,
+  "judge_accuracy": 78.4,
+  "matcher_vs_hand": {
+    "cases": 37,
+    "agree": 33,
+    "rate": 89.2,
+    "disagree": [
+      "config_port_rollout",
+      "crash_traceback_first",
+      "healthy_web",
+      "img_private_rollout"
+    ]
+  },
+  "judge_vs_hand": {
+    "cases": 37,
+    "agree": 35,
+    "rate": 94.6,
+    "disagree": [
+      "img_private_rollout",
+      "svc_port_mismatch"
+    ]
+  },
+  "judge_vs_matcher": {
+    "cases": 37,
+    "agree": 33,
+    "rate": 89.2,
+    "disagree": [
+      "config_port_rollout",
+      "crash_traceback_first",
+      "healthy_web",
+      "svc_port_mismatch"
+    ]
+  },
+  "judge_verdicts": {
+    "cm_deleted_after_rollout": {
+      "verdict": "correct",
+      "reason": "The diagnosis correctly identifies the missing ConfigMap 'pricing-config' as the root cause, which matches the ground truth of a deleted ConfigMap causing a CreateContainerConfigError."
+    },
+    "cm_edited_after_rollout": {
+      "verdict": "correct",
+      "reason": "The diagnosis correctly identifies the invalid LOG_LEVEL value 'verbose' as the root cause, matching the ground truth of a bad configuration value."
+    },
+    "config_loglevel_first": {
+      "verdict": "correct",
+      "reason": "The diagnosis correctly identifies the invalid log level 'verbose' as the root cause, which matches the ground truth of a bad configuration value causing the app to exit."
+    },
+    "config_port_rollout": {
+      "verdict": "correct",
+      "reason": "The diagnosis correctly identifies that the invalid string value 'eighty' for the PORT environment variable is causing the application to exit with code 2, which matches the ground truth fault."
+    },
+    "cpu_throttle_first": {
+      "verdict": "incorrect",
+      "reason": "The diagnosis claims the pod is healthy and the issue is a false positive due to high limits, whereas the ground truth is that the pod is throttled and slow due to a CPU limit that is too low."
+    },
+    "crash_bad_command_rollout": {
+      "verdict": "correct",
+      "reason": "The diagnosis correctly identifies that the container fails because the specified command /app/server does not exist in the image, which matches the ground truth of an exec failure due to a missing binary."
+    },
+    "crash_panic_rollout": {
+      "verdict": "correct",
+      "reason": "The diagnosis correctly identifies the nil pointer dereference as the root cause of the application crash, matching the ground truth fault mechanism."
+    },
+    "crash_traceback_first": {
+      "verdict": "correct",
+      "reason": "The diagnosis correctly identifies the application error (KeyError due to missing handler) as the root cause of the crash, which matches the ground truth of a code bug causing the process to exit."
+    },
+    "dns_missing_service": {
+      "verdict": "correct",
+      "reason": "The diagnosis correctly identifies the root cause as a DNS resolution failure for the missing 'pricing-api' service, which matches the injected fault."
+    },
+    "healthy_after_rollout": {
+      "verdict": "incorrect",
+      "reason": "The ground truth states the system is healthy with no fault, but the diagnosis incorrectly identifies a memory leak and improper node scheduling as the root cause."
+    },
+    "healthy_job_completed": {
+      "verdict": "correct",
+      "reason": "The diagnosis correctly identifies that the pod is healthy and completed its job successfully, matching the ground truth of no fault."
+    },
+    "healthy_noisy_logs": {
+      "verdict": "incorrect",
+      "reason": "The ground truth states the system is healthy with no injected fault, but the diagnosis incorrectly identifies an upstream service outage as the root cause."
+    },
+    "healthy_web": {
+      "verdict": "correct",
+      "reason": "The diagnosis correctly identifies that the pod is healthy and attributes the alert to a false positive, aligning with the ground truth that no fault was injected."
+    },
+    "img_private_rollout": {
+      "verdict": "incorrect",
+      "reason": "The diagnosis attributes the failure to a DNS resolution issue, whereas the ground truth is that the image repository does not exist (bad tag/missing repo)."
+    },
+    "img_registry_first": {
+      "verdict": "correct",
+      "reason": "The diagnosis correctly identifies that the image registry host does not exist (manifesting as a DNS resolution failure), which matches the ground truth of an unreachable/non-existent registry."
+    },
+    "img_tag_rollout": {
+      "verdict": "correct",
+      "reason": "The diagnosis correctly identifies the invalid image tag as the root cause, which matches the ground truth of a non-existent tag."
+    },
+    "init_migration_first": {
+      "verdict": "correct",
+      "reason": "The diagnosis correctly identifies the failing init container 'run-migrations' as the root cause, which aligns with the ground truth that the init container exits with an error, preventing the pod from becoming ready."
+    },
+    "liveness_slow_start_first": {
+      "verdict": "correct",
+      "reason": "The diagnosis correctly identifies that the liveness probe is configured too aggressively (short initialDelaySeconds/failureThreshold) for the application's startup time, which matches the ground truth fault mechanism."
+    },
+    "missing_cm_envfrom_rollout": {
+      "verdict": "correct",
+      "reason": "The diagnosis correctly identifies the missing ConfigMap 'cart-feature-flags' as the root cause, which matches the injected fault."
+    },
+    "missing_cm_volume_first": {
+      "verdict": "correct",
+      "reason": "The diagnosis correctly identifies the missing ConfigMap 'search-synonyms' as the root cause, matching the injected fault."
+    },
+    "missing_secret_first": {
+      "verdict": "correct",
+      "reason": "The diagnosis correctly identifies the missing secret 'orders-db-credentials' as the root cause, which matches the ground truth of a missing referenced Secret."
+    },
+    "missing_secret_key_rollout": {
+      "verdict": "correct",
+      "reason": "The diagnosis correctly identifies that the Secret 'ledger-api' is missing the specific key 'api_token' required by the pod, which matches the ground truth of a missing config key."
+    },
+    "oom_first": {
+      "verdict": "correct",
+      "reason": "The diagnosis correctly identifies that the container was OOMKilled due to an insufficient memory limit, which matches the ground truth fault."
+    },
+    "oom_leak_first": {
+      "verdict": "correct",
+      "reason": "The diagnosis correctly identifies that the container exceeded its memory limit, which matches the ground truth of an OOMKill caused by memory exhaustion."
+    },
+    "oom_limit_rollout": {
+      "verdict": "correct",
+      "reason": "The diagnosis correctly identifies that the container is being OOMKilled because its memory usage exceeds the configured limit, which matches the ground truth failure mechanism."
+    },
+    "pending_antiaffinity_first": {
+      "verdict": "correct",
+      "reason": "The diagnosis correctly identifies that the required anti-affinity rule prevents scheduling on the single available node, which matches the ground truth fault."
+    },
+    "pending_cpu_first": {
+      "verdict": "correct",
+      "reason": "The diagnosis correctly identifies that the pod is unschedulable because its CPU request exceeds the available capacity on the node, which matches the ground truth fault."
+    },
+    "pending_nodeselector_rollout": {
+      "verdict": "correct",
+      "reason": "The diagnosis correctly identifies the root cause as a node selector/affinity mismatch preventing scheduling, which aligns with the injected fault of a nodeSelector that no node satisfies."
+    },
+    "pod_kill_after_rollout": {
+      "verdict": "incorrect",
+      "reason": "The diagnosis claims the pod is healthy and functioning as expected, failing to identify the injected fault where a pod was killed by Chaos Mesh and replaced by the ReplicaSet."
+    },
+    "pod_kill_repeated": {
+      "verdict": "incorrect",
+      "reason": "The diagnosis claims the pod is healthy and functioning as expected, whereas the ground truth indicates the pod was killed by an injected fault (PodChaos), which is a disruption event."
+    },
+    "pod_kill_single": {
+      "verdict": "incorrect",
+      "reason": "The diagnosis identifies a memory anomaly/leak as the root cause, whereas the ground truth is a deliberate pod kill (PodChaos) that was handled by the ReplicaSet, not a memory issue."
+    },
+    "pvc_missing_first": {
+      "verdict": "correct",
+      "reason": "The diagnosis correctly identifies the missing PersistentVolumeClaim 'exports-data' as the root cause, which matches the ground truth."
+    },
+    "pvc_storageclass_first": {
+      "verdict": "correct",
+      "reason": "The diagnosis correctly identifies that the pod is stuck in Pending because the PersistentVolumeClaim is unbound, which matches the ground truth cause of a missing storage class preventing the PVC from binding."
+    },
+    "readiness_exec_rollout": {
+      "verdict": "correct",
+      "reason": "The diagnosis correctly identifies that the readiness probe is failing because it checks for a file (/tmp/ready) that the application never creates, which matches the injected fault."
+    },
+    "readiness_port_first": {
+      "verdict": "correct",
+      "reason": "The diagnosis correctly identifies that the readiness probe is targeting port 8081 while nginx listens on port 80, which matches the injected fault mechanism."
+    },
+    "stale_dependency": {
+      "verdict": "correct",
+      "reason": "The diagnosis correctly identifies that the application cannot reach its upstream dependency 'deps-api', which matches the ground truth failure mechanism of dependency connectivity issues."
+    },
+    "svc_port_mismatch": {
+      "verdict": "incorrect",
+      "reason": "The diagnosis attributes the failure to the service not running, missing, or network issues, whereas the ground truth is a specific port mismatch where the Service targets 8080 but the pods listen on 80."
+    }
+  }
+}
