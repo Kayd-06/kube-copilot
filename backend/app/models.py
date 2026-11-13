@@ -81,15 +81,40 @@ class MetricSample(BaseModel):
     restarts: float
 
 
+class LifecycleSignalOut(BaseModel):
+    """One disruption signal from Kubernetes events / lifecycle state."""
+
+    kind: str
+    at: datetime
+    workload: str
+    pod: str | None = None
+    detail: str = ""
+
+
 class AnomalyScore(BaseModel):
     namespace: str
     name: str
     score: float
+    # True when either detector flags the pod (metrics OR lifecycle).
     is_anomaly: bool
     threshold: float
+    # The Isolation Forest's own verdict on the metrics window.
+    metric_anomaly: bool | None = None
+    detectors: list[str] = Field(default_factory=list)
+    lifecycle_signals: list[LifecycleSignalOut] = Field(default_factory=list)
     contributing_features: list[FeatureContribution] = Field(default_factory=list)
     series: list[MetricSample] = Field(default_factory=list)
     warning: str | None = None
+
+
+class WorkloadDisruption(BaseModel):
+    """A workload with recent disruption signals, including pods that no longer exist."""
+
+    namespace: str
+    workload: str
+    signals: list[LifecycleSignalOut] = Field(default_factory=list)
+    pods: list[str] = Field(default_factory=list)
+    summary: str = ""
 
 
 class AnomaliesResponse(BaseModel):
@@ -97,7 +122,15 @@ class AnomaliesResponse(BaseModel):
     count: int = 0
     model_loaded: bool = True
     prometheus_unavailable: bool = False
+    disruptions: list[WorkloadDisruption] = Field(default_factory=list)
+    lifecycle_unavailable: bool = False
     warning: str | None = None
+
+
+class DisruptionsResponse(BaseModel):
+    disruptions: list[WorkloadDisruption] = Field(default_factory=list)
+    count: int = 0
+    lookback_seconds: float = 180.0
 
 
 class DiagnoseResponse(BaseModel):

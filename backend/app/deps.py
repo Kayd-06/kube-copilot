@@ -3,6 +3,7 @@
 from functools import lru_cache
 
 from app.config import Settings, get_settings
+from app.anomaly.lifecycle import LifecycleDetector
 from app.anomaly.scorer import AnomalyScorer
 from app.k8s_client import K8sClient
 from app.llm_explainer import LLMExplainer
@@ -47,6 +48,11 @@ def get_anomaly_scorer() -> AnomalyScorer:
     return AnomalyScorer(settings=get_settings())
 
 
+@lru_cache
+def get_lifecycle_detector() -> LifecycleDetector:
+    return LifecycleDetector(get_k8s_client(), settings=get_settings())
+
+
 def clear_caches() -> None:
     """Drop cached settings and clients. Useful in tests."""
     get_settings.cache_clear()
@@ -57,6 +63,7 @@ def clear_caches() -> None:
     get_retriever.cache_clear()
     get_prometheus_client.cache_clear()
     get_anomaly_scorer.cache_clear()
+    get_lifecycle_detector.cache_clear()
 
 
 def settings() -> Settings:

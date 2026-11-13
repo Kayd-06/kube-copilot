@@ -16,6 +16,7 @@ from kubernetes.client.models import (
 
 from app.config import Settings, get_settings
 from app.models import ContainerStateSummary, PodEvent, PodLogs, PodSummary
+from ml.lifecycle import LifecycleEvent, PodLife, RestartObservation, WorkloadSample, workload_of
 
 logger = logging.getLogger(__name__)
 
@@ -221,6 +222,7 @@ class K8sClient:
         self._settings = settings or get_settings()
         self._loaded = False
         self._core: client.CoreV1Api | None = None
+        self._apps: client.AppsV1Api | None = None
 
 
     def _should_load_incluster(self) -> bool:
@@ -240,6 +242,7 @@ class K8sClient:
             else:
                 config.load_kube_config(config_file=self._settings.k8s_kubeconfig)
             self._core = client.CoreV1Api()
+            self._apps = client.AppsV1Api()
             self._loaded = True
             return self._core
         except Exception as exc:  # noqa: BLE001 — surface any kubeconfig / auth failure
@@ -371,3 +374,136 @@ class K8sClient:
             )
         events.sort(key=lambda e: e.last_timestamp or datetime.min.replace(tzinfo=timezone.utc))
         return events
+
+    def lifecycle_snapshot(
+        self, namespace: str | None = None, lookback_s: float = 180.0, now: float | None = None
+    ) -> tuple[list[LifecycleEvent], list[PodLife], list[WorkloadSample], list[RestartObservation]]:
+        """Events, pods, Deployments and recent restarts for ml.lifecycle.detect."""
+        core = self._ensure_connected()
+        apps = self._apps or client.AppsV1Api()
+        try:
+            if namespace:
+                events = core.list_namespaced_event(namespace=namespace).items or []
+                pods = core.list_namespaced_pod(namespace=namespace).items or []
+            else:
+                events = core.list_event_for_all_namespaces().items or []
+                pods = core.list_pod_for_all_namespaces().items or []
+        except ApiException as exc:
+            raise K8sUnavailableError(f"Kubernetes API error while reading lifecycle state: {exc.reason}") from exc
+        # Optional: older RBAC (pods + events only) still gets event and restart signals.
+        try:
+            if namespace:
+                deployments = apps.list_namespaced_deployment(namespace=namespace).items or []
+                replicasets = apps.list_namespaced_replica_set(namespace=namespace).items or []
+            else:
+                deployments = apps.list_deployment_for_all_namespaces().items or []
+                replicasets = apps.list_replica_set_for_all_namespaces().items or []
+        except ApiException as exc:
+            logger.info("Deployments/ReplicaSets unavailable for lifecycle signals: %s", exc.reason)
+            deployments, replicasets = [], []
+        now = now if now is not None else datetime.now(timezone.utc).timestamp()
+        return lifecycle_from_objects(events, pods, deployments, replicasets, now, lookback_s)
+
+
+def _ts(dt: datetime | None) -> float | None:
+    dt = _utc(dt)
+    return dt.timestamp() if dt is not None else None
+
+
+# Chaos Mesh reports its own injections as events; never use them as evidence.
+_CHAOS_MESH_KINDS = frozenset(
+    {"PodChaos", "StressChaos", "NetworkChaos", "PodNetworkChaos", "Schedule", "IOChaos", "TimeChaos", "HTTPChaos"}
+)
+
+
+def lifecycle_from_objects(
+    events: list,
+    pods: list[V1Pod],
+    deployments: list,
+    replicasets: list,
+    now: float,
+    lookback_s: float,
+) -> tuple[list[LifecycleEvent], list[PodLife], list[WorkloadSample], list[RestartObservation]]:
+    """Convert Kubernetes API objects into ml.lifecycle inputs (pure, unit-tested)."""
+    since = now - lookback_s
+    out_events: list[LifecycleEvent] = []
+    for ev in events:
+        obj = ev.involved_object
+        if obj is None or not obj.name or (obj.kind or "") in _CHAOS_MESH_KINDS:
+            continue
+        last = _ts(ev.last_timestamp) or _ts(ev.event_time) or _ts(ev.metadata.creation_timestamp if ev.metadata else None)
+        if last is None or last < since:
+            continue
+        out_events.append(
+            LifecycleEvent(
+                ts=last,
+                first_ts=_ts(ev.first_timestamp) or last,
+                namespace=obj.namespace or (ev.metadata.namespace if ev.metadata else "") or "",
+                kind=obj.kind or "",
+                name=obj.name,
+                reason=ev.reason or "",
+                type=ev.type or "Normal",
+                message=(ev.message or "")[:300],
+                count=int(ev.count or 1),
+            )
+        )
+
+    rs_created = {
+        (rs.metadata.namespace, rs.metadata.name): _ts(rs.metadata.creation_timestamp)
+        for rs in replicasets
+        if rs.metadata is not None
+    }
+    out_pods: list[PodLife] = []
+    restarts: list[RestartObservation] = []
+    for pod in pods:
+        meta = pod.metadata
+        if meta is None or meta.creation_timestamp is None:
+            continue
+        owner = next(iter(meta.owner_references or []), None)
+        owner_name = owner.name if owner is not None else None
+        owner_kind = owner.kind if owner is not None else None
+        workload = workload_of(meta.name, owner_name, owner_kind)
+        created = _ts(meta.creation_timestamp) or now
+        out_pods.append(
+            PodLife(
+                namespace=meta.namespace,
+                pod=meta.name,
+                workload=workload,
+                created_ts=created,
+                first_seen=created,
+                last_seen=now,
+                owner_created_ts=rs_created.get((meta.namespace, owner_name)) if owner_kind == "ReplicaSet" else None,
+            )
+        )
+        for cs in (pod.status.container_statuses or []) if pod.status else []:
+            terminated = cs.last_state.terminated if cs.last_state is not None else None
+            finished = _ts(terminated.finished_at) if terminated is not None else None
+            if finished is not None and finished >= since and int(cs.restart_count or 0) > 0:
+                restarts.append(
+                    RestartObservation(
+                        ts=finished,
+                        namespace=meta.namespace,
+                        pod=meta.name,
+                        workload=workload,
+                        delta=1.0,
+                        reason=terminated.reason or "",
+                    )
+                )
+
+    samples = []
+    for dep in deployments:
+        if dep.metadata is None:
+            continue
+        desired = float((dep.spec.replicas if dep.spec and dep.spec.replicas is not None else 1))
+        available = float((dep.status.available_replicas or 0) if dep.status else 0)
+        samples.append(
+            WorkloadSample(
+                ts=now,
+                namespace=dep.metadata.namespace,
+                workload=dep.metadata.name,
+                desired=desired,
+                available=available,
+                generation=float(dep.metadata.generation or 0),
+            )
+        )
+    return out_events, out_pods, samples, restarts

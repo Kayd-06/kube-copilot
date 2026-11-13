@@ -4,20 +4,24 @@ from __future__ import annotations
 
 import json
 import logging
+from collections import Counter
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
 from app import __version__
+from app.anomaly.lifecycle import LifecycleDetector, LifecycleReport
 from app.anomaly.poller import AnomalyPoller
 from app.anomaly.scorer import AnomalyModelMissingError, AnomalyScorer, ScoreResult
 from app.config import Settings, get_settings
 from app.deps import (
     get_anomaly_scorer,
     get_k8s_client,
+    get_lifecycle_detector,
     get_llm_explainer,
     get_prometheus_client,
     get_retriever,
@@ -32,18 +36,22 @@ from app.models import (
     Citation,
     DiagnoseResponse,
     Diagnosis,
+    DisruptionsResponse,
     FeatureContribution,
     HealthResponse,
     IncidentCreate,
     IncidentSaved,
     KnowledgeHit,
     KnowledgeSearchResponse,
+    LifecycleSignalOut,
     MetricSample,
     UnhealthyPodsResponse,
+    WorkloadDisruption,
 )
 from app.rag.retriever import RetrievedChunk, Retriever, RetrieveResult
 from app.rag.store import KnowledgeUnavailableError
 from ml.features import MIB
+from ml.lifecycle import Signal
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -183,12 +191,28 @@ def _series_from_result(result: ScoreResult) -> list[MetricSample]:
     return samples
 
 
-def to_anomaly_score(result: ScoreResult) -> AnomalyScore:
+def _signal_out(signal: Signal) -> LifecycleSignalOut:
+    return LifecycleSignalOut(
+        kind=signal.kind,
+        at=datetime.fromtimestamp(signal.ts, timezone.utc),
+        workload=signal.workload,
+        pod=signal.pod,
+        detail=signal.detail,
+    )
+
+
+def to_anomaly_score(result: ScoreResult, lifecycle: list[Signal] | None = None) -> AnomalyScore:
+    """Metric verdict plus lifecycle signals; `is_anomaly` is the union of both."""
+    signals = list(lifecycle or [])
+    detectors = (["isolation_forest"] if result.is_anomaly else []) + (["lifecycle"] if signals else [])
     return AnomalyScore(
         namespace=result.namespace,
         name=result.name,
         score=round(result.score, 4),
-        is_anomaly=result.is_anomaly,
+        is_anomaly=bool(result.is_anomaly or signals),
+        metric_anomaly=result.is_anomaly,
+        detectors=detectors,
+        lifecycle_signals=[_signal_out(s) for s in signals[-10:]],
         threshold=round(result.threshold, 6),
         contributing_features=[FeatureContribution(**item) for item in result.contributing_features],
         series=_series_from_result(result),
@@ -196,18 +220,51 @@ def to_anomaly_score(result: ScoreResult) -> AnomalyScore:
     )
 
 
+def _summarize_signals(signals: list[Signal]) -> str:
+    counts = Counter(s.kind.removeprefix("event:") for s in signals)
+    return ", ".join(f"{kind} x{n}" for kind, n in counts.most_common())
+
+
+def to_disruptions(report: LifecycleReport) -> list[WorkloadDisruption]:
+    out = []
+    for (namespace, workload), signals in report.by_workload().items():
+        out.append(
+            WorkloadDisruption(
+                namespace=namespace,
+                workload=workload,
+                signals=[_signal_out(s) for s in signals[-20:]],
+                pods=sorted({s.pod for s in signals if s.pod}),
+                summary=_summarize_signals(signals),
+            )
+        )
+    out.sort(key=lambda d: max(s.at for s in d.signals), reverse=True)
+    return out
+
+
+def _lifecycle_report(detector: LifecycleDetector, namespace: str | None) -> LifecycleReport | None:
+    """Best effort: None when the Kubernetes API cannot be read."""
+    try:
+        return detector.snapshot(namespace=namespace)
+    except Exception as exc:  # noqa: BLE001 — metrics scoring must still work without the API
+        logger.info("Lifecycle signals unavailable: %s", exc)
+        return None
+
+
 def _score_pod(
     scorer: AnomalyScorer,
     prometheus: PrometheusClient,
     namespace: str,
     name: str,
+    lifecycle: LifecycleDetector | None = None,
 ) -> tuple[AnomalyScore | None, bool]:
     """Best-effort scoring used by diagnose. Never raises."""
     try:
         if not scorer.loaded:
             return None, True
         points = prometheus.pod_metric_series(namespace, name)
-        scored = to_anomaly_score(scorer.score_window(namespace, name, points))
+        report = _lifecycle_report(lifecycle, namespace) if lifecycle is not None else None
+        signals = report.for_pod(namespace, name) if report is not None else []
+        scored = to_anomaly_score(scorer.score_window(namespace, name, points), signals)
         record_anomaly(scored.namespace, scored.name, scored.score, scored.is_anomaly)
         return scored, False
     except (AnomalyModelMissingError, PrometheusUnavailableError) as exc:
@@ -228,10 +285,11 @@ async def diagnose_pod(
     retriever: Retriever = Depends(get_retriever),
     scorer: AnomalyScorer = Depends(get_anomaly_scorer),
     prometheus: PrometheusClient = Depends(get_prometheus_client),
+    lifecycle: LifecycleDetector = Depends(get_lifecycle_detector),
 ):
     pod, events, logs = _collect_evidence(k8s, namespace, name)
     retrieved = _retrieve(retriever, pod, events, logs)
-    anomaly, anomaly_unavailable = _score_pod(scorer, prometheus, namespace, name)
+    anomaly, anomaly_unavailable = _score_pod(scorer, prometheus, namespace, name, lifecycle)
 
     if stream:
         return StreamingResponse(
@@ -355,6 +413,7 @@ def list_anomalies(
     flagged_only: bool = Query(default=False, description="Only return pods flagged as anomalous"),
     scorer: AnomalyScorer = Depends(get_anomaly_scorer),
     prometheus: PrometheusClient = Depends(get_prometheus_client),
+    lifecycle: LifecycleDetector = Depends(get_lifecycle_detector),
 ) -> AnomaliesResponse:
     if not scorer.loaded:
         raise HTTPException(status_code=503, detail=scorer.missing_message)
@@ -362,17 +421,43 @@ def list_anomalies(
         series = prometheus.list_pod_series(namespace=namespace)
     except PrometheusUnavailableError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
+    report = _lifecycle_report(lifecycle, namespace)
 
     scores: list[AnomalyScore] = []
     for (ns, name), points in sorted(series.items()):
         result = scorer.score_window(ns, name, points)
-        if flagged_only and not result.is_anomaly:
+        signals = report.for_pod(ns, name) if report is not None else []
+        scored = to_anomaly_score(result, signals)
+        if flagged_only and not scored.is_anomaly:
             continue
-        scored = to_anomaly_score(result)
         record_anomaly(scored.namespace, scored.name, scored.score, scored.is_anomaly)
         scores.append(scored)
-    scores.sort(key=lambda item: item.score, reverse=True)
-    return AnomaliesResponse(pods=scores, count=len(scores), model_loaded=True)
+    # Lifecycle-flagged pods first (a killed pod's metrics can look normal), then by score.
+    scores.sort(key=lambda item: (item.is_anomaly, item.score), reverse=True)
+    return AnomaliesResponse(
+        pods=scores,
+        count=len(scores),
+        model_loaded=True,
+        disruptions=to_disruptions(report) if report is not None else [],
+        lifecycle_unavailable=report is None,
+    )
+
+
+@app.get("/disruptions", response_model=DisruptionsResponse)
+def list_disruptions(
+    namespace: str | None = Query(default=None, description="Limit to one namespace"),
+    lifecycle: LifecycleDetector = Depends(get_lifecycle_detector),
+) -> DisruptionsResponse:
+    """Workloads with pod kills, replacements, replica dips or restarts in the lookback window.
+
+    Works without Prometheus or the anomaly model: it reads only the Kubernetes API.
+    """
+    try:
+        report = lifecycle.snapshot(namespace=namespace)
+    except K8sUnavailableError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    disruptions = to_disruptions(report)
+    return DisruptionsResponse(disruptions=disruptions, count=len(disruptions), lookback_seconds=report.lookback_s)
 
 
 @app.get("/pods/{namespace}/{name}/anomaly", response_model=AnomalyScore)
@@ -381,6 +466,7 @@ def get_pod_anomaly(
     name: str,
     scorer: AnomalyScorer = Depends(get_anomaly_scorer),
     prometheus: PrometheusClient = Depends(get_prometheus_client),
+    lifecycle: LifecycleDetector = Depends(get_lifecycle_detector),
 ) -> AnomalyScore:
     if not scorer.loaded:
         raise HTTPException(status_code=503, detail=scorer.missing_message)
@@ -396,7 +482,9 @@ def get_pod_anomaly(
                 "Is metrics-up running, and has the pod been scraping for a minute?"
             ),
         )
-    scored = to_anomaly_score(scorer.score_window(namespace, name, points))
+    report = _lifecycle_report(lifecycle, namespace)
+    signals = report.for_pod(namespace, name) if report is not None else []
+    scored = to_anomaly_score(scorer.score_window(namespace, name, points), signals)
     record_anomaly(scored.namespace, scored.name, scored.score, scored.is_anomaly)
     return scored
 
