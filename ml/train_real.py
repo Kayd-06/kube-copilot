@@ -85,8 +85,14 @@ def _round(value: float) -> float | None:
 def evaluate(artifact: dict, test: list[RealWindow], threshold: float | None = None) -> dict:
     """Overall + per-scenario metrics for one model on labelled windows."""
     x = extract_feature_matrix([w.points for w in test])
-    y_true = np.array([1 if w.is_anomaly else 0 for w in test], dtype=np.int32)
     y_pred = predict(artifact, x, threshold)
+    return evaluate_predictions(test, y_pred, float(artifact["threshold"] if threshold is None else threshold))
+
+
+def evaluate_predictions(test: list[RealWindow], y_pred: np.ndarray, threshold: float | None = None) -> dict:
+    """The same report as `evaluate`, for predictions from any detector."""
+    y_pred = np.asarray(y_pred, dtype=np.int32)
+    y_true = np.array([1 if w.is_anomaly else 0 for w in test], dtype=np.int32)
     overall = metrics(y_true, y_pred)
     labels = np.array([w.label for w in test])
     normal_idx = labels == LABEL_NORMAL
@@ -107,7 +113,7 @@ def evaluate(artifact: dict, test: list[RealWindow], threshold: float | None = N
     fp_by_namespace = Counter(w.namespace for w, p in zip(test, y_pred, strict=True) if p == 1 and not w.is_anomaly)
     normal_by_namespace = Counter(w.namespace for w in test if not w.is_anomaly)
     return {
-        "threshold": float(artifact["threshold"] if threshold is None else threshold),
+        "threshold": threshold,
         "precision": _round(overall["precision"]),
         "recall": _round(overall["recall"]),
         "f1": _round(overall["f1"]),
