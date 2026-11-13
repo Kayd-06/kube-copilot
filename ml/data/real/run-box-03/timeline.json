@@ -1,0 +1,142 @@
+{
+  "run_id": "run-box-03",
+  "namespace": "chaos-lab",
+  "step_seconds": 15,
+  "phases": [
+    {
+      "kind": "baseline",
+      "start": 1794579016.958612,
+      "end": 1794579496.9591634,
+      "scenario": null,
+      "target_prefix": null,
+      "injected": null,
+      "note": ""
+    },
+    {
+      "kind": "chaos",
+      "start": 1794579496.9601088,
+      "end": 1794579737.1974316,
+      "scenario": "pod_kill",
+      "target_prefix": "victim-kill-",
+      "injected": null,
+      "note": ""
+    },
+    {
+      "kind": "recovery",
+      "start": 1794579737.1974316,
+      "end": 1794579857.198258,
+      "scenario": "pod_kill",
+      "target_prefix": null,
+      "injected": null,
+      "note": ""
+    },
+    {
+      "kind": "chaos",
+      "start": 1794579857.1989715,
+      "end": 1794580225.8904097,
+      "scenario": "cpu_stress",
+      "target_prefix": "victim-cpu-",
+      "injected": true,
+      "note": ""
+    },
+    {
+      "kind": "recovery",
+      "start": 1794580225.8904097,
+      "end": 1794580524.761662,
+      "scenario": "cpu_stress",
+      "target_prefix": null,
+      "injected": null,
+      "note": ""
+    },
+    {
+      "kind": "chaos",
+      "start": 1794580524.7639327,
+      "end": 1794580765.0756674,
+      "scenario": "restart_storm",
+      "target_prefix": "victim-restart-",
+      "injected": null,
+      "note": ""
+    },
+    {
+      "kind": "recovery",
+      "start": 1794580765.0756674,
+      "end": 1794581036.0182023,
+      "scenario": "restart_storm",
+      "target_prefix": null,
+      "injected": null,
+      "note": ""
+    },
+    {
+      "kind": "chaos",
+      "start": 1794581036.0186465,
+      "end": 1794581599.8523684,
+      "scenario": "pod_kill",
+      "target_prefix": "victim-kill-",
+      "injected": null,
+      "note": ""
+    },
+    {
+      "kind": "recovery",
+      "start": 1794581599.8523684,
+      "end": 1794581719.8560781,
+      "scenario": "pod_kill",
+      "target_prefix": null,
+      "injected": null,
+      "note": ""
+    },
+    {
+      "kind": "chaos",
+      "start": 1794581719.8566642,
+      "end": 1794581959.9934978,
+      "scenario": "memory_leak",
+      "target_prefix": "victim-leak-",
+      "injected": null,
+      "note": ""
+    },
+    {
+      "kind": "recovery",
+      "start": 1794581959.9934978,
+      "end": 1794582079.994411,
+      "scenario": "memory_leak",
+      "target_prefix": null,
+      "injected": null,
+      "note": ""
+    },
+    {
+      "kind": "chaos",
+      "start": 1794582079.995618,
+      "end": 1794582320.318141,
+      "scenario": "memory_stress",
+      "target_prefix": "victim-mem-",
+      "injected": true,
+      "note": ""
+    },
+    {
+      "kind": "recovery",
+      "start": 1794582320.318141,
+      "end": 1794582440.3190484,
+      "scenario": "memory_stress",
+      "target_prefix": null,
+      "injected": null,
+      "note": ""
+    },
+    {
+      "kind": "chaos",
+      "start": 1794582440.3197513,
+      "end": 1794582680.5290766,
+      "scenario": "pod_kill",
+      "target_prefix": "victim-kill-",
+      "injected": null,
+      "note": ""
+    },
+    {
+      "kind": "recovery",
+      "start": 1794582680.5290766,
+      "end": 1794582800.5305014,
+      "scenario": "pod_kill",
+      "target_prefix": null,
+      "injected": null,
+      "note": ""
+    }
+  ]
+}

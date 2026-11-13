@@ -245,6 +245,19 @@ def evaluate_run(run_dir: Path, forest: dict, scope: str) -> dict:
         "lifecycle": evaluate_predictions(test, lc_pred),
         "union": evaluate_predictions(test, union),
     }
+    # Post-hoc sensitivity, never the headline: drop windows that overlap a
+    # NodeNotReady episode (on the box these came from the VM pausing, which
+    # is a real node disruption the chaos labels call "normal").
+    node_ok = np.array([not any(s.kind == "event:NodeNotReady" for s in h) for h in hits])
+    sub = [w for w, keep in zip(test, node_ok, strict=True) if keep]
+    sensitivity = {
+        "dropped_windows": int((~node_ok).sum()),
+        "models": {
+            "isolation_forest": evaluate_predictions(sub, if_pred[node_ok]),
+            "lifecycle": evaluate_predictions(sub, lc_pred[node_ok]),
+            "union": evaluate_predictions(sub, union[node_ok]),
+        },
+    }
     fp_kinds = Counter(
         s.kind for w, h in zip(test, hits, strict=True) if not w.is_anomaly for s in h[:1]
     )
@@ -266,6 +279,7 @@ def evaluate_run(run_dir: Path, forest: dict, scope: str) -> dict:
         "scope": scope,
         "test_windows": dict(sorted(Counter(w.label for w in test).items())),
         "models": models,
+        "sensitivity_without_node_not_ready": sensitivity,
         "signals_by_kind": dict(sorted(Counter(s.kind for s in app_signals).items())),
         "false_positive_first_signal_kinds": dict(fp_kinds),
         "false_positive_examples": fp_unique[:15],
@@ -301,6 +315,12 @@ def render_section(title: str, result: dict) -> str:
         f"{_fmt_s(p['first_signal_after_s'])} | {', '.join(f'{k} x{v}' for k, v in sorted(p['kinds'].items())) or '-'} |"
         for p in result["phase_latency"]
     )
+    sens = result["sensitivity_without_node_not_ready"]
+    sens_rows = "\n".join(
+        f"| `{n}` | {_fmt(m['precision'])} | {_fmt(m['recall'])} | {_fmt(m['f1'])} | "
+        f"{_fmt(m['per_scenario'].get('pod_kill', {}).get('recall'))} |"
+        for n, m in sens["models"].items()
+    )
     fps = "\n".join(
         f"- `{e['pod']}` at {e['at_utc']}: `{e['signal']}` {e['detail']}" for e in result["false_positive_examples"]
     ) or "- none"
@@ -328,6 +348,17 @@ Test windows: `{json.dumps(result['test_windows'])}`.
 ### Lifecycle false positives (first signal per normal window, de-duplicated)
 
 {fps}
+
+### Post-hoc sensitivity: without NodeNotReady windows
+
+Not the headline number. Chosen after seeing the false positives above: it drops
+the {sens['dropped_windows']} test windows whose lifecycle hits include a `NodeNotReady` event
+(on the box the node went NotReady while the VM was paused; that is a real
+node disruption, but the chaos labels call it normal).
+
+| Model | Precision | Recall | F1 | `pod_kill` recall |
+|---|---|---|---|---|
+{sens_rows}
 """
 
 
