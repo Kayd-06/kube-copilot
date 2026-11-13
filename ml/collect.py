@@ -36,6 +36,7 @@ import shutil
 import socket
 import subprocess
 import sys
+import threading
 import time
 from collections import defaultdict
 from collections.abc import Callable, Iterator
@@ -45,7 +46,7 @@ from pathlib import Path
 
 import httpx
 
-from ml.promql import REQUIRED_CHANNELS, pod_queries
+from ml.promql import REQUIRED_CHANNELS, lifecycle_queries, pod_queries
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CHAOS_DIR = REPO_ROOT / "demo" / "chaos"
@@ -280,6 +281,170 @@ def write_rows(rows: list[dict], path: Path) -> None:
             writer.writerow(row)
 
 
+# ---------------------------------------------------------------- lifecycle (kube-state-metrics)
+
+LIFECYCLE_COLUMNS = ("ts", "series", "namespace", "name", "extra", "value")
+# The label that is not namespace/pod/deployment, kept in the `extra` column.
+_EXTRA_LABEL = {"pod_owner": "owner_name", "pod_last_terminated": "reason"}
+
+
+def fetch_lifecycle(
+    client: httpx.Client, base_url: str, start: float, end: float, step: int, chunk_seconds: int = 3600
+) -> list[dict]:
+    """Long-format rows of the lifecycle series in ml/promql.py:lifecycle_queries."""
+    rows: list[dict] = []
+    for key, expr in lifecycle_queries().items():
+        chunk_start = start
+        while chunk_start <= end:
+            chunk_end = min(chunk_start + chunk_seconds, end)
+            try:
+                results = query_range(client, base_url, expr, chunk_start, chunk_end, step)
+            except PrometheusError as exc:
+                print(f"warning: lifecycle series {key} unavailable: {exc}", file=sys.stderr)
+                results = []
+            for item in results:
+                metric = item.get("metric") or {}
+                name = metric.get("deployment") if key.startswith("deploy_") else metric.get("pod")
+                if not metric.get("namespace") or not name:
+                    continue
+                extra = metric.get(_EXTRA_LABEL.get(key, ""), "")
+                for ts, value in item.get("values") or []:
+                    try:
+                        rows.append(
+                            {
+                                "ts": int(float(ts)),
+                                "series": key,
+                                "namespace": metric["namespace"],
+                                "name": name,
+                                "extra": extra,
+                                "value": float(value),
+                            }
+                        )
+                    except (TypeError, ValueError):
+                        continue
+            chunk_start = chunk_end + step
+    rows.sort(key=lambda r: (r["series"], r["namespace"], r["name"], r["ts"]))
+    return rows
+
+
+def write_lifecycle(rows: list[dict], path: Path) -> None:
+    with gzip.open(path, "wt", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(LIFECYCLE_COLUMNS))
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+# ---------------------------------------------------------------- kubernetes events
+
+# Events about Chaos Mesh's own objects say "chaos was injected". Recording
+# them would hand the detector the answer, so they are never written.
+CHAOS_MESH_KINDS = frozenset(
+    {"PodChaos", "StressChaos", "NetworkChaos", "PodNetworkChaos", "Schedule", "IOChaos", "TimeChaos",
+     "PodIOChaos", "PodHttpChaos", "HTTPChaos", "DNSChaos", "Workflow", "WorkflowNode"}
+)
+
+
+def _event_ts(value: str | None) -> float | None:
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00")).timestamp()
+    except ValueError:
+        return None
+
+
+def normalize_event(raw: dict) -> dict | None:
+    """Flatten a core/v1 Event into the fields ml/lifecycle.py uses, or None to skip it."""
+    obj = raw.get("involvedObject") or {}
+    kind = obj.get("kind") or ""
+    if kind in CHAOS_MESH_KINDS or not obj.get("name"):
+        return None
+    meta = raw.get("metadata") or {}
+    first = _event_ts(raw.get("firstTimestamp")) or _event_ts(raw.get("eventTime")) or _event_ts(meta.get("creationTimestamp"))
+    last = _event_ts(raw.get("lastTimestamp")) or _event_ts((raw.get("series") or {}).get("lastObservedTime")) or first
+    if first is None:
+        return None
+    return {
+        "uid": meta.get("uid") or meta.get("name") or "",
+        "namespace": obj.get("namespace") or meta.get("namespace") or "",
+        "kind": kind,
+        "name": obj["name"],
+        "reason": raw.get("reason") or "",
+        "type": raw.get("type") or "",
+        "source": (raw.get("source") or {}).get("component") or raw.get("reportingComponent") or "",
+        "count": int(raw.get("count") or (raw.get("series") or {}).get("count") or 1),
+        "first_ts": first,
+        "last_ts": last or first,
+        "message": (raw.get("message") or "")[:300],
+    }
+
+
+class EventRecorder:
+    """Poll `kubectl get events -A` during a run and append new ones to a JSONL file.
+
+    Events expire after an hour by default, so they have to be captured while
+    the run happens; they cannot be queried afterwards like Prometheus.
+    """
+
+    def __init__(self, path: Path, runner: Runner | None = None, interval_s: float = 15.0) -> None:
+        self.path = path
+        self.run = runner or run_kubectl
+        self.interval_s = interval_s
+        self._seen: set[tuple[str, int, float]] = set()
+        self._stop = threading.Event()
+        self._thread: threading.Thread | None = None
+
+    def poll_once(self) -> int:
+        result = self.run(["get", "events", "-A", "-o", "json"])
+        if result.returncode != 0:
+            return 0
+        try:
+            items = json.loads(result.stdout).get("items") or []
+        except ValueError:
+            return 0
+        new = []
+        for raw in items:
+            event = normalize_event(raw)
+            if event is None:
+                continue
+            key = (event["uid"], event["count"], event["last_ts"])
+            if key in self._seen:
+                continue
+            self._seen.add(key)
+            new.append(event)
+        if new:
+            with self.path.open("a", encoding="utf-8") as handle:
+                for event in sorted(new, key=lambda e: e["last_ts"]):
+                    handle.write(json.dumps(event) + "\n")
+        return len(new)
+
+    def start(self) -> None:
+        self.poll_once()
+        self._thread = threading.Thread(target=self._loop, name="event-recorder", daemon=True)
+        self._thread.start()
+
+    def _loop(self) -> None:
+        while not self._stop.wait(self.interval_s):
+            try:
+                self.poll_once()
+            except Exception as exc:  # noqa: BLE001 — never kill a long run over one poll
+                print(f"warning: event poll failed: {exc}", file=sys.stderr)
+
+    def stop(self) -> None:
+        self._stop.set()
+        if self._thread is not None:
+            self._thread.join(timeout=5)
+        self.poll_once()
+
+
+def read_events(path: Path) -> list[dict]:
+    if not path.is_file():
+        return []
+    opener = gzip.open if path.suffix == ".gz" else open
+    with opener(path, "rt", encoding="utf-8") as handle:
+        return [json.loads(line) for line in handle if line.strip()]
+
+
 # ---------------------------------------------------------------- cluster control
 
 Runner = Callable[[list[str]], subprocess.CompletedProcess]
@@ -461,10 +626,23 @@ def query_and_write(timeline: Timeline, out_dir: Path, prometheus_url: str, grac
         channels = fetch_channels(
             client, prometheus_url, timeline.start, timeline.end, timeline.step_seconds
         )
+        lifecycle = fetch_lifecycle(client, prometheus_url, timeline.start, timeline.end, timeline.step_seconds)
     rows = build_rows(channels, timeline, grace_seconds)
     points_path = out_dir / "points.csv.gz"
     write_rows(rows, points_path)
+    write_lifecycle(lifecycle, out_dir / "lifecycle.csv.gz")
     summary = summarize(rows)
+    summary["lifecycle_rows"] = len(lifecycle)
+    events_path = out_dir / "events.jsonl"
+    if events_path.is_file():
+        events = read_events(events_path)
+        with gzip.open(out_dir / "events.jsonl.gz", "wt", encoding="utf-8") as handle:
+            for event in events:
+                handle.write(json.dumps(event) + "\n")
+        events_path.unlink()
+    events = read_events(out_dir / "events.jsonl.gz")
+    in_run = [e for e in events if timeline.start - 60 <= e["last_ts"] <= timeline.end + 60]
+    summary["events"] = len(in_run)
     summary.update(
         {
             "run_id": timeline.run_id,
@@ -530,15 +708,20 @@ def main(argv: list[str] | None = None) -> int:
         out_dir = args.output_root / run_id
         out_dir.mkdir(parents=True, exist_ok=True)
         timeline = Timeline(run_id=run_id, namespace=CHAOS_NAMESPACE, step_seconds=args.step_seconds)
-        run_timeline(
-            timeline,
-            scenarios,
-            baseline_s,
-            chaos_s,
-            recovery_s,
-            ChaosController(),
-            out_dir / "timeline.json",
-        )
+        recorder = EventRecorder(out_dir / "events.jsonl")
+        recorder.start()
+        try:
+            run_timeline(
+                timeline,
+                scenarios,
+                baseline_s,
+                chaos_s,
+                recovery_s,
+                ChaosController(),
+                out_dir / "timeline.json",
+            )
+        finally:
+            recorder.stop()
 
     with prometheus_port_forward(enabled=not args.prometheus_url) as default_url:
         summary = query_and_write(timeline, out_dir, args.prometheus_url or default_url, args.grace_seconds)
