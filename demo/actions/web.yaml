@@ -1,0 +1,64 @@
+# Healthy target for the safe-actions end-to-end test (make actions-e2e).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: copilot-demo
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: web-config
+  namespace: copilot-demo
+data:
+  UPSTREAM_READY: "true"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+  namespace: copilot-demo
+  labels:
+    app: web
+    demo: kube-copilot-actions
+spec:
+  replicas: 2
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      labels:
+        app: web
+        demo: kube-copilot-actions
+    spec:
+      containers:
+        - name: web
+          image: nginx:1.27-alpine
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: web-config
+          command: ["sh", "-c"]
+          args:
+            - |
+              if [ "$UPSTREAM_READY" != "true" ]; then
+                echo "FATAL: upstream dependency not ready (UPSTREAM_READY=$UPSTREAM_READY), exiting"; exit 1
+              fi
+              exec nginx -g 'daemon off;'
+          ports:
+            - containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            periodSeconds: 3
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi

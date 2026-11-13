@@ -1,0 +1,150 @@
+{
+  "config": {
+    "enabled": true,
+    "kill_switch": false,
+    "allowed_namespaces": [
+      "copilot-demo"
+    ],
+    "denied_namespaces": [
+      "chaos-mesh",
+      "kube-copilot",
+      "kube-node-lease",
+      "kube-public",
+      "kube-system",
+      "observability"
+    ],
+    "allowed_actions": [
+      "delete_pod",
+      "restart_deployment",
+      "rollback_deployment",
+      "scale_deployment"
+    ],
+    "scale_min": 1,
+    "scale_max": 5,
+    "cooldown_seconds": 120,
+    "max_per_hour": 10,
+    "proposal_ttl_seconds": 900,
+    "verify_window_seconds": 180
+  },
+  "trials": [
+    {
+      "scenario": "outage_bad_image",
+      "started_at": "2026-11-13T16:47:27.937074+00:00",
+      "fault_visible_after_s": 9.6,
+      "incident_pod": "web-789755944-bnrmw",
+      "propose_latency_s": 1.14,
+      "note": "",
+      "proposals": [
+        {
+          "id": "2cccb9e6a9ac",
+          "kind": "rollback_deployment",
+          "params": {
+            "name": "web",
+            "namespace": "copilot-demo"
+          },
+          "status": "proposed",
+          "violations": [],
+          "rationale": "Rollback to previous revision restores the correct nginx image (nginx:1.27-alpine) fixing the ErrImagePull caused by the typo in the current image tag."
+        }
+      ],
+      "approved_kind": "rollback_deployment",
+      "double_approve_status": 409,
+      "outcome": "resolved",
+      "kubectl_recovery_after_approve_s": 10.7,
+      "verifier_time_to_recovery_s": 10.1,
+      "verifier_reason": "all 2 replica(s) ready and stable for 20s, no new restarts or disruption signals",
+      "verifier_samples": 16,
+      "metric_anomalies_after": [
+        "web-6c8cb66bfc-fsx88",
+        "web-6c8cb66bfc-fxhgr",
+        "web-6c8cb66bfc-4lc8d",
+        "web-6c8cb66bfc-8mhpm",
+        "web-6c8cb66bfc-w7dr6"
+      ],
+      "timeline": [
+        "proposed",
+        "approved",
+        "executed",
+        "verification_started",
+        "verified_resolved"
+      ],
+      "total_fault_to_recovery_s": 21.4,
+      "trial": 1
+    },
+    {
+      "scenario": "bad_command",
+      "started_at": "2026-11-13T16:48:09.980935+00:00",
+      "fault_visible_after_s": 4.3,
+      "incident_pod": "web-8475bbc7df-9tpbz",
+      "propose_latency_s": 0.93,
+      "note": "",
+      "proposals": [
+        {
+          "id": "285f29a51e19",
+          "kind": "rollback_deployment",
+          "params": {
+            "name": "web",
+            "namespace": "copilot-demo"
+          },
+          "status": "proposed",
+          "violations": [],
+          "rationale": "Current revision 27 runs a command that always exits with error (config parse error). Rolling back to revision 26 restores the correct startup command and fixes the CrashLoopBackOff."
+        }
+      ],
+      "approved_kind": "rollback_deployment",
+      "rate_limited": [
+        "web was acted on recently; cooldown has 83s left",
+        "web was acted on recently; cooldown has 73s left",
+        "web was acted on recently; cooldown has 63s left",
+        "web was acted on recently; cooldown has 53s left",
+        "web was acted on recently; cooldown has 43s left",
+        "web was acted on recently; cooldown has 33s left",
+        "web was acted on recently; cooldown has 23s left",
+        "web was acted on recently; cooldown has 13s left",
+        "web was acted on recently; cooldown has 3s left"
+      ],
+      "double_approve_status": 409,
+      "outcome": "resolved",
+      "kubectl_recovery_after_approve_s": 0.2,
+      "verifier_time_to_recovery_s": 2.0,
+      "verifier_reason": "all 2 replica(s) ready and stable for 20s, no new restarts or disruption signals",
+      "verifier_samples": 12,
+      "metric_anomalies_after": [
+        "web-6c8cb66bfc-bv9nl",
+        "web-6c8cb66bfc-fsx88",
+        "web-6c8cb66bfc-fxhgr",
+        "web-6c8cb66bfc-qrs7h",
+        "web-6c8cb66bfc-4lc8d",
+        "web-6c8cb66bfc-w7dr6"
+      ],
+      "timeline": [
+        "proposed",
+        "rate_limited",
+        "rate_limited",
+        "rate_limited",
+        "rate_limited",
+        "rate_limited",
+        "rate_limited",
+        "rate_limited",
+        "rate_limited",
+        "rate_limited",
+        "approved",
+        "executed",
+        "verification_started",
+        "verified_resolved"
+      ],
+      "total_fault_to_recovery_s": 95.4,
+      "trial": 1
+    }
+  ],
+  "guardrail_checks": {
+    "kube_system_propose": {
+      "status": 200,
+      "body": {
+        "actions": [],
+        "note": "Not asking the LLM: namespace 'kube-system' is on the deny list.",
+        "kill_switch": false
+      }
+    }
+  }
+}

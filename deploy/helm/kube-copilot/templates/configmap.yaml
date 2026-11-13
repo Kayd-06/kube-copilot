@@ -20,3 +20,14 @@ data:
   {{- if .Values.qdrant.enabled }}
   QDRANT_URL: {{ printf "http://%s:%s" (include "kube-copilot.qdrant.fullname" .) (.Values.qdrant.service.port | toString) | quote }}
   {{- end }}
+  ACTIONS_ENABLED: {{ .Values.actions.enabled | quote }}
+  ACTIONS_KILL_SWITCH: {{ .Values.actions.killSwitch | quote }}
+  ACTIONS_ALLOWED_NAMESPACES: {{ join "," .Values.actions.namespaces | quote }}
+  ACTIONS_DENIED_NAMESPACES: {{ .Values.actions.deniedNamespaces | quote }}
+  ACTIONS_SCALE_MIN: {{ .Values.actions.scale.min | quote }}
+  ACTIONS_SCALE_MAX: {{ .Values.actions.scale.max | quote }}
+  ACTIONS_COOLDOWN_SECONDS: {{ .Values.actions.cooldownSeconds | quote }}
+  ACTIONS_MAX_PER_HOUR: {{ .Values.actions.maxPerHour | quote }}
+  ACTIONS_PROPOSAL_TTL_SECONDS: {{ .Values.actions.proposalTtlSeconds | quote }}
+  ACTIONS_VERIFY_WINDOW_SECONDS: {{ .Values.actions.verifyWindowSeconds | quote }}
+  ACTIONS_AUDIT_PATH: /data/actions.sqlite

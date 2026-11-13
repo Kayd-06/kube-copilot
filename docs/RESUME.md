@@ -10,6 +10,8 @@ Honest phrasing you can paste into a resume or internship application. The real-
 
 - Added a pod-disruption detector driven by Kubernetes events and lifecycle state (unexplained pod replacements, replica dips, restarts, Killing/BackOff/OOMKilling events), recorded alongside the metrics during chaos runs, and merged it with the Isolation Forest in the API. On a held-out 63-minute run, pod-kill recall went from 0.04 to 0.85, and combined recall on application pods went from 0.33 to 0.82 (F1 0.41 to 0.67, precision 0.57).
 
+- Added human-in-the-loop remediation: the LLM proposes fixes through function calling restricted to four actions (rollback, restart, bounded scale, delete a crashlooping pod), a policy engine in code blocks anything else, each change is dry-run on the Kubernetes API server and shown as a diff, and nothing runs until a person approves it. The service then verifies recovery and writes an audit log, and Helm grants write RBAC only per allowed namespace and only when the feature is turned on. In 12 fault-injection trials on kind, all 9 approved rollbacks were verified as resolved; in the full-outage case the service was healthy 3.3 to 11.7 s after approval.
+
 - Packaged the stack for real clusters with a least-privilege Helm chart (in-cluster Kubernetes client, optional Qdrant, probes, and resource limits), GitHub Actions CI (pytest, Helm lint, a kind smoke test, GHCR publish, Trivy scans), a Terraform module for a single-node k3s VM, and Grafana dashboards for pod resources and anomaly scores.
 
 - Wrote 100+ backend tests with mocked Kubernetes, LLM, and Prometheus clients, plus a one-command kind demo that reproduces CrashLoopBackOff, ImagePullBackOff, OOMKilled, and a leaking process.

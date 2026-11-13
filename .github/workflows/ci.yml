@@ -65,6 +65,16 @@ jobs:
           helm template kube-copilot deploy/helm/kube-copilot \
             -f deploy/helm/kube-copilot/values-kind.yaml \
             --namespace kube-copilot >/dev/null
+          # Safe actions on: per-namespace write Roles must render.
+          helm template kube-copilot deploy/helm/kube-copilot \
+            --set actions.enabled=true --set 'actions.namespaces={copilot-demo}' \
+            --namespace kube-copilot | grep 'name: kube-copilot-actions' >/dev/null
+          # ...and must refuse kube-system.
+          if helm template kube-copilot deploy/helm/kube-copilot \
+            --set actions.enabled=true --set 'actions.namespaces={kube-system}' >/dev/null 2>&1; then
+            echo "chart allowed actions in kube-system" >&2
+            exit 1
+          fi
 
   dockerfiles:
     name: Dockerfile lint (hadolint)

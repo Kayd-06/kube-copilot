@@ -44,11 +44,15 @@ If you would rather demo the in-cluster path: `make cluster-up && make demo-brea
 
 6. **How it is packaged (20s).** Flip to the repo: Helm chart under `deploy/helm`, CI badge on the README, Terraform under `deploy/terraform` (say that you have not applied it against a paid account in this recording). If there is time, show `GET /metrics` on the API.
 
-7. **Close (10s).** One sentence on what you would do next: evaluate the detector on real cluster metrics, or add a signed GitOps path for the chart.
+7. **Safe actions (60s, optional).** Before recording: `make actions-demo-up` and run the API with `make backend-dev-actions` instead of `make backend-dev`. Break the rollout live: `kubectl -n copilot-demo set image deploy/web web=nginx:1.27-alpine-typo`. Diagnose the `ErrImagePull` pod, press **Propose remediation**, and show the rollback card: the LLM's reason, the server-side dry-run diff (image `...-typo` back to `nginx:1.27-alpine`) and the Approve / Reject buttons. Say that the LLM can only pick from four actions, that the policy is checked in code, and that `kube-system` is refused outright. Type your name, press **Approve & run**, and watch the status go from verifying to resolved with the time to recovery. Open **Audit log** to show the timeline. If you approve something else on `web` within two minutes, the cooldown returns 429; that is expected.
+
+8. **Close (10s).** One sentence on what you would do next: evaluate the detector on real cluster metrics, or add a signed GitOps path for the chart.
 
 ## If something is red
 
 - Empty Anomalies panel: Prometheus needs about a minute, and `make metrics-forward` must be running for the host workflow.
 - Diagnose returns 502: the Groq key is missing or rate-limited. Restart the backend after fixing `.env`.
 - Citations empty: Qdrant is down or `make ingest` was skipped. Diagnose still works; just say so.
+- Propose remediation says "read-only mode": the API was started without `ACTIONS_ENABLED=true`. Use `make backend-dev-actions`.
+- Propose returns 502: the LLM rejected the tool call or the model is not available for your key. Set `LLM_MODEL` to a model your provider lists (the e2e report used Groq `openai/gpt-oss-120b`).
 - Grafana has no anomaly series: the API has not scored any pods yet, or Prometheus cannot scrape the API (in the host workflow the API is not in-cluster — scores still appear on the dashboard itself).

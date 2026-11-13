@@ -1,0 +1,68 @@
+{{- if .Values.actions.enabled }}
+{{- if not .Values.actions.namespaces }}
+{{- fail "actions.enabled=true needs at least one namespace in actions.namespaces" }}
+{{- end }}
+{{- if gt (int .Values.backend.replicaCount) 1 }}
+{{- fail "actions.enabled=true needs backend.replicaCount=1 (the in-flight lock and SQLite audit log are per pod)" }}
+{{- end }}
+{{- $denied := splitList "," .Values.actions.deniedNamespaces }}
+{{- range $ns := .Values.actions.namespaces }}
+{{- if or (eq $ns "kube-system") (has $ns $denied) }}
+{{- fail (printf "actions.namespaces must not include denied namespace %q" $ns) }}
+{{- end }}
+---
+# Write access for safe actions, scoped to one namespace. Only what the four
+# allowed actions need: rollout restart / rollback (patch deployments),
+# scale (patch deployments/scale), delete a crashlooping pod (delete pods).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "kube-copilot.fullname" $ }}-actions
+  namespace: {{ $ns }}
+  labels:
+    {{- include "kube-copilot.labels" $ | nindent 4 }}
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["patch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments/scale"]
+    verbs: ["get", "patch"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "kube-copilot.fullname" $ }}-actions
+  namespace: {{ $ns }}
+  labels:
+    {{- include "kube-copilot.labels" $ | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "kube-copilot.fullname" $ }}-actions
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "kube-copilot.serviceAccountName" $ }}
+    namespace: {{ $.Release.Namespace }}
+{{- end }}
+{{- if .Values.actions.audit.persistence.enabled }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "kube-copilot.fullname" . }}-actions
+  labels:
+    {{- include "kube-copilot.labels" . | nindent 4 }}
+spec:
+  accessModes: ["ReadWriteOnce"]
+  {{- with .Values.actions.audit.persistence.storageClass }}
+  storageClassName: {{ . }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.actions.audit.persistence.size }}
+{{- end }}
+{{- end }}

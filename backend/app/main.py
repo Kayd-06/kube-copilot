@@ -14,6 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
 from app import __version__
+from app.actions.router import router as actions_router
 from app.anomaly.lifecycle import LifecycleDetector, LifecycleReport
 from app.anomaly.poller import AnomalyPoller
 from app.anomaly.scorer import AnomalyModelMissingError, AnomalyScorer, ScoreResult
@@ -99,6 +100,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    # Re-add each route on the app: newer FastAPI wraps include_router() in a
+    # lazy route without `.path`, which the Prometheus instrumentator can't name.
+    for route in actions_router.routes:
+        application.add_api_route(
+            route.path,
+            route.endpoint,
+            methods=list(route.methods),
+            response_model=route.response_model,
+            tags=list(route.tags),
+            summary=route.summary,
+        )
     instrument_app(application)
     return application
 
