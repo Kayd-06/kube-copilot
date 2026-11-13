@@ -1,0 +1,258 @@
+{
+  "_about": "Verdicts written by reading every full-context diagnosis against the injected fault (cases.py), using the judge rubric in ml/llm_eval/judge.py. They were not produced by the regex matcher or by any model.",
+  "openai/gpt-oss-120b": {
+    "cm_deleted_after_rollout": {
+      "correct": true
+    },
+    "cm_edited_after_rollout": {
+      "correct": true,
+      "note": "Invalid log level 'verbose' -> correct; regex missed 'does not recognize'."
+    },
+    "config_loglevel_first": {
+      "correct": true
+    },
+    "config_port_rollout": {
+      "correct": true
+    },
+    "cpu_throttle_first": {
+      "correct": false,
+      "note": "Calls it healthy / an over-provisioning false positive; never mentions the CPU limit."
+    },
+    "crash_bad_command_rollout": {
+      "correct": true
+    },
+    "crash_panic_rollout": {
+      "correct": true
+    },
+    "crash_traceback_first": {
+      "correct": true,
+      "note": "KeyError in application code -> correct; regex has no 'code error'/'KeyError'."
+    },
+    "dns_missing_service": {
+      "correct": true
+    },
+    "healthy_after_rollout": {
+      "correct": false,
+      "note": "Blames a rising memory footprint (follows a false-positive anomaly)."
+    },
+    "healthy_job_completed": {
+      "correct": true
+    },
+    "healthy_noisy_logs": {
+      "correct": false,
+      "note": "Treats routine retry WARN lines as an upstream outage."
+    },
+    "healthy_web": {
+      "correct": true,
+      "note": "Says the anomaly is likely a false positive and the pod shows no errors."
+    },
+    "img_private_rollout": {
+      "correct": true,
+      "note": "Evidence shows a DNS failure resolving the registry (the box's kind node has no registry egress); naming that as why the pull fails counts as correct."
+    },
+    "img_registry_first": {
+      "correct": true,
+      "note": "Evidence shows a DNS failure resolving the registry (the box's kind node has no registry egress); naming that as why the pull fails counts as correct."
+    },
+    "img_tag_rollout": {
+      "correct": true,
+      "note": "Evidence shows a DNS failure resolving the registry (the box's kind node has no registry egress); naming that as why the pull fails counts as correct."
+    },
+    "init_migration_first": {
+      "correct": true,
+      "note": "Says the init container exits non-zero because of a bad command/script; the real migration error is not in the context. Category-level correct."
+    },
+    "liveness_slow_start_first": {
+      "correct": true
+    },
+    "missing_cm_envfrom_rollout": {
+      "correct": true
+    },
+    "missing_cm_volume_first": {
+      "correct": true
+    },
+    "missing_secret_first": {
+      "correct": true
+    },
+    "missing_secret_key_rollout": {
+      "correct": true,
+      "note": "Secret lacks key api_token -> correct; regex has no 'does not contain'."
+    },
+    "oom_first": {
+      "correct": true
+    },
+    "oom_leak_first": {
+      "correct": true
+    },
+    "oom_limit_rollout": {
+      "correct": true
+    },
+    "pending_antiaffinity_first": {
+      "correct": true
+    },
+    "pending_cpu_first": {
+      "correct": true
+    },
+    "pending_nodeselector_rollout": {
+      "correct": true
+    },
+    "pod_kill_after_rollout": {
+      "correct": false,
+      "note": "Ignores the kill signals."
+    },
+    "pod_kill_repeated": {
+      "correct": false,
+      "note": "Ignores the kill signals."
+    },
+    "pod_kill_single": {
+      "correct": false,
+      "note": "Ignores the Killing/pod_replaced signals; follows the metric anomaly or calls the pod healthy."
+    },
+    "pvc_missing_first": {
+      "correct": true
+    },
+    "pvc_storageclass_first": {
+      "correct": true
+    },
+    "readiness_exec_rollout": {
+      "correct": true
+    },
+    "readiness_port_first": {
+      "correct": true
+    },
+    "stale_dependency": {
+      "correct": false,
+      "note": "Blames the readiness probe definition, not the upstream that was down at startup."
+    },
+    "svc_port_mismatch": {
+      "correct": true
+    }
+  },
+  "openai/gpt-oss-20b": {
+    "cm_deleted_after_rollout": {
+      "correct": true
+    },
+    "cm_edited_after_rollout": {
+      "correct": true
+    },
+    "config_loglevel_first": {
+      "correct": true
+    },
+    "config_port_rollout": {
+      "correct": true,
+      "note": "PORT='eighty' instead of a number -> correct; regex missed this phrasing."
+    },
+    "cpu_throttle_first": {
+      "correct": false,
+      "note": "Calls it healthy / an over-provisioning false positive; never mentions the CPU limit."
+    },
+    "crash_bad_command_rollout": {
+      "correct": true
+    },
+    "crash_panic_rollout": {
+      "correct": true
+    },
+    "crash_traceback_first": {
+      "correct": true,
+      "note": "Missing handler for job type 'invoice.v2' (code bug) -> correct."
+    },
+    "dns_missing_service": {
+      "correct": true
+    },
+    "healthy_after_rollout": {
+      "correct": false,
+      "note": "Blames rising memory and the node."
+    },
+    "healthy_job_completed": {
+      "correct": true
+    },
+    "healthy_noisy_logs": {
+      "correct": false,
+      "note": "Treats routine retry WARN lines as an upstream outage."
+    },
+    "healthy_web": {
+      "correct": true,
+      "note": "'Anomaly detector false positive ... not an actual pod failure' -> correct; regex missed it."
+    },
+    "img_private_rollout": {
+      "correct": true,
+      "note": "Evidence shows a DNS failure resolving the registry (the box's kind node has no registry egress); naming that as why the pull fails counts as correct."
+    },
+    "img_registry_first": {
+      "correct": true,
+      "note": "Evidence shows a DNS failure resolving the registry (the box's kind node has no registry egress); naming that as why the pull fails counts as correct."
+    },
+    "img_tag_rollout": {
+      "correct": true,
+      "note": "Evidence shows a DNS failure resolving the registry (the box's kind node has no registry egress); naming that as why the pull fails counts as correct."
+    },
+    "init_migration_first": {
+      "correct": true,
+      "note": "Says the init container exits non-zero because of a bad command/script; the real migration error is not in the context. Category-level correct."
+    },
+    "liveness_slow_start_first": {
+      "correct": true
+    },
+    "missing_cm_envfrom_rollout": {
+      "correct": true
+    },
+    "missing_cm_volume_first": {
+      "correct": true
+    },
+    "missing_secret_first": {
+      "correct": true
+    },
+    "missing_secret_key_rollout": {
+      "correct": true
+    },
+    "oom_first": {
+      "correct": true
+    },
+    "oom_leak_first": {
+      "correct": true
+    },
+    "oom_limit_rollout": {
+      "correct": true
+    },
+    "pending_antiaffinity_first": {
+      "correct": true
+    },
+    "pending_cpu_first": {
+      "correct": true
+    },
+    "pending_nodeselector_rollout": {
+      "correct": true
+    },
+    "pod_kill_after_rollout": {
+      "correct": false,
+      "note": "Ignores the kill signals."
+    },
+    "pod_kill_repeated": {
+      "correct": false,
+      "note": "Ignores the kill signals."
+    },
+    "pod_kill_single": {
+      "correct": false,
+      "note": "Ignores the Killing/pod_replaced signals; follows the metric anomaly or calls the pod healthy."
+    },
+    "pvc_missing_first": {
+      "correct": true
+    },
+    "pvc_storageclass_first": {
+      "correct": true
+    },
+    "readiness_exec_rollout": {
+      "correct": true
+    },
+    "readiness_port_first": {
+      "correct": true
+    },
+    "stale_dependency": {
+      "correct": true,
+      "note": "Upstream deps-api unreachable -> correct."
+    },
+    "svc_port_mismatch": {
+      "correct": true
+    }
+  }
+}

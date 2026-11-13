@@ -455,6 +455,36 @@ def render_markdown(report: dict[str, Any]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def rescore(args, fixtures: list[Fixture], model: str, base: dict[str, Any]) -> int:
+    """Re-apply the (deterministic) category and hallucination checks to a saved report."""
+    from app.llm_explainer import build_user_prompt
+
+    path = args.out_dir / f"{slug(model)}.json"
+    report = json.loads(path.read_text())
+    by_id = {f.id: f for f in fixtures}
+    changed = []
+    for rec in report["records"]:
+        if rec["task"] != "diagnose" or "error" in rec or rec["case"] not in by_id:
+            continue
+        fx = by_id[rec["case"]]
+        d = rec["diagnosis"]
+        new = score_category(fx.labels["category"], d["likely_root_cause"])
+        if new["correct"] != rec["category"]["correct"]:
+            changed.append(f"{rec['variant']}/{rec['case']}: {rec['category']['correct']} -> {new['correct']}")
+        rec["category"] = new
+        rec["hallucination"] = score_hallucination(d["kubectl_commands"], build_user_prompt(*diagnose_inputs(fx, rec["variant"])))
+    report["summary"] = summarize(report["records"], by_id, model)
+    report["baselines"] = base
+    report.setdefault("rescored", []).append({"at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                                              "changed": changed})
+    path.write_text(json.dumps(report, indent=2, default=str) + "\n")
+    path.with_suffix(".md").write_text(render_markdown(report))
+    print(f"rescored {path}: {len(changed)} verdict(s) changed")
+    for c in changed:
+        print("  " + c)
+    return 0
+
+
 # ------------------------------------------------------------------ main
 def slug(model: str) -> str:
     return re.sub(r"[^a-zA-Z0-9.-]+", "_", model).strip("_")
@@ -471,6 +501,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--tpm", type=int, default=int(os.environ.get("EVAL_TPM", "7000")),
                         help="Tokens per minute to stay under (Groq free tier: 8000). 0 = no pacing")
     parser.add_argument("--dry-run", action="store_true", help="No API calls: load fixtures, build prompts, baselines")
+    parser.add_argument("--rescore", action="store_true",
+                        help="No API calls: re-apply the current matchers to the saved diagnoses in the existing report")
     parser.add_argument("--resume", action="store_true",
                         help="Keep finished calls from an existing report for this model and only run the rest")
     args = parser.parse_args(argv)
@@ -498,6 +530,8 @@ def main(argv: list[str] | None = None) -> int:
     model = settings.llm_model
     print(f"{len(fixtures)} fixtures, model={model}, variants={variants}, tasks={tasks}")
     base = baselines(fixtures)
+    if args.rescore:
+        return rescore(args, fixtures, model, base)
     if args.dry_run:
         from app.actions.proposer import build_context
         from app.llm_explainer import build_user_prompt

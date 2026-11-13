@@ -6,11 +6,11 @@ Run 2026-11-13T18:01:14+00:00 → 2026-11-13T18:39:12+00:00 (UTC) on 38 frozen i
 
 | Metric | Value |
 |---|---|
-| Root-cause category accuracy | 26/38 = 68.4% (95% CI (52.5, 80.9)) |
+| Root-cause category accuracy | 27/38 = 71.1% (95% CI (55.2, 83.0)) |
 | JSON/schema valid | 97.4% |
 | Hallucinated resource in a kubectl command | 0.0% of diagnoses |
 | Diagnose latency p50 / p95 | 1.77s / 3.42s |
-| Mean confidence when right / wrong | 0.898 / 0.837 |
+| Mean confidence when right / wrong | 0.9 / 0.826 |
 | Remediation (first proposed action) correct | 30/38 = 78.9% (95% CI (63.7, 88.9)) |
 | Proposals targeting the wrong object | 0 |
 | Proposals the policy engine would block | 0/4 |
@@ -29,7 +29,7 @@ Run 2026-11-13T18:01:14+00:00 → 2026-11-13T18:39:12+00:00 (UTC) on 38 frozen i
 
 | Task / variant | Cases | Errors | Accuracy | p50 | p95 | Prompt tok | Completion tok | Cost (USD) |
 |---|---|---|---|---|---|---|---|---|
-| diagnose/full | 38 | 1 | 68.4% | 1.77s | 3.42s | 82017 | 23195 | 0.0262 |
+| diagnose/full | 38 | 1 | 71.1% | 1.77s | 3.42s | 82017 | 23195 | 0.0262 |
 | propose/full | 38 | 0 | 78.9% | 0.96s | 2.36s | 62461 | 10092 | 0.0154 |
 
 ## By category (full context)
@@ -37,7 +37,7 @@ Run 2026-11-13T18:01:14+00:00 → 2026-11-13T18:39:12+00:00 (UTC) on 38 frozen i
 | Category | Diagnose | Propose |
 |---|---|---|
 | app_crash | 3/4 | 4/4 |
-| bad_config_value | 1/3 | 2/3 |
+| bad_config_value | 2/3 | 2/3 |
 | cpu_throttling | 0/1 | 1/1 |
 | dependency_connectivity | 2/3 | 2/3 |
 | healthy | 2/4 | 4/4 |
@@ -53,7 +53,7 @@ Run 2026-11-13T18:01:14+00:00 → 2026-11-13T18:39:12+00:00 (UTC) on 38 frozen i
 
 | Difficulty | Diagnose | Propose |
 |---|---|---|
-| easy | 14/16 | 12/17 |
+| easy | 15/16 | 12/17 |
 | hard | 6/11 | 10/11 |
 | medium | 6/10 | 8/10 |
 
@@ -64,7 +64,7 @@ Run 2026-11-13T18:01:14+00:00 → 2026-11-13T18:39:12+00:00 (UTC) on 38 frozen i
 | `cm_deleted_after_rollout` | missing_config | Missing or miss‑named ConfigMap "pricing-config" in the kc-eval-32 namespace that the pod’s volume/env referen… | ✅ | no_action | no_action | ✅ |
 | `cm_edited_after_rollout` | bad_config_value | The container’s startup command or environment sets a log level of "verbose", which the application does not r… | ❌ | no_action | no_action | ✅ |
 | `config_loglevel_first` | bad_config_value | The container’s entrypoint or configuration passes an invalid log level ("verbose") that the application does … | ✅ | no_action | no_action | ✅ |
-| `config_port_rollout` | bad_config_value | The PORT environment variable is set to the non‑numeric string "eighty" instead of a valid integer, causing th… | ❌ | rollback_deployment | no_action | ❌ |
+| `config_port_rollout` | bad_config_value | The PORT environment variable is set to the non‑numeric string "eighty" instead of a valid integer, causing th… | ✅ | rollback_deployment | no_action | ❌ |
 | `cpu_throttle_first` | cpu_throttling | No actual failure; the pod is healthy. The anomaly flag is a false positive caused by unusually low resource c… | ❌ | no_action / scale_deployment | no_action | ✅ |
 | `crash_bad_command_rollout` | app_crash | Incorrect container image or command configuration – the pod spec points to "/app/server" which does not exist… | ✅ | rollback_deployment | rollback_deployment | ✅ |
 | `crash_panic_rollout` | app_crash | Application bug – the Router instance is nil when Register is called (likely due to missing or malformed confi… | ✅ | rollback_deployment | rollback_deployment | ✅ |

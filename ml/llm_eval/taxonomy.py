@@ -12,6 +12,14 @@ output was looked at, then frozen; agreement with a hand check is reported.
 from __future__ import annotations
 
 import re
+import unicodedata
+
+# Models often write non-breaking hyphens (U+2011) and dashes; regexes expect ASCII.
+_DASHES = dict.fromkeys(map(ord, "\u2010\u2011\u2012\u2013\u2014\u2015\u2212"), "-")
+
+
+def normalize(text: str) -> str:
+    return unicodedata.normalize("NFKC", text or "").translate(_DASHES)
 
 CATEGORIES: dict[str, str] = {
     "image_pull": "The image cannot be pulled (bad tag, missing repo, unreachable or private registry).",
@@ -97,11 +105,12 @@ ACTIONS = ("rollback_deployment", "restart_deployment", "scale_deployment", "del
 
 
 def matches(category: str, text: str) -> bool:
-    return bool(PATTERNS[category].search(text or ""))
+    return bool(PATTERNS[category].search(normalize(text)))
 
 
 def predict_category(text: str) -> str | None:
     """Earliest-matching category in `text`; ties go to the order in CATEGORIES."""
+    text = normalize(text)
     best: tuple[int, int, str] | None = None
     for order, (name, pattern) in enumerate(PATTERNS.items()):
         m = pattern.search(text or "")

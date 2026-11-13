@@ -74,17 +74,17 @@
       "prompt_tokens": 82017,
       "completion_tokens": 23195,
       "cost_usd": 0.0262,
-      "category_correct": 26,
-      "category_accuracy": 68.4,
+      "category_correct": 27,
+      "category_accuracy": 71.1,
       "category_accuracy_ci95": [
-        52.5,
-        80.9
+        55.2,
+        83.0
       ],
       "schema_valid": 97.4,
       "hallucination_rate": 0.0,
       "placeholder_rate": 32.4,
-      "mean_confidence_correct": 0.898,
-      "mean_confidence_wrong": 0.837
+      "mean_confidence_correct": 0.9,
+      "mean_confidence_wrong": 0.826
     },
     "propose/full": {
       "cases": 38,
@@ -115,7 +115,7 @@
       },
       "bad_config_value": {
         "diagnose_n": 3,
-        "diagnose_ok": 1,
+        "diagnose_ok": 2,
         "propose_n": 3,
         "propose_ok": 2
       },
@@ -183,7 +183,7 @@
     "by_difficulty": {
       "easy": {
         "diagnose_n": 16,
-        "diagnose_ok": 14,
+        "diagnose_ok": 15,
         "propose_n": 17,
         "propose_ok": 12
       },
@@ -784,10 +784,11 @@
         "confidence": 0.95
       },
       "category": {
-        "correct": false,
-        "predicted": "app_crash",
+        "correct": true,
+        "predicted": "bad_config_value",
         "also_matched": [
-          "app_crash"
+          "app_crash",
+          "bad_config_value"
         ]
       },
       "hallucination": {
@@ -2804,6 +2805,14 @@
       },
       "policy_violations": [],
       "policy_blocked": 0
+    }
+  ],
+  "rescored": [
+    {
+      "at": "2026-11-13T18:42:03+00:00",
+      "changed": [
+        "full/config_port_rollout: False -> True"
+      ]
     }
   ]
 }

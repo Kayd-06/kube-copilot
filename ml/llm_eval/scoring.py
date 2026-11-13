@@ -7,7 +7,7 @@ import re
 import shlex
 from typing import Any
 
-from ml.llm_eval.taxonomy import CATEGORIES, PATTERNS, matches, predict_category
+from ml.llm_eval.taxonomy import CATEGORIES, PATTERNS, matches, normalize, predict_category
 
 DIAGNOSIS_KEYS = {
     "summary": str,
@@ -57,7 +57,7 @@ def score_category(expected: str, root_cause: str) -> dict[str, Any]:
     return {
         "correct": matches(expected, root_cause),
         "predicted": predict_category(root_cause),
-        "also_matched": sorted(name for name, p in PATTERNS.items() if p.search(root_cause or "")),
+        "also_matched": sorted(name for name, p in PATTERNS.items() if p.search(normalize(root_cause))),
     }
 
 
