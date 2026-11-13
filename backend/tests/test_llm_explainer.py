@@ -131,14 +131,14 @@ def test_explain_uses_injected_client(sample_pod, sample_events, sample_logs):
     }
     completions = _FakeCompletions(content=json.dumps(payload))
     explainer = LLMExplainer(
-        settings=Settings(llm_api_key="test-key", llm_model="llama-3.3-70b-versatile"),
+        settings=Settings(llm_api_key="test-key", llm_model="openai/gpt-oss-120b"),
         client=_FakeOpenAI(completions),
     )
     diagnosis = explainer.explain(sample_pod, sample_events, sample_logs)
     assert diagnosis.likely_root_cause == "exit 1 in the container command"
     assert completions.calls, "expected a chat.completions.create call"
     call = completions.calls[0]
-    assert call["model"] == "llama-3.3-70b-versatile"
+    assert call["model"] == "openai/gpt-oss-120b"
     assert call["response_format"] == {"type": "json_object"}
     assert call["messages"][0]["role"] == "system"
 
@@ -194,3 +194,14 @@ def test_build_user_prompt_includes_anomaly(sample_pod, sample_events, sample_lo
     assert "flagged_as_anomaly: true" in prompt
     assert "mem_slope_mib_per_min" in prompt
     assert "Isolation Forest" in prompt
+
+def test_default_llm_model_is_gpt_oss(monkeypatch):
+    monkeypatch.delenv("LLM_MODEL", raising=False)
+    settings = Settings(_env_file=None)
+    assert settings.llm_model == "openai/gpt-oss-120b"
+
+
+def test_llm_model_env_override(monkeypatch):
+    monkeypatch.setenv("LLM_MODEL", "my-custom-model")
+    settings = Settings(_env_file=None)
+    assert settings.llm_model == "my-custom-model"

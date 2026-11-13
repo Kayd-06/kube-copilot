@@ -23,6 +23,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 
 ### Changed
 
+- Default Groq model is now `openai/gpt-oss-120b` (`LLM_MODEL`, Helm `llm.model`, Terraform `llm_model`). The previous default, `llama-3.3-70b-versatile`, is no longer listed for typical Groq keys. Override with `LLM_MODEL` as before.
 - The Helm ClusterRole can also get/list/watch `deployments` and `replicasets`. Without that permission, lifecycle signals still work from events and pods.
 - `ml.train_real.evaluate_predictions` scores predictions from any detector with the same report format.
 
