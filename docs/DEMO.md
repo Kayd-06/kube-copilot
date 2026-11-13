@@ -54,5 +54,5 @@ If you would rather demo the in-cluster path: `make cluster-up && make demo-brea
 - Diagnose returns 502: the Groq key is missing or rate-limited. Restart the backend after fixing `.env`.
 - Citations empty: Qdrant is down or `make ingest` was skipped. Diagnose still works; just say so.
 - Propose remediation says "read-only mode": the API was started without `ACTIONS_ENABLED=true`. Use `make backend-dev-actions`.
-- Propose returns 502: the LLM rejected the tool call or the model is not available for your key. Set `LLM_MODEL` to a model your provider lists (the e2e report used Groq `openai/gpt-oss-120b`).
+- Propose returns 502: the LLM rejected the tool call or the model is not available for your key. Set `LLM_MODEL` to a model your provider lists. The project default is Groq `openai/gpt-oss-120b`.
 - Grafana has no anomaly series: the API has not scored any pods yet, or Prometheus cannot scrape the API (in the host workflow the API is not in-cluster — scores still appear on the dashboard itself).

@@ -42,7 +42,7 @@ variable "llm_base_url" {
 
 variable "llm_model" {
   type    = string
-  default = "llama-3.3-70b-versatile"
+  default = "openai/gpt-oss-120b"
 }
 
 variable "helm_chart_path" {

@@ -65,7 +65,7 @@ flowchart LR
   end
 
   subgraph Models["Models"]
-    Groq["Groq llama-3.3-70b-versatile<br/>(default)"]
+    Groq["Groq openai/gpt-oss-120b<br/>(default)"]
     Embed["FastEmbed BAAI/bge-small-en-v1.5<br/>(CPU-only)"]
   end
 
@@ -156,7 +156,7 @@ Create a free Groq key at [console.groq.com/keys](https://console.groq.com/keys)
 ```bash
 LLM_BASE_URL=https://api.groq.com/openai/v1
 LLM_API_KEY=gsk_...
-LLM_MODEL=llama-3.3-70b-versatile
+LLM_MODEL=openai/gpt-oss-120b
 ```
 
 Want OpenAI or a local model instead?
@@ -382,7 +382,7 @@ Off by default. Turn it on with `ACTIONS_ENABLED=true` (host) or `--set actions.
 
 Helm only grants write RBAC when `actions.enabled=true`, as one namespaced `Role` per entry in `actions.namespaces` with exactly `patch deployments`, `get/patch deployments/scale` and `delete pods`. The chart refuses to render with `kube-system` or another denied namespace.
 
-**Measured on kind** ([report](docs/reports/safe_actions_e2e.md), 12 trials): for a bad image tag, a bad command and a bad image with `Recreate` (full outage), the LLM proposed `rollback_deployment` 9/9 times and all 9 approved rollbacks were verified as resolved. In the full-outage case the Deployment was healthy again 3.3 to 11.7 s after approval (median 3.4 s). Proposals took about 1 s. For a crashloop caused by a config value that had already been fixed, the model declined all 3 times (`no_action`), which was a miss: a restart would have helped. These runs used Groq `openai/gpt-oss-120b`, because `llama-3.3-70b-versatile` returned 404 for the test key.
+**Measured on kind** ([report](docs/reports/safe_actions_e2e.md), 12 trials): for a bad image tag, a bad command and a bad image with `Recreate` (full outage), the LLM proposed `rollback_deployment` 9/9 times and all 9 approved rollbacks were verified as resolved. In the full-outage case the Deployment was healthy again 3.3 to 11.7 s after approval (median 3.4 s). Proposals took about 1 s. For a crashloop caused by a config value that had already been fixed, the model declined all 3 times (`no_action`), which was a miss: a restart would have helped. These runs used Groq `openai/gpt-oss-120b`, which is now the project default.
 
 ## API
 

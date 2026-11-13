@@ -15,12 +15,12 @@ class Settings(BaseSettings):
     )
 
     # OpenAI-compatible LLM endpoint. Defaults to Groq (fast, free-tier friendly).
-    # Groq:    https://api.groq.com/openai/v1   model: llama-3.3-70b-versatile
+    # Groq:    https://api.groq.com/openai/v1   model: openai/gpt-oss-120b
     # OpenAI:  https://api.openai.com/v1        model: gpt-4o-mini
     # Ollama:  http://localhost:11434/v1       model: llama3.2  (set LLM_API_KEY=ollama)
     llm_base_url: str = "https://api.groq.com/openai/v1"
     llm_api_key: str = ""
-    llm_model: str = "llama-3.3-70b-versatile"
+    llm_model: str = "openai/gpt-oss-120b"
 
     # Kubernetes access. Leave kubeconfig unset to use the default (~/.kube/config).
     k8s_in_cluster: bool = False
