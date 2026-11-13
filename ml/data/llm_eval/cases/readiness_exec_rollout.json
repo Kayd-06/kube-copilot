@@ -1,0 +1,285 @@
+{
+  "schema_version": 1,
+  "id": "readiness_exec_rollout",
+  "title": "Rollout adds an exec readiness probe for a file never written",
+  "labels": {
+    "category": "probe_failure",
+    "expected_actions": [
+      "rollback_deployment"
+    ],
+    "expected_runbooks": [
+      "probe-failures.md"
+    ],
+    "difficulty": "medium",
+    "fault": "Deployment updated with readinessProbe `cat /tmp/ready`; the app never creates the file.",
+    "notes": ""
+  },
+  "namespace": "kc-eval-20",
+  "workload": "profile",
+  "pod_name": "profile-6889864d4f-qg6xj",
+  "captured_at": "2026-11-13T17:48:28+00:00",
+  "cluster": "kind kube-copilot (single node, Kubernetes v1.32.2)",
+  "diagnose_input": {
+    "pod": {
+      "name": "profile-6889864d4f-qg6xj",
+      "namespace": "kc-eval-20",
+      "phase": "Running",
+      "reason": null,
+      "message": null,
+      "restart_count": 0,
+      "ready": false,
+      "created_at": "2026-11-13T17:47:25Z",
+      "node": "kube-copilot-control-plane",
+      "qos_class": "Burstable",
+      "containers": [
+        {
+          "name": "profile",
+          "ready": false,
+          "restart_count": 0,
+          "state": "running",
+          "reason": null,
+          "message": null,
+          "exit_code": null
+        }
+      ]
+    },
+    "events": [
+      {
+        "type": "Normal",
+        "reason": "Scheduled",
+        "message": "Successfully assigned kc-eval-20/profile-6889864d4f-qg6xj to kube-copilot-control-plane",
+        "count": 1,
+        "first_timestamp": "2026-11-13T17:47:25Z",
+        "last_timestamp": "2026-11-13T17:47:25Z",
+        "source": "default-scheduler"
+      },
+      {
+        "type": "Normal",
+        "reason": "Pulled",
+        "message": "Container image \"busybox:1.36\" already present on machine",
+        "count": 1,
+        "first_timestamp": "2026-11-13T17:47:25Z",
+        "last_timestamp": "2026-11-13T17:47:25Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Created",
+        "message": "Created container: profile",
+        "count": 1,
+        "first_timestamp": "2026-11-13T17:47:25Z",
+        "last_timestamp": "2026-11-13T17:47:25Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Started",
+        "message": "Started container profile",
+        "count": 1,
+        "first_timestamp": "2026-11-13T17:47:25Z",
+        "last_timestamp": "2026-11-13T17:47:25Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Warning",
+        "reason": "Unhealthy",
+        "message": "Readiness probe failed: cat: can't open '/tmp/ready': No such file or directory\n",
+        "count": 13,
+        "first_timestamp": "2026-11-13T17:47:27Z",
+        "last_timestamp": "2026-11-13T17:48:27Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      }
+    ],
+    "logs": {
+      "current": "2026-11-13T17:47:25.795139966Z 2026-11-13T17:47:25+00:00 INFO starting profile v1.4.2\n2026-11-13T17:47:25.796236714Z 2026-11-13T17:47:25+00:00 INFO listening on :8080\n2026-11-13T17:47:25.797198587Z 2026-11-13T17:47:25+00:00 INFO handled request path=/api/v1/items status=200 latency_ms=29\n2026-11-13T17:47:28.799029173Z 2026-11-13T17:47:28+00:00 INFO handled request path=/api/v1/items status=200 latency_ms=41\n2026-11-13T17:47:31.800605886Z 2026-11-13T17:47:31+00:00 INFO handled request path=/api/v1/items status=200 latency_ms=40\n2026-11-13T17:47:34.802111952Z 2026-11-13T17:47:34+00:00 INFO handled request path=/api/v1/items status=200 latency_ms=20\n2026-11-13T17:47:37.803304375Z 2026-11-13T17:47:37+00:00 INFO handled request path=/api/v1/items status=200 latency_ms=17\n2026-11-13T17:47:40.804818238Z 2026-11-13T17:47:40+00:00 INFO handled request path=/api/v1/items status=200 latency_ms=24\n2026-11-13T17:47:43.806388420Z 2026-11-13T17:47:43+00:00 INFO handled request path=/api/v1/items status=200 latency_ms=38\n2026-11-13T17:47:46.807637257Z 2026-11-13T17:47:46+00:00 INFO handled request path=/api/v1/items status=200 latency_ms=32\n2026-11-13T17:47:49.809044017Z 2026-11-13T17:47:49+00:00 INFO handled request path=/api/v1/items status=200 latency_ms=14\n2026-11-13T17:47:52.810585594Z 2026-11-13T17:47:52+00:00 INFO handled request path=/api/v1/items status=200 latency_ms=11\n2026-11-13T17:47:55.811979213Z 2026-11-13T17:47:55+00:00 INFO handled request path=/api/v1/items status=200 latency_ms=29\n2026-11-13T17:47:58.814017001Z 2026-11-13T17:47:58+00:00 INFO handled request path=/api/v1/items status=200 latency_ms=24\n2026-11-13T17:48:01.815448115Z 2026-11-13T17:48:01+00:00 INFO handled request path=/api/v1/items status=200 latency_ms=43\n2026-11-13T17:48:04.817272013Z 2026-11-13T17:48:04+00:00 INFO handled request path=/api/v1/items status=200 latency_ms=18\n2026-11-13T17:48:07.818960267Z 2026-11-13T17:48:07+00:00 INFO handled request path=/api/v1/items status=200 latency_ms=16\n2026-11-13T17:48:10.820095169Z 2026-11-13T17:48:10+00:00 INFO handled request path=/api/v1/items status=200 latency_ms=11\n2026-11-13T17:48:13.821320368Z 2026-11-13T17:48:13+00:00 INFO handled request path=/api/v1/items status=200 latency_ms=40\n2026-11-13T17:48:16.822512998Z 2026-11-13T17:48:16+00:00 INFO handled request path=/api/v1/items status=200 latency_ms=26\n2026-11-13T17:48:19.824577097Z 2026-11-13T17:48:19+00:00 INFO handled request path=/api/v1/items status=200 latency_ms=26\n2026-11-13T17:48:22.826092361Z 2026-11-13T17:48:22+00:00 INFO handled request path=/api/v1/items status=200 latency_ms=12\n2026-11-13T17:48:25.827469747Z 2026-11-13T17:48:25+00:00 INFO handled request path=/api/v1/items status=200 latency_ms=6\n",
+      "previous": null,
+      "container": "profile"
+    },
+    "retrieval_query": "Running Scheduled Successfully assigned kc-eval-20/profile-6889864d4f-qg6xj to kube-copilot-control-plane Pulled Container image \"busybox:1.36\" already present on machine Created Created container: profile Started Started container profile Unhealthy Readiness probe failed: cat: can't open '/tmp/ready': No such file or directory\n 2026-11-13T17:47:25.795139966Z 2026-11-13T17:47:25+00:00 INFO starting profile v1.4.2 2026-11-13T17:47:25.796236714Z 2026-11-13T17:47:25+00:00 INFO listening on :8080 2026-11-13T17:47:25.797198587Z 2026-11-13T17:47:25+00:00 INFO handled request path=/api/v1/items status=200 latency_ms=29 2026-11-13T17:47:28.799029173Z 2026-11-13T17:47:28+00:00 INFO handled request path=/api/v1/items status=200 latency_ms=41 2026-11-13T17:47:31.800605886Z 2026-11-13T17:47:31+00:00 INFO handled request path=/api/v1/items status=200 latency_ms=40 2026-11-13T17:47:34.802111952Z 2026-11-13T17:47:34+00:00 INFO handled request path=/api/v1/items status=200 latency_ms=20 2026-11-13T17:47:37.803304375Z 2026-11-13T17:47:37+00:00 INFO handled request path=/api/v1/items status=200 latency_ms=17 2026-11-13T17:47:40.804818238Z 2026-11-13T17:47:40+00:00 INFO handled request path=/api/v1/items status=200 latency_ms=24 2026-11-13T17:47:43.806388420Z 2026-11-13T17:47:43+00:00 INFO handled request path=/api/v1/items status=200 latency_ms=38 2026-11-13T17:47:46.807637257Z 2026-11-13T17:47:46+00:00 INFO handled request path=/api/v1/items status=200 latency_ms=32 2026-11-13T17:47:49.809044017Z 2026-11-13T17:47:49+00:00 INFO handled request path=/api/v1/items status=200 latency_ms=14 2026-11-13T17:47:52.810585594Z 2026-11-13T17:47:52+00:00 INFO handled request path=/api/v1/items status=200 latency_ms=11 2026-11-13T17:47:55.811979213Z 2026-11-13T17:47:55+00:00 INFO handled request path=/api/v1/items status=200 latency_ms=29 2026-11-13T17:47:58.814017001Z 2026-11-13T17:47:58+00:00 INFO handled request path=/api/v1/items status=200 latency_ms=24 2026-11-13T17:48:01.815448115Z 2026-11-13T17:48:01+00:00 INFO handled request path=/api/v1/items status=200 latency_ms=43 2026-11-13T17:48:04.817272013Z 2026-11-13T17:48:04+00:00 INFO handled request path=/api/v1/items status=200 latency_ms=18 2026-11-13T17:48:07.818960267Z 2026-11-13T17:48:07+00:00 INFO handled request path=/api/v1/items status=200 latency_ms=16 2026-11-13T17:48:10.820095169Z 2026-11-13T17:48:10+00:00 INFO handled request path=/api/v1/items status=200 latency_ms=11 2026-11-13T17:48:13.821320368Z 2026-11-13T17:48:13+00:00 INFO handled request path=/api/v1/items status=200 latency_ms=40 2026-11-13T17:48:16.822512998Z 2026-11-13T17:48:16+00:00 INFO handled request path=/api/v1/items status=200 latency_ms=26 2026-11-13T17:48:19.824577097Z 2026-11-13T17:48:19+00:00 INFO handled request path=/api/v1/items status=200 latency_ms=26 2026-11-13T17:48:22.826092361Z 2026-11-13T17:48:22+00:00 INFO handled request path=/api/v1/items status=200 latency_ms=12 2026-11-13T17:48:25.827469747Z 2026-11-13T17:48:25+00:00 INFO handled request path=/api/v1/items status=200 latency_ms=6",
+    "retrieved": [
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Fixes",
+        "text": "## Fixes\n\n- If the command is wrong (for example a demo container that ends in `exit 1`), correct `command`/`args` or the image entrypoint so the main process stays in the foreground.\n- If a config value is missing, add the env var or volume and roll the workload.\n- If a dependency is down, fix that service or make startup retry instead of exiting.\n- If a liveness probe is too aggressive, increase `initialDelaySeconds` / `failureThreshold` (see probe-failures).\n- After a fix, roll the deployment and confirm the restart count stops climbing:\n\n  ```bash\n  kubectl rollout status deploy/<name> -n <ns>\n  kubectl get pod <pod> -n <ns> --watch\n  ```",
+        "score": 0.7809312052278815,
+        "kind": "runbook"
+      },
+      {
+        "title": "CreateContainerError",
+        "source": "create-container-error.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- Pod is `Waiting` with reason `CreateContainerError`.\n- Events include `Failed` from the kubelet with a runtime error (device mapper, `no space left on device`, seccomp / AppArmor / SELinux denial, invalid capability, or a missing device plugin).\n- The image has often already been pulled (`ImagePullBackOff` is not the current reason).\n- Application logs are typically unavailable because the container never started.",
+        "score": 0.7746300583423769,
+        "kind": "runbook"
+      },
+      {
+        "title": "CreateContainerError",
+        "source": "create-container-error.md",
+        "section": "Common causes",
+        "text": "## Common causes\n\n- The node disk is full, so the runtime cannot create the container's writable layer.\n- A security context asks for a capability, seccomp profile, AppArmor profile, or user that the node or policy will not allow.\n- A device plugin (GPU, FPGA) is required but not healthy, or the requested resource is gone.\n- An invalid `command` / working directory / symlink inside the image, or a corrupted image snapshot.\n- Runtime bugs or leftover half-created containers after a kubelet crash.",
+        "score": 0.7673347595515543,
+        "kind": "runbook"
+      },
+      {
+        "title": "CreateContainerConfigError",
+        "source": "create-container-config-error.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- Pod is `Pending` or `Waiting` with reason `CreateContainerConfigError`.\n- Events include `Failed` with a message such as `Error: secret \"...\" not found`, `couldn't find key ... in ConfigMap ...`, or `configmap \"...\" not found`.\n- Restart count is usually zero. `kubectl logs` will fail or return an \"unavailable\" message.",
+        "score": 0.7669126028032639,
+        "kind": "runbook"
+      },
+      {
+        "title": "Liveness and readiness probe failures",
+        "source": "probe-failures.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Inspect the probe definitions and recent probe events:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get pod <pod> -n <ns> -o jsonpath='{.spec.containers[*].livenessProbe}'\n   kubectl get pod <pod> -n <ns> -o jsonpath='{.spec.containers[*].readinessProbe}'\n   kubectl get endpoints <svc> -n <ns>\n   ```\n\n2. Exec into a running container (if it lives long enough) and call the same path or command the probe uses.\n3. Read current and previous logs around the time of each restart. If the process is killed mid-startup, the liveness probe is a prime suspect.\n4. Distinguish \"app is crashing on its own\" (see CrashLoopBackOff) from \"kubelet is killing a healthy-but-slow process\".",
+        "score": 0.7655580937412244,
+        "kind": "runbook"
+      }
+    ],
+    "knowledge_unavailable": false,
+    "anomaly": {
+      "namespace": "kc-eval-20",
+      "name": "profile-6889864d4f-qg6xj",
+      "score": 0.9821,
+      "is_anomaly": true,
+      "threshold": 0.013067,
+      "metric_anomaly": true,
+      "detectors": [
+        "isolation_forest"
+      ],
+      "lifecycle_signals": [],
+      "contributing_features": [
+        {
+          "name": "mem_slope_mib_per_min",
+          "value": -1.5921874999999999,
+          "zscore": -6.4456003167011575,
+          "direction": "low"
+        },
+        {
+          "name": "mem_last_mib",
+          "value": 0.35546875,
+          "zscore": -4.965861968646849,
+          "direction": "low"
+        },
+        {
+          "name": "mem_mean_mib",
+          "value": 0.7515625,
+          "zscore": -4.943754982330223,
+          "direction": "low"
+        },
+        {
+          "name": "mem_to_limit_ratio",
+          "value": 0.00555419921875,
+          "zscore": -2.7189344067358063,
+          "direction": "low"
+        },
+        {
+          "name": "cpu_mean",
+          "value": 0.00043624080466444034,
+          "zscore": -2.635875092506751,
+          "direction": "low"
+        }
+      ],
+      "series": [
+        {
+          "ts": 1794592048.0,
+          "cpu": 0.0,
+          "memory_mib": 2.344,
+          "mem_to_limit_ratio": 0.0,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794592063.0,
+          "cpu": 0.0003,
+          "memory_mib": 0.355,
+          "mem_to_limit_ratio": 0.0056,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794592078.0,
+          "cpu": 0.0005,
+          "memory_mib": 0.352,
+          "mem_to_limit_ratio": 0.0055,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794592093.0,
+          "cpu": 0.0006,
+          "memory_mib": 0.352,
+          "mem_to_limit_ratio": 0.0055,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794592108.0,
+          "cpu": 0.0008,
+          "memory_mib": 0.355,
+          "mem_to_limit_ratio": 0.0056,
+          "restarts": 0.0
+        }
+      ],
+      "warning": null
+    },
+    "anomaly_unavailable": false
+  },
+  "propose_input": {
+    "deployment": {
+      "namespace": "kc-eval-20",
+      "name": "profile",
+      "replicas": 1,
+      "ready": 1,
+      "available": 1,
+      "updated": 1,
+      "generation": 2,
+      "observed_generation": 2,
+      "revision": 2,
+      "previous_revision": 1,
+      "summary": {
+        "replicas": 1,
+        "revision": 2,
+        "template": {
+          "annotations": {},
+          "containers": [
+            {
+              "name": "profile",
+              "image": "busybox:1.36",
+              "command": [
+                "sh",
+                "-c",
+                "echo \"$(date -Iseconds) INFO starting profile v1.4.2\"; echo \"$(date -Iseconds) INFO listening on :8080\"; while true; do echo \"$(date -Iseconds) INFO handled request path=/api/v1/items status=200 latency_ms=$((RANDOM%40+5))\"; sleep 3; done"
+              ],
+              "args": null
+            }
+          ]
+        }
+      },
+      "previous_summary": {
+        "annotations": {},
+        "containers": [
+          {
+            "name": "profile",
+            "image": "busybox:1.36",
+            "command": [
+              "sh",
+              "-c",
+              "echo \"$(date -Iseconds) INFO starting profile v1.4.2\"; echo \"$(date -Iseconds) INFO listening on :8080\"; while true; do echo \"$(date -Iseconds) INFO handled request path=/api/v1/items status=200 latency_ms=$((RANDOM%40+5))\"; sleep 3; done"
+            ],
+            "args": null
+          }
+        ]
+      }
+    },
+    "pod_state": {
+      "namespace": "kc-eval-20",
+      "name": "profile-6889864d4f-qg6xj",
+      "controller_kind": "ReplicaSet",
+      "controller_name": "profile-6889864d4f",
+      "deployment": "profile",
+      "crashlooping": false,
+      "restart_count": 0,
+      "reason": null
+    },
+    "signals": []
+  }
+}

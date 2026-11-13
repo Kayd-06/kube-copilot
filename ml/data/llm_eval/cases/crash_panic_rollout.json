@@ -1,0 +1,236 @@
+{
+  "schema_version": 1,
+  "id": "crash_panic_rollout",
+  "title": "Rollout of a version that panics on start",
+  "labels": {
+    "category": "app_crash",
+    "expected_actions": [
+      "rollback_deployment"
+    ],
+    "expected_runbooks": [
+      "crashloopbackoff.md"
+    ],
+    "difficulty": "easy",
+    "fault": "Deployment updated to v2.0.0 whose process panics (nil pointer) and exits 2.",
+    "notes": ""
+  },
+  "namespace": "kc-eval-06",
+  "workload": "gateway",
+  "pod_name": "gateway-866f58ddf4-7ld8p",
+  "captured_at": "2026-11-13T17:47:19+00:00",
+  "cluster": "kind kube-copilot (single node, Kubernetes v1.32.2)",
+  "diagnose_input": {
+    "pod": {
+      "name": "gateway-866f58ddf4-7ld8p",
+      "namespace": "kc-eval-06",
+      "phase": "Running",
+      "reason": "Error",
+      "message": null,
+      "restart_count": 4,
+      "ready": false,
+      "created_at": "2026-11-13T17:45:49Z",
+      "node": "kube-copilot-control-plane",
+      "qos_class": "Burstable",
+      "containers": [
+        {
+          "name": "gateway",
+          "ready": false,
+          "restart_count": 4,
+          "state": "terminated",
+          "reason": "Error",
+          "message": null,
+          "exit_code": 2
+        }
+      ]
+    },
+    "events": [
+      {
+        "type": "Normal",
+        "reason": "Scheduled",
+        "message": "Successfully assigned kc-eval-06/gateway-866f58ddf4-7ld8p to kube-copilot-control-plane",
+        "count": 1,
+        "first_timestamp": "2026-11-13T17:45:49Z",
+        "last_timestamp": "2026-11-13T17:45:49Z",
+        "source": "default-scheduler"
+      },
+      {
+        "type": "Normal",
+        "reason": "Pulled",
+        "message": "Container image \"busybox:1.36\" already present on machine",
+        "count": 5,
+        "first_timestamp": "2026-11-13T17:45:49Z",
+        "last_timestamp": "2026-11-13T17:47:09Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Created",
+        "message": "Created container: gateway",
+        "count": 5,
+        "first_timestamp": "2026-11-13T17:45:49Z",
+        "last_timestamp": "2026-11-13T17:47:09Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Started",
+        "message": "Started container gateway",
+        "count": 5,
+        "first_timestamp": "2026-11-13T17:45:49Z",
+        "last_timestamp": "2026-11-13T17:47:09Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Warning",
+        "reason": "BackOff",
+        "message": "Back-off restarting failed container gateway in pod gateway-866f58ddf4-7ld8p_kc-eval-06(e5550457-6f29-4344-b194-79b30d21b8ea)",
+        "count": 7,
+        "first_timestamp": "2026-11-13T17:45:50Z",
+        "last_timestamp": "2026-11-13T17:47:10Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      }
+    ],
+    "logs": {
+      "current": "2026-11-13T17:47:09.490451844Z INFO starting gateway v2.0.0\n2026-11-13T17:47:09.490477872Z INFO loading 14 routes\n2026-11-13T17:47:09.490480565Z panic: runtime error: invalid memory address or nil pointer dereference\n2026-11-13T17:47:09.490482004Z [signal SIGSEGV: segmentation violation code=0x1 addr=0x0 pc=0x6b2f1a]\n2026-11-13T17:47:09.490482950Z \n2026-11-13T17:47:09.490484508Z goroutine 1 [running]:\n2026-11-13T17:47:09.490485951Z main.(*Router).Register(0x0, {0xc0001a2000, 0x9})\n2026-11-13T17:47:09.490487039Z \t/src/router.go:88 +0x3a\n2026-11-13T17:47:09.490488023Z main.main()\n2026-11-13T17:47:09.490489249Z \t/src/main.go:41 +0x1c5\n",
+      "previous": "unable to retrieve container logs for containerd://b8aec713aae32c466bf2af4a75a5d0c50da823735cc7e6de2e82589fe83d91a1",
+      "container": "gateway"
+    },
+    "retrieval_query": "Running Error Error exit code 2 Scheduled Successfully assigned kc-eval-06/gateway-866f58ddf4-7ld8p to kube-copilot-control-plane Pulled Container image \"busybox:1.36\" already present on machine Created Created container: gateway Started Started container gateway BackOff Back-off restarting failed container gateway in pod gateway-866f58ddf4-7ld8p_kc-eval-06(e5550457-6f29-4344-b194-79b30d21b8ea) unable to retrieve container logs for containerd://b8aec713aae32c466bf2af4a75a5d0c50da823735cc7e6de2e82589fe83d91a1 2026-11-13T17:47:09.490451844Z INFO starting gateway v2.0.0 2026-11-13T17:47:09.490477872Z INFO loading 14 routes 2026-11-13T17:47:09.490480565Z panic: runtime error: invalid memory address or nil pointer dereference 2026-11-13T17:47:09.490482004Z [signal SIGSEGV: segmentation violation code=0x1 addr=0x0 pc=0x6b2f1a] 2026-11-13T17:47:09.490482950Z 2026-11-13T17:47:09.490484508Z goroutine 1 [running]: 2026-11-13T17:47:09.490485951Z main.(*Router).Register(0x0, {0xc0001a2000, 0x9}) 2026-11-13T17:47:09.490487039Z \t/src/router.go:88 +0x3a 2026-11-13T17:47:09.490488023Z main.main() 2026-11-13T17:47:09.490489249Z \t/src/main.go:41 +0x1c5",
+    "retrieved": [
+      {
+        "title": "OOMKilled",
+        "source": "oomkilled.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Confirm the termination reason and the current limits:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get pod <pod> -n <ns> -o jsonpath='{.spec.containers[*].resources}'\n   ```\n\n2. Compare usage if metrics are available:\n\n   ```bash\n   kubectl top pod <pod> -n <ns> --containers\n   ```\n\n3. Read previous logs for allocation errors, heap dumps, or a sudden stop.\n4. Check whether the node itself is under memory pressure (`kubectl describe node <node>` and look for evictions or `MemoryPressure`).",
+        "score": 0.7709737985440042,
+        "kind": "runbook"
+      },
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Read the last termination reason and exit code:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get pod <pod> -n <ns> -o jsonpath='{range .status.containerStatuses[*]}{.name}{\" \"}{.state}{\" \"}{.lastState.terminated}{\"\\n\"}{end}'\n   ```\n\n2. Always fetch previous logs if `restartCount > 0`:\n\n   ```bash\n   kubectl logs <pod> -n <ns> --previous --tail=200\n   kubectl logs <pod> -n <ns> --tail=200\n   ```\n\n3. Confirm the command that actually ran (`command` / `args` in the pod spec) and whether the image entrypoint expects different arguments.\n4. If logs mention a missing file, env var, or connection refused, inspect the related ConfigMap, Secret, and Service.",
+        "score": 0.7558919761260284,
+        "kind": "runbook"
+      },
+      {
+        "title": "CreateContainerError",
+        "source": "create-container-error.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- Pod is `Waiting` with reason `CreateContainerError`.\n- Events include `Failed` from the kubelet with a runtime error (device mapper, `no space left on device`, seccomp / AppArmor / SELinux denial, invalid capability, or a missing device plugin).\n- The image has often already been pulled (`ImagePullBackOff` is not the current reason).\n- Application logs are typically unavailable because the container never started.",
+        "score": 0.7541719133682363,
+        "kind": "runbook"
+      },
+      {
+        "title": "Pending and unschedulable pods",
+        "source": "pending-unschedulable.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Read the `FailedScheduling` message first \u2014 it usually lists every reason a node was skipped:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get events -n <ns> --field-selector reason=FailedScheduling\n   ```\n\n2. Compare requests to allocatable resources:\n\n   ```bash\n   kubectl get pod <pod> -n <ns> -o jsonpath='{.spec.containers[*].resources.requests}'\n   kubectl get nodes -o custom-columns=NAME:.metadata.name,STATUS:.status.conditions[-1],CPU:.status.allocatable.cpu,MEM:.status.allocatable.memory\n   kubectl describe node <node>\n   ```\n\n3. Check taints, affinity, and selectors on the pod against labels and taints on the nodes.\n4. If the message mentions a PVC or volume, inspect the claim (see the PVC pending runbook).",
+        "score": 0.7518613286591249,
+        "kind": "runbook"
+      },
+      {
+        "title": "DNS issues inside the cluster",
+        "source": "dns-issues.md",
+        "section": "Common causes",
+        "text": "## Common causes\n\n- CoreDNS is down, not scheduled, or its Service / endpoints are empty.\n- The pod's `dnsPolicy` or `dnsConfig` points at the wrong nameserver, or `ndots` / search domains are mis-set.\n- A NetworkPolicy or firewall blocks UDP/TCP 53 from the workload namespace to `kube-system`.\n- The client is using the wrong name (missing namespace, typo, or using an external FQDN for an in-cluster Service).\n- `kube-dns` / `kubelet` cluster DNS flags are wrong, so `/etc/resolv.conf` in the pod has a bad nameserver.",
+        "score": 0.746549669521192,
+        "kind": "runbook"
+      }
+    ],
+    "knowledge_unavailable": false,
+    "anomaly": {
+      "namespace": "kc-eval-06",
+      "name": "gateway-866f58ddf4-7ld8p",
+      "score": 0.0,
+      "is_anomaly": true,
+      "threshold": 0.013067,
+      "metric_anomaly": false,
+      "detectors": [
+        "lifecycle"
+      ],
+      "lifecycle_signals": [
+        {
+          "kind": "container_restarted",
+          "at": "2026-11-13T17:46:28Z",
+          "workload": "gateway",
+          "pod": "gateway-866f58ddf4-7ld8p",
+          "detail": "+1 (Error)"
+        },
+        {
+          "kind": "event:BackOff",
+          "at": "2026-11-13T17:47:10Z",
+          "workload": "gateway",
+          "pod": "gateway-866f58ddf4-7ld8p",
+          "detail": "Back-off restarting failed container gateway in pod gateway-866f58ddf4-7ld8p_kc-eval-06(e5550457-6f29-4344-b194-79b30d21"
+        }
+      ],
+      "contributing_features": [],
+      "series": [],
+      "warning": "Insufficient metric history for kc-eval-06/gateway-866f58ddf4-7ld8p (0 sample(s); need at least 3)."
+    },
+    "anomaly_unavailable": false
+  },
+  "propose_input": {
+    "deployment": {
+      "namespace": "kc-eval-06",
+      "name": "gateway",
+      "replicas": 1,
+      "ready": 1,
+      "available": 1,
+      "updated": 1,
+      "generation": 2,
+      "observed_generation": 2,
+      "revision": 2,
+      "previous_revision": 1,
+      "summary": {
+        "replicas": 1,
+        "revision": 2,
+        "template": {
+          "annotations": {},
+          "containers": [
+            {
+              "name": "gateway",
+              "image": "busybox:1.36",
+              "command": [
+                "sh",
+                "-c",
+                "cat <<'EOF'\nINFO starting gateway v2.0.0\nINFO loading 14 routes\npanic: runtime error: invalid memory address or nil pointer dereference\n[signal SIGSEGV: segmentation violation code=0x1 addr=0x0 pc=0x6b2f1a]\n\ngoroutine 1 [running]:\nmain.(*Router).Register(0x0, {0xc0001a2000, 0x9})\n\t/src/router.go:88 +0x3a\nmain.main()\n\t/src/main.go:41 +0x1c5\nEOF\nexit 2"
+              ],
+              "args": null
+            }
+          ]
+        }
+      },
+      "previous_summary": {
+        "annotations": {},
+        "containers": [
+          {
+            "name": "gateway",
+            "image": "busybox:1.36",
+            "command": [
+              "sh",
+              "-c",
+              "echo \"$(date -Iseconds) INFO starting gateway v1.4.2\"; echo \"$(date -Iseconds) INFO listening on :8080\"; while true; do echo \"$(date -Iseconds) INFO handled request path=/api/v1/items status=200 latency_ms=$((RANDOM%40+5))\"; sleep 3; done"
+            ],
+            "args": null
+          }
+        ]
+      }
+    },
+    "pod_state": {
+      "namespace": "kc-eval-06",
+      "name": "gateway-866f58ddf4-7ld8p",
+      "controller_kind": "ReplicaSet",
+      "controller_name": "gateway-866f58ddf4",
+      "deployment": "gateway",
+      "crashlooping": true,
+      "restart_count": 4,
+      "reason": "repeated restarts"
+    },
+    "signals": [
+      "container_restarted pod=gateway-866f58ddf4-7ld8p +1 (Error)",
+      "event:BackOff pod=gateway-866f58ddf4-7ld8p Back-off restarting failed container gateway in pod gateway-866f58ddf4-7ld8p_kc-eval-06(e5550457-6f29-4344-b194-79b30d21"
+    ]
+  }
+}

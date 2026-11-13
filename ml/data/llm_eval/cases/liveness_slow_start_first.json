@@ -1,0 +1,322 @@
+{
+  "schema_version": 1,
+  "id": "liveness_slow_start_first",
+  "title": "Liveness probe kills a slow-starting app",
+  "labels": {
+    "category": "probe_failure",
+    "expected_actions": [
+      "no_action"
+    ],
+    "expected_runbooks": [
+      "probe-failures.md"
+    ],
+    "difficulty": "hard",
+    "fault": "App needs ~40s to start listening; livenessProbe has initialDelaySeconds=5, period 5, failureThreshold 2.",
+    "notes": "Looks like a crash loop; the container never logs an error."
+  },
+  "namespace": "kc-eval-19",
+  "workload": "analytics",
+  "pod_name": "analytics-6f7f774bb-7jlld",
+  "captured_at": "2026-11-13T17:49:02+00:00",
+  "cluster": "kind kube-copilot (single node, Kubernetes v1.32.2)",
+  "diagnose_input": {
+    "pod": {
+      "name": "analytics-6f7f774bb-7jlld",
+      "namespace": "kc-eval-19",
+      "phase": "Running",
+      "reason": "Error",
+      "message": null,
+      "restart_count": 5,
+      "ready": true,
+      "created_at": "2026-11-13T17:47:16Z",
+      "node": "kube-copilot-control-plane",
+      "qos_class": "Burstable",
+      "containers": [
+        {
+          "name": "analytics",
+          "ready": true,
+          "restart_count": 5,
+          "state": "running",
+          "reason": "Error",
+          "message": null,
+          "exit_code": 137
+        }
+      ]
+    },
+    "events": [
+      {
+        "type": "Normal",
+        "reason": "Scheduled",
+        "message": "Successfully assigned kc-eval-19/analytics-6f7f774bb-7jlld to kube-copilot-control-plane",
+        "count": 1,
+        "first_timestamp": "2026-11-13T17:47:16Z",
+        "last_timestamp": "2026-11-13T17:47:16Z",
+        "source": "default-scheduler"
+      },
+      {
+        "type": "Warning",
+        "reason": "BackOff",
+        "message": "Back-off restarting failed container analytics in pod analytics-6f7f774bb-7jlld_kc-eval-19(86f693e4-bd68-4424-9f16-ddf0987f905e)",
+        "count": 3,
+        "first_timestamp": "2026-11-13T17:48:14Z",
+        "last_timestamp": "2026-11-13T17:48:28Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Killing",
+        "message": "Container analytics failed liveness probe, will be restarted",
+        "count": 5,
+        "first_timestamp": "2026-11-13T17:47:27Z",
+        "last_timestamp": "2026-11-13T17:48:52Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Pulled",
+        "message": "Container image \"nginx:1.27-alpine\" already present on machine",
+        "count": 6,
+        "first_timestamp": "2026-11-13T17:47:17Z",
+        "last_timestamp": "2026-11-13T17:48:54Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Created",
+        "message": "Created container: analytics",
+        "count": 6,
+        "first_timestamp": "2026-11-13T17:47:17Z",
+        "last_timestamp": "2026-11-13T17:48:54Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Started",
+        "message": "Started container analytics",
+        "count": 6,
+        "first_timestamp": "2026-11-13T17:47:17Z",
+        "last_timestamp": "2026-11-13T17:48:54Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Warning",
+        "reason": "Unhealthy",
+        "message": "Liveness probe failed: Get \"http://10.244.0.137:80/\": dial tcp 10.244.0.137:80: connect: connection refused",
+        "count": 11,
+        "first_timestamp": "2026-11-13T17:47:22Z",
+        "last_timestamp": "2026-11-13T17:49:02Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      }
+    ],
+    "logs": {
+      "current": "2026-11-13T17:48:54.377906376Z 2026-11-13T17:48:54+00:00 INFO warming caches, this takes ~40s\n",
+      "previous": "2026-11-13T17:48:42.494707814Z 2026-11-13T17:48:42+00:00 INFO warming caches, this takes ~40s\n",
+      "container": "analytics"
+    },
+    "retrieval_query": "Running Error Error exit code 137 Scheduled Successfully assigned kc-eval-19/analytics-6f7f774bb-7jlld to kube-copilot-control-plane BackOff Back-off restarting failed container analytics in pod analytics-6f7f774bb-7jlld_kc-eval-19(86f693e4-bd68-4424-9f16-ddf0987f905e) Killing Container analytics failed liveness probe, will be restarted Pulled Container image \"nginx:1.27-alpine\" already present on machine Created Created container: analytics Started Started container analytics Unhealthy Liveness probe failed: Get \"http://10.244.0.137:80/\": dial tcp 10.244.0.137:80: connect: connection refused 2026-11-13T17:48:42.494707814Z 2026-11-13T17:48:42+00:00 INFO warming caches, this takes ~40s 2026-11-13T17:48:54.377906376Z 2026-11-13T17:48:54+00:00 INFO warming caches, this takes ~40s",
+    "retrieved": [
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Read the last termination reason and exit code:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get pod <pod> -n <ns> -o jsonpath='{range .status.containerStatuses[*]}{.name}{\" \"}{.state}{\" \"}{.lastState.terminated}{\"\\n\"}{end}'\n   ```\n\n2. Always fetch previous logs if `restartCount > 0`:\n\n   ```bash\n   kubectl logs <pod> -n <ns> --previous --tail=200\n   kubectl logs <pod> -n <ns> --tail=200\n   ```\n\n3. Confirm the command that actually ran (`command` / `args` in the pod spec) and whether the image entrypoint expects different arguments.\n4. If logs mention a missing file, env var, or connection refused, inspect the related ConfigMap, Secret, and Service.",
+        "score": 0.7763835182382699,
+        "kind": "runbook"
+      },
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Fixes",
+        "text": "## Fixes\n\n- If the command is wrong (for example a demo container that ends in `exit 1`), correct `command`/`args` or the image entrypoint so the main process stays in the foreground.\n- If a config value is missing, add the env var or volume and roll the workload.\n- If a dependency is down, fix that service or make startup retry instead of exiting.\n- If a liveness probe is too aggressive, increase `initialDelaySeconds` / `failureThreshold` (see probe-failures).\n- After a fix, roll the deployment and confirm the restart count stops climbing:\n\n  ```bash\n  kubectl rollout status deploy/<name> -n <ns>\n  kubectl get pod <pod> -n <ns> --watch\n  ```",
+        "score": 0.7728002274268471,
+        "kind": "runbook"
+      },
+      {
+        "title": "OOMKilled",
+        "source": "oomkilled.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Confirm the termination reason and the current limits:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get pod <pod> -n <ns> -o jsonpath='{.spec.containers[*].resources}'\n   ```\n\n2. Compare usage if metrics are available:\n\n   ```bash\n   kubectl top pod <pod> -n <ns> --containers\n   ```\n\n3. Read previous logs for allocation errors, heap dumps, or a sudden stop.\n4. Check whether the node itself is under memory pressure (`kubectl describe node <node>` and look for evictions or `MemoryPressure`).",
+        "score": 0.7695580124652485,
+        "kind": "runbook"
+      },
+      {
+        "title": "Liveness and readiness probe failures",
+        "source": "probe-failures.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Inspect the probe definitions and recent probe events:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get pod <pod> -n <ns> -o jsonpath='{.spec.containers[*].livenessProbe}'\n   kubectl get pod <pod> -n <ns> -o jsonpath='{.spec.containers[*].readinessProbe}'\n   kubectl get endpoints <svc> -n <ns>\n   ```\n\n2. Exec into a running container (if it lives long enough) and call the same path or command the probe uses.\n3. Read current and previous logs around the time of each restart. If the process is killed mid-startup, the liveness probe is a prime suspect.\n4. Distinguish \"app is crashing on its own\" (see CrashLoopBackOff) from \"kubelet is killing a healthy-but-slow process\".",
+        "score": 0.7632514299994893,
+        "kind": "runbook"
+      },
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- `kubectl get pods` shows `STATUS` as `CrashLoopBackOff` or `Error` with a climbing restart count.\n- The pod phase may still be `Running` because a container is mid-backoff, not because the app is healthy.\n- Current logs are often empty or just a short \"waiting\" message. The useful signal is usually in the **previous** container logs (`kubectl logs --previous`).\n- Events include `BackOff`, `Failed`, or `Unhealthy` from the kubelet.",
+        "score": 0.7582554045344116,
+        "kind": "runbook"
+      }
+    ],
+    "knowledge_unavailable": false,
+    "anomaly": {
+      "namespace": "kc-eval-19",
+      "name": "analytics-6f7f774bb-7jlld",
+      "score": 0.9996,
+      "is_anomaly": true,
+      "threshold": 0.013067,
+      "metric_anomaly": true,
+      "detectors": [
+        "isolation_forest",
+        "lifecycle"
+      ],
+      "lifecycle_signals": [
+        {
+          "kind": "event:BackOff",
+          "at": "2026-11-13T17:48:28Z",
+          "workload": "analytics",
+          "pod": "analytics-6f7f774bb-7jlld",
+          "detail": "Back-off restarting failed container analytics in pod analytics-6f7f774bb-7jlld_kc-eval-19(86f693e4-bd68-4424-9f16-ddf09"
+        },
+        {
+          "kind": "container_restarted",
+          "at": "2026-11-13T17:48:54Z",
+          "workload": "analytics",
+          "pod": "analytics-6f7f774bb-7jlld",
+          "detail": "+1 (Error)"
+        }
+      ],
+      "contributing_features": [
+        {
+          "name": "restart_rate_per_min",
+          "value": 2.6666666666666665,
+          "zscore": 44.12416517631303,
+          "direction": "high"
+        },
+        {
+          "name": "restart_delta",
+          "value": 4.0,
+          "zscore": 23.99028847248468,
+          "direction": "high"
+        },
+        {
+          "name": "mem_slope_mib_per_min",
+          "value": 4.337053571428572,
+          "zscore": 17.4970778114607,
+          "direction": "high"
+        },
+        {
+          "name": "restart_last",
+          "value": 4.0,
+          "zscore": 15.332703228618232,
+          "direction": "high"
+        },
+        {
+          "name": "mem_mean_mib",
+          "value": 7.576450892857143,
+          "zscore": -4.4704365204745145,
+          "direction": "low"
+        }
+      ],
+      "series": [
+        {
+          "ts": 1794592052.0,
+          "cpu": 0.0,
+          "memory_mib": 3.117,
+          "mem_to_limit_ratio": 0.0487,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794592067.0,
+          "cpu": 0.0,
+          "memory_mib": 5.672,
+          "mem_to_limit_ratio": 0.0886,
+          "restarts": 1.0
+        },
+        {
+          "ts": 1794592082.0,
+          "cpu": 0.0,
+          "memory_mib": 7.941,
+          "mem_to_limit_ratio": 0.1241,
+          "restarts": 2.0
+        },
+        {
+          "ts": 1794592097.0,
+          "cpu": 0.0,
+          "memory_mib": 7.941,
+          "mem_to_limit_ratio": 0.1241,
+          "restarts": 3.0
+        },
+        {
+          "ts": 1794592112.0,
+          "cpu": 0.0,
+          "memory_mib": 7.941,
+          "mem_to_limit_ratio": 0.1241,
+          "restarts": 3.0
+        },
+        {
+          "ts": 1794592127.0,
+          "cpu": 0.0,
+          "memory_mib": 10.211,
+          "mem_to_limit_ratio": 0.1595,
+          "restarts": 3.0
+        },
+        {
+          "ts": 1794592142.0,
+          "cpu": 0.0,
+          "memory_mib": 10.211,
+          "mem_to_limit_ratio": 0.1595,
+          "restarts": 4.0
+        }
+      ],
+      "warning": null
+    },
+    "anomaly_unavailable": false
+  },
+  "propose_input": {
+    "deployment": {
+      "namespace": "kc-eval-19",
+      "name": "analytics",
+      "replicas": 1,
+      "ready": 1,
+      "available": 1,
+      "updated": 1,
+      "generation": 1,
+      "observed_generation": 1,
+      "revision": 1,
+      "previous_revision": null,
+      "summary": {
+        "replicas": 1,
+        "revision": 1,
+        "template": {
+          "annotations": {},
+          "containers": [
+            {
+              "name": "analytics",
+              "image": "nginx:1.27-alpine",
+              "command": [
+                "sh",
+                "-c",
+                "echo \"$(date -Iseconds) INFO warming caches, this takes ~40s\"; sleep 40; echo \"$(date -Iseconds) INFO ready\"; exec nginx -g \"daemon off;\""
+              ],
+              "args": null
+            }
+          ]
+        }
+      },
+      "previous_summary": null
+    },
+    "pod_state": {
+      "namespace": "kc-eval-19",
+      "name": "analytics-6f7f774bb-7jlld",
+      "controller_kind": "ReplicaSet",
+      "controller_name": "analytics-6f7f774bb",
+      "deployment": "analytics",
+      "crashlooping": false,
+      "restart_count": 5,
+      "reason": null
+    },
+    "signals": [
+      "event:BackOff pod=analytics-6f7f774bb-7jlld Back-off restarting failed container analytics in pod analytics-6f7f774bb-7jlld_kc-eval-19(86f693e4-bd68-4424-9f16-ddf09",
+      "container_restarted pod=analytics-6f7f774bb-7jlld +1 (Error)"
+    ]
+  }
+}

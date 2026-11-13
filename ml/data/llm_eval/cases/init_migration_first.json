@@ -1,0 +1,214 @@
+{
+  "schema_version": 1,
+  "id": "init_migration_first",
+  "title": "Init container (DB migration) fails",
+  "labels": {
+    "category": "app_crash",
+    "expected_actions": [
+      "no_action"
+    ],
+    "expected_runbooks": [
+      "crashloopbackoff.md"
+    ],
+    "difficulty": "hard",
+    "fault": "Revision 1 has an init container running a migration that fails ('relation already exists') and exits 1.",
+    "notes": "Diagnose fetches main-container logs only, so the migration error is not in the context."
+  },
+  "namespace": "kc-eval-07",
+  "workload": "orders",
+  "pod_name": "orders-797c8655f9-768cj",
+  "captured_at": "2026-11-13T17:47:03+00:00",
+  "cluster": "kind kube-copilot (single node, Kubernetes v1.32.2)",
+  "diagnose_input": {
+    "pod": {
+      "name": "orders-797c8655f9-768cj",
+      "namespace": "kc-eval-07",
+      "phase": "Pending",
+      "reason": "CrashLoopBackOff",
+      "message": "back-off 40s restarting failed container=run-migrations pod=orders-797c8655f9-768cj_kc-eval-07(c9a4669c-e1f5-45c9-8ac4-a2367d2a082b)",
+      "restart_count": 0,
+      "ready": false,
+      "created_at": "2026-11-13T17:45:42Z",
+      "node": "kube-copilot-control-plane",
+      "qos_class": "Burstable",
+      "containers": [
+        {
+          "name": "orders",
+          "ready": false,
+          "restart_count": 0,
+          "state": "waiting",
+          "reason": "PodInitializing",
+          "message": null,
+          "exit_code": null
+        }
+      ]
+    },
+    "events": [
+      {
+        "type": "Normal",
+        "reason": "Scheduled",
+        "message": "Successfully assigned kc-eval-07/orders-797c8655f9-768cj to kube-copilot-control-plane",
+        "count": 1,
+        "first_timestamp": "2026-11-13T17:45:42Z",
+        "last_timestamp": "2026-11-13T17:45:42Z",
+        "source": "default-scheduler"
+      },
+      {
+        "type": "Normal",
+        "reason": "Pulled",
+        "message": "Container image \"busybox:1.36\" already present on machine",
+        "count": 4,
+        "first_timestamp": "2026-11-13T17:45:42Z",
+        "last_timestamp": "2026-11-13T17:46:29Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Created",
+        "message": "Created container: run-migrations",
+        "count": 4,
+        "first_timestamp": "2026-11-13T17:45:42Z",
+        "last_timestamp": "2026-11-13T17:46:29Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Started",
+        "message": "Started container run-migrations",
+        "count": 4,
+        "first_timestamp": "2026-11-13T17:45:42Z",
+        "last_timestamp": "2026-11-13T17:46:29Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Warning",
+        "reason": "BackOff",
+        "message": "Back-off restarting failed container run-migrations in pod orders-797c8655f9-768cj_kc-eval-07(c9a4669c-e1f5-45c9-8ac4-a2367d2a082b)",
+        "count": 7,
+        "first_timestamp": "2026-11-13T17:45:44Z",
+        "last_timestamp": "2026-11-13T17:46:58Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      }
+    ],
+    "logs": {
+      "current": "(logs unavailable: Bad Request)",
+      "previous": null,
+      "container": "orders"
+    },
+    "retrieval_query": "Pending CrashLoopBackOff back-off 40s restarting failed container=run-migrations pod=orders-797c8655f9-768cj_kc-eval-07(c9a4669c-e1f5-45c9-8ac4-a2367d2a082b) PodInitializing Scheduled Successfully assigned kc-eval-07/orders-797c8655f9-768cj to kube-copilot-control-plane Pulled Container image \"busybox:1.36\" already present on machine Created Created container: run-migrations Started Started container run-migrations BackOff Back-off restarting failed container run-migrations in pod orders-797c8655f9-768cj_kc-eval-07(c9a4669c-e1f5-45c9-8ac4-a2367d2a082b)",
+    "retrieved": [
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- `kubectl get pods` shows `STATUS` as `CrashLoopBackOff` or `Error` with a climbing restart count.\n- The pod phase may still be `Running` because a container is mid-backoff, not because the app is healthy.\n- Current logs are often empty or just a short \"waiting\" message. The useful signal is usually in the **previous** container logs (`kubectl logs --previous`).\n- Events include `BackOff`, `Failed`, or `Unhealthy` from the kubelet.",
+        "score": 0.8386298773916625,
+        "kind": "runbook"
+      },
+      {
+        "title": "Pending and unschedulable pods",
+        "source": "pending-unschedulable.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- `kubectl get pods` shows `STATUS` as `Pending` for longer than a few seconds.\n- `kubectl describe pod` has a `PodScheduled` condition set to `False` with reason `Unschedulable`.\n- Events include `FailedScheduling` with a message such as `0/N nodes are available: ...`.\n- The pod has no `nodeName` yet (unless it is stuck later in volume attach or image pull).",
+        "score": 0.8229803621735319,
+        "kind": "runbook"
+      },
+      {
+        "title": "CreateContainerConfigError",
+        "source": "create-container-config-error.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- Pod is `Pending` or `Waiting` with reason `CreateContainerConfigError`.\n- Events include `Failed` with a message such as `Error: secret \"...\" not found`, `couldn't find key ... in ConfigMap ...`, or `configmap \"...\" not found`.\n- Restart count is usually zero. `kubectl logs` will fail or return an \"unavailable\" message.",
+        "score": 0.8203035179734408,
+        "kind": "runbook"
+      },
+      {
+        "title": "CreateContainerError",
+        "source": "create-container-error.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- Pod is `Waiting` with reason `CreateContainerError`.\n- Events include `Failed` from the kubelet with a runtime error (device mapper, `no space left on device`, seccomp / AppArmor / SELinux denial, invalid capability, or a missing device plugin).\n- The image has often already been pulled (`ImagePullBackOff` is not the current reason).\n- Application logs are typically unavailable because the container never started.",
+        "score": 0.808843701788724,
+        "kind": "runbook"
+      },
+      {
+        "title": "ImagePullBackOff and ErrImagePull",
+        "source": "imagepullbackoff.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- Pod stays `Pending` or shows `STATUS` as `ImagePullBackOff` / `ErrImagePull`.\n- Events include `Failed` from `kubelet` with messages such as `Failed to pull image`, `not found`, `unauthorized`, `denied`, or `invalid image name`.\n- There are no application logs because the container has not started.",
+        "score": 0.8031751810691061,
+        "kind": "runbook"
+      }
+    ],
+    "knowledge_unavailable": false,
+    "anomaly": {
+      "namespace": "kc-eval-07",
+      "name": "orders-797c8655f9-768cj",
+      "score": 0.0,
+      "is_anomaly": true,
+      "threshold": 0.013067,
+      "metric_anomaly": false,
+      "detectors": [
+        "lifecycle"
+      ],
+      "lifecycle_signals": [
+        {
+          "kind": "event:BackOff",
+          "at": "2026-11-13T17:46:58Z",
+          "workload": "orders",
+          "pod": "orders-797c8655f9-768cj",
+          "detail": "Back-off restarting failed container run-migrations in pod orders-797c8655f9-768cj_kc-eval-07(c9a4669c-e1f5-45c9-8ac4-a2"
+        }
+      ],
+      "contributing_features": [],
+      "series": [],
+      "warning": "Insufficient metric history for kc-eval-07/orders-797c8655f9-768cj (0 sample(s); need at least 3)."
+    },
+    "anomaly_unavailable": false
+  },
+  "propose_input": {
+    "deployment": {
+      "namespace": "kc-eval-07",
+      "name": "orders",
+      "replicas": 1,
+      "ready": 0,
+      "available": 0,
+      "updated": 1,
+      "generation": 1,
+      "observed_generation": 1,
+      "revision": 1,
+      "previous_revision": null,
+      "summary": {
+        "replicas": 1,
+        "revision": 1,
+        "template": {
+          "annotations": {},
+          "containers": [
+            {
+              "name": "orders",
+              "image": "busybox:1.36",
+              "command": [
+                "sh",
+                "-c",
+                "echo \"$(date -Iseconds) INFO starting orders v1.4.2\"; echo \"$(date -Iseconds) INFO listening on :8080\"; while true; do echo \"$(date -Iseconds) INFO handled request path=/api/v1/items status=200 latency_ms=$((RANDOM%40+5))\"; sleep 3; done"
+              ],
+              "args": null
+            }
+          ]
+        }
+      },
+      "previous_summary": null
+    },
+    "pod_state": {
+      "namespace": "kc-eval-07",
+      "name": "orders-797c8655f9-768cj",
+      "controller_kind": "ReplicaSet",
+      "controller_name": "orders-797c8655f9",
+      "deployment": "orders",
+      "crashlooping": false,
+      "restart_count": 0,
+      "reason": null
+    },
+    "signals": [
+      "event:BackOff pod=orders-797c8655f9-768cj Back-off restarting failed container run-migrations in pod orders-797c8655f9-768cj_kc-eval-07(c9a4669c-e1f5-45c9-8ac4-a2"
+    ]
+  }
+}

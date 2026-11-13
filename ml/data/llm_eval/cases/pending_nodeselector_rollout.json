@@ -1,0 +1,182 @@
+{
+  "schema_version": 1,
+  "id": "pending_nodeselector_rollout",
+  "title": "Rollout adds a nodeSelector no node matches",
+  "labels": {
+    "category": "unschedulable",
+    "expected_actions": [
+      "rollback_deployment"
+    ],
+    "expected_runbooks": [
+      "pending-unschedulable.md"
+    ],
+    "difficulty": "easy",
+    "fault": "Deployment updated with nodeSelector disktype=ssd; no node has that label.",
+    "notes": ""
+  },
+  "namespace": "kc-eval-23",
+  "workload": "stock",
+  "pod_name": "stock-dd96975bd-mnslt",
+  "captured_at": "2026-11-13T17:48:11+00:00",
+  "cluster": "kind kube-copilot (single node, Kubernetes v1.32.2)",
+  "diagnose_input": {
+    "pod": {
+      "name": "stock-dd96975bd-mnslt",
+      "namespace": "kc-eval-23",
+      "phase": "Pending",
+      "reason": "Unschedulable",
+      "message": "0/1 nodes are available: 1 node(s) didn't match Pod's node affinity/selector. preemption: 0/1 nodes are available: 1 Preemption is not helpful for scheduling.",
+      "restart_count": 0,
+      "ready": false,
+      "created_at": "2026-11-13T17:47:26Z",
+      "node": null,
+      "qos_class": "Burstable",
+      "containers": []
+    },
+    "events": [
+      {
+        "type": "Warning",
+        "reason": "FailedScheduling",
+        "message": "0/1 nodes are available: 1 node(s) didn't match Pod's node affinity/selector. preemption: 0/1 nodes are available: 1 Preemption is not helpful for scheduling.",
+        "count": 1,
+        "first_timestamp": "2026-11-13T17:47:26Z",
+        "last_timestamp": "2026-11-13T17:47:26Z",
+        "source": "default-scheduler"
+      }
+    ],
+    "logs": {
+      "current": "",
+      "previous": null,
+      "container": null
+    },
+    "retrieval_query": "Pending Unschedulable 0/1 nodes are available: 1 node(s) didn't match Pod's node affinity/selector. preemption: 0/1 nodes are available: 1 Preemption is not helpful for scheduling. FailedScheduling 0/1 nodes are available: 1 node(s) didn't match Pod's node affinity/selector. preemption: 0/1 nodes are available: 1 Preemption is not helpful for scheduling.",
+    "retrieved": [
+      {
+        "title": "Pending and unschedulable pods",
+        "source": "pending-unschedulable.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Read the `FailedScheduling` message first \u2014 it usually lists every reason a node was skipped:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get events -n <ns> --field-selector reason=FailedScheduling\n   ```\n\n2. Compare requests to allocatable resources:\n\n   ```bash\n   kubectl get pod <pod> -n <ns> -o jsonpath='{.spec.containers[*].resources.requests}'\n   kubectl get nodes -o custom-columns=NAME:.metadata.name,STATUS:.status.conditions[-1],CPU:.status.allocatable.cpu,MEM:.status.allocatable.memory\n   kubectl describe node <node>\n   ```\n\n3. Check taints, affinity, and selectors on the pod against labels and taints on the nodes.\n4. If the message mentions a PVC or volume, inspect the claim (see the PVC pending runbook).",
+        "score": 0.8028874252657456,
+        "kind": "runbook"
+      },
+      {
+        "title": "Pending and unschedulable pods",
+        "source": "pending-unschedulable.md",
+        "section": "Common causes",
+        "text": "## Common causes\n\n- Requests for CPU or memory are larger than the allocatable resources on any node.\n- A `nodeSelector`, `nodeAffinity`, `taint`/`toleration`, or topology constraint matches no node.\n- PersistentVolumeClaim is unbound, so the pod cannot schedule (`pvc-pending` runbook).\n- The only candidate nodes are `NotReady`, cordoned (`SchedulingDisabled`), or out of disk / memory / PID pressure.\n- A required port (`hostPort`) or an extended resource (GPU) is already taken.",
+        "score": 0.8003816550986246,
+        "kind": "runbook"
+      },
+      {
+        "title": "Pending and unschedulable pods",
+        "source": "pending-unschedulable.md",
+        "section": "Pending and unschedulable pods",
+        "text": "# Pending and unschedulable pods\n\nA pod stays `Pending` when the scheduler cannot place it on any node, or when it is still waiting for a condition that must be true before scheduling or starting (most often volumes, but also init containers or resource availability).",
+        "score": 0.7854613002006192,
+        "kind": "runbook"
+      },
+      {
+        "title": "Pending and unschedulable pods",
+        "source": "pending-unschedulable.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- `kubectl get pods` shows `STATUS` as `Pending` for longer than a few seconds.\n- `kubectl describe pod` has a `PodScheduled` condition set to `False` with reason `Unschedulable`.\n- Events include `FailedScheduling` with a message such as `0/N nodes are available: ...`.\n- The pod has no `nodeName` yet (unless it is stuck later in volume attach or image pull).",
+        "score": 0.784761021631309,
+        "kind": "runbook"
+      },
+      {
+        "title": "Pending and unschedulable pods",
+        "source": "pending-unschedulable.md",
+        "section": "Fixes",
+        "text": "## Fixes\n\n- Lower resource requests, or add node capacity, so the pod fits.\n- Fix or remove an overly strict `nodeSelector` / affinity rule, and add any missing tolerations for tainted nodes.\n- Uncordon nodes (`kubectl uncordon <node>`) if they were drained and forgotten.\n- Bind or provision the PVC before expecting the pod to schedule.\n- For `hostPort` or GPU conflicts, reschedule, free the resource, or change the port.",
+        "score": 0.7560048632087021,
+        "kind": "runbook"
+      }
+    ],
+    "knowledge_unavailable": false,
+    "anomaly": {
+      "namespace": "kc-eval-23",
+      "name": "stock-dd96975bd-mnslt",
+      "score": 0.0,
+      "is_anomaly": true,
+      "threshold": 0.013067,
+      "metric_anomaly": false,
+      "detectors": [
+        "lifecycle"
+      ],
+      "lifecycle_signals": [
+        {
+          "kind": "event:FailedScheduling",
+          "at": "2026-11-13T17:47:26Z",
+          "workload": "stock",
+          "pod": "stock-dd96975bd-mnslt",
+          "detail": "0/1 nodes are available: 1 node(s) didn't match Pod's node affinity/selector. preemption: 0/1 nodes are available: 1 Pre"
+        }
+      ],
+      "contributing_features": [],
+      "series": [],
+      "warning": "Insufficient metric history for kc-eval-23/stock-dd96975bd-mnslt (0 sample(s); need at least 3)."
+    },
+    "anomaly_unavailable": false
+  },
+  "propose_input": {
+    "deployment": {
+      "namespace": "kc-eval-23",
+      "name": "stock",
+      "replicas": 1,
+      "ready": 1,
+      "available": 1,
+      "updated": 1,
+      "generation": 2,
+      "observed_generation": 2,
+      "revision": 2,
+      "previous_revision": 1,
+      "summary": {
+        "replicas": 1,
+        "revision": 2,
+        "template": {
+          "annotations": {},
+          "containers": [
+            {
+              "name": "stock",
+              "image": "busybox:1.36",
+              "command": [
+                "sh",
+                "-c",
+                "echo \"$(date -Iseconds) INFO starting stock v1.4.2\"; echo \"$(date -Iseconds) INFO listening on :8080\"; while true; do echo \"$(date -Iseconds) INFO handled request path=/api/v1/items status=200 latency_ms=$((RANDOM%40+5))\"; sleep 3; done"
+              ],
+              "args": null
+            }
+          ]
+        }
+      },
+      "previous_summary": {
+        "annotations": {},
+        "containers": [
+          {
+            "name": "stock",
+            "image": "busybox:1.36",
+            "command": [
+              "sh",
+              "-c",
+              "echo \"$(date -Iseconds) INFO starting stock v1.4.2\"; echo \"$(date -Iseconds) INFO listening on :8080\"; while true; do echo \"$(date -Iseconds) INFO handled request path=/api/v1/items status=200 latency_ms=$((RANDOM%40+5))\"; sleep 3; done"
+            ],
+            "args": null
+          }
+        ]
+      }
+    },
+    "pod_state": {
+      "namespace": "kc-eval-23",
+      "name": "stock-dd96975bd-mnslt",
+      "controller_kind": "ReplicaSet",
+      "controller_name": "stock-dd96975bd",
+      "deployment": "stock",
+      "crashlooping": false,
+      "restart_count": 0,
+      "reason": null
+    },
+    "signals": [
+      "event:FailedScheduling pod=stock-dd96975bd-mnslt 0/1 nodes are available: 1 node(s) didn't match Pod's node affinity/selector. preemption: 0/1 nodes are available: 1 Pre"
+    ]
+  }
+}

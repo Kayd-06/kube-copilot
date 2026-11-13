@@ -1,0 +1,236 @@
+{
+  "schema_version": 1,
+  "id": "config_port_rollout",
+  "title": "Rollout sets PORT to a non-numeric value",
+  "labels": {
+    "category": "bad_config_value",
+    "expected_actions": [
+      "rollback_deployment"
+    ],
+    "expected_runbooks": [
+      "crashloopbackoff.md"
+    ],
+    "difficulty": "easy",
+    "fault": "Deployment updated with env PORT=eighty; the app validates PORT and exits 2.",
+    "notes": ""
+  },
+  "namespace": "kc-eval-08",
+  "workload": "payments",
+  "pod_name": "payments-6d7bd7849-fbl9m",
+  "captured_at": "2026-11-13T17:47:19+00:00",
+  "cluster": "kind kube-copilot (single node, Kubernetes v1.32.2)",
+  "diagnose_input": {
+    "pod": {
+      "name": "payments-6d7bd7849-fbl9m",
+      "namespace": "kc-eval-08",
+      "phase": "Running",
+      "reason": "Error",
+      "message": null,
+      "restart_count": 4,
+      "ready": false,
+      "created_at": "2026-11-13T17:45:49Z",
+      "node": "kube-copilot-control-plane",
+      "qos_class": "Burstable",
+      "containers": [
+        {
+          "name": "payments",
+          "ready": false,
+          "restart_count": 4,
+          "state": "terminated",
+          "reason": "Error",
+          "message": null,
+          "exit_code": 2
+        }
+      ]
+    },
+    "events": [
+      {
+        "type": "Normal",
+        "reason": "Scheduled",
+        "message": "Successfully assigned kc-eval-08/payments-6d7bd7849-fbl9m to kube-copilot-control-plane",
+        "count": 1,
+        "first_timestamp": "2026-11-13T17:45:49Z",
+        "last_timestamp": "2026-11-13T17:45:49Z",
+        "source": "default-scheduler"
+      },
+      {
+        "type": "Normal",
+        "reason": "Pulled",
+        "message": "Container image \"busybox:1.36\" already present on machine",
+        "count": 5,
+        "first_timestamp": "2026-11-13T17:45:49Z",
+        "last_timestamp": "2026-11-13T17:47:16Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Created",
+        "message": "Created container: payments",
+        "count": 5,
+        "first_timestamp": "2026-11-13T17:45:49Z",
+        "last_timestamp": "2026-11-13T17:47:16Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Started",
+        "message": "Started container payments",
+        "count": 5,
+        "first_timestamp": "2026-11-13T17:45:49Z",
+        "last_timestamp": "2026-11-13T17:47:16Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Warning",
+        "reason": "BackOff",
+        "message": "Back-off restarting failed container payments in pod payments-6d7bd7849-fbl9m_kc-eval-08(4a956a23-1156-40de-b822-70579e209b29)",
+        "count": 8,
+        "first_timestamp": "2026-11-13T17:45:50Z",
+        "last_timestamp": "2026-11-13T17:47:17Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      }
+    ],
+    "logs": {
+      "current": "2026-11-13T17:47:16.588025342Z 2026-11-13T17:47:16+00:00 INFO payments starting\n2026-11-13T17:47:16.588506886Z 2026-11-13T17:47:16+00:00 FATAL invalid value for PORT: \"eighty\" (expected an integer 1-65535)\n",
+      "previous": "unable to retrieve container logs for containerd://d55ccefb1e445ef95350722c1681ddf684e93aa2021b5be3a589666e22ea36ec",
+      "container": "payments"
+    },
+    "retrieval_query": "Running Error Error exit code 2 Scheduled Successfully assigned kc-eval-08/payments-6d7bd7849-fbl9m to kube-copilot-control-plane Pulled Container image \"busybox:1.36\" already present on machine Created Created container: payments Started Started container payments BackOff Back-off restarting failed container payments in pod payments-6d7bd7849-fbl9m_kc-eval-08(4a956a23-1156-40de-b822-70579e209b29) unable to retrieve container logs for containerd://d55ccefb1e445ef95350722c1681ddf684e93aa2021b5be3a589666e22ea36ec 2026-11-13T17:47:16.588025342Z 2026-11-13T17:47:16+00:00 INFO payments starting 2026-11-13T17:47:16.588506886Z 2026-11-13T17:47:16+00:00 FATAL invalid value for PORT: \"eighty\" (expected an integer 1-65535)",
+    "retrieved": [
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Read the last termination reason and exit code:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get pod <pod> -n <ns> -o jsonpath='{range .status.containerStatuses[*]}{.name}{\" \"}{.state}{\" \"}{.lastState.terminated}{\"\\n\"}{end}'\n   ```\n\n2. Always fetch previous logs if `restartCount > 0`:\n\n   ```bash\n   kubectl logs <pod> -n <ns> --previous --tail=200\n   kubectl logs <pod> -n <ns> --tail=200\n   ```\n\n3. Confirm the command that actually ran (`command` / `args` in the pod spec) and whether the image entrypoint expects different arguments.\n4. If logs mention a missing file, env var, or connection refused, inspect the related ConfigMap, Secret, and Service.",
+        "score": 0.7843406278675852,
+        "kind": "runbook"
+      },
+      {
+        "title": "OOMKilled",
+        "source": "oomkilled.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Confirm the termination reason and the current limits:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get pod <pod> -n <ns> -o jsonpath='{.spec.containers[*].resources}'\n   ```\n\n2. Compare usage if metrics are available:\n\n   ```bash\n   kubectl top pod <pod> -n <ns> --containers\n   ```\n\n3. Read previous logs for allocation errors, heap dumps, or a sudden stop.\n4. Check whether the node itself is under memory pressure (`kubectl describe node <node>` and look for evictions or `MemoryPressure`).",
+        "score": 0.7730250204956848,
+        "kind": "runbook"
+      },
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Fixes",
+        "text": "## Fixes\n\n- If the command is wrong (for example a demo container that ends in `exit 1`), correct `command`/`args` or the image entrypoint so the main process stays in the foreground.\n- If a config value is missing, add the env var or volume and roll the workload.\n- If a dependency is down, fix that service or make startup retry instead of exiting.\n- If a liveness probe is too aggressive, increase `initialDelaySeconds` / `failureThreshold` (see probe-failures).\n- After a fix, roll the deployment and confirm the restart count stops climbing:\n\n  ```bash\n  kubectl rollout status deploy/<name> -n <ns>\n  kubectl get pod <pod> -n <ns> --watch\n  ```",
+        "score": 0.7659525792684422,
+        "kind": "runbook"
+      },
+      {
+        "title": "ImagePullBackOff and ErrImagePull",
+        "source": "imagepullbackoff.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Read the event message \u2014 it usually names the exact reference and the registry error:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get events -n <ns> --field-selector involvedObject.name=<pod>\n   ```\n\n2. Confirm the image the pod is actually asking for:\n\n   ```bash\n   kubectl get pod <pod> -n <ns> -o jsonpath='{range .spec.containers[*]}{.name}{\" \"}{.image}{\"\\n\"}{end}'\n   ```\n\n3. If it is a private image, check that a pull Secret exists in the same namespace and is referenced on the ServiceAccount or pod:\n\n   ```bash\n   kubectl get sa default -n <ns> -o yaml\n   kubectl get secret -n <ns>\n   ```\n\n4. From a node or a debug pod, try `crictl pull` / `docker pull` with the same reference to distinguish \"does not exist\" from \"auth\" and \"network\".",
+        "score": 0.7640509420927615,
+        "kind": "runbook"
+      },
+      {
+        "title": "CreateContainerError",
+        "source": "create-container-error.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- Pod is `Waiting` with reason `CreateContainerError`.\n- Events include `Failed` from the kubelet with a runtime error (device mapper, `no space left on device`, seccomp / AppArmor / SELinux denial, invalid capability, or a missing device plugin).\n- The image has often already been pulled (`ImagePullBackOff` is not the current reason).\n- Application logs are typically unavailable because the container never started.",
+        "score": 0.7637532668165756,
+        "kind": "runbook"
+      }
+    ],
+    "knowledge_unavailable": false,
+    "anomaly": {
+      "namespace": "kc-eval-08",
+      "name": "payments-6d7bd7849-fbl9m",
+      "score": 0.0,
+      "is_anomaly": true,
+      "threshold": 0.013067,
+      "metric_anomaly": false,
+      "detectors": [
+        "lifecycle"
+      ],
+      "lifecycle_signals": [
+        {
+          "kind": "container_restarted",
+          "at": "2026-11-13T17:46:31Z",
+          "workload": "payments",
+          "pod": "payments-6d7bd7849-fbl9m",
+          "detail": "+1 (Error)"
+        },
+        {
+          "kind": "event:BackOff",
+          "at": "2026-11-13T17:47:17Z",
+          "workload": "payments",
+          "pod": "payments-6d7bd7849-fbl9m",
+          "detail": "Back-off restarting failed container payments in pod payments-6d7bd7849-fbl9m_kc-eval-08(4a956a23-1156-40de-b822-70579e2"
+        }
+      ],
+      "contributing_features": [],
+      "series": [],
+      "warning": "Insufficient metric history for kc-eval-08/payments-6d7bd7849-fbl9m (0 sample(s); need at least 3)."
+    },
+    "anomaly_unavailable": false
+  },
+  "propose_input": {
+    "deployment": {
+      "namespace": "kc-eval-08",
+      "name": "payments",
+      "replicas": 1,
+      "ready": 1,
+      "available": 1,
+      "updated": 1,
+      "generation": 2,
+      "observed_generation": 2,
+      "revision": 2,
+      "previous_revision": 1,
+      "summary": {
+        "replicas": 1,
+        "revision": 2,
+        "template": {
+          "annotations": {},
+          "containers": [
+            {
+              "name": "payments",
+              "image": "busybox:1.36",
+              "command": [
+                "sh",
+                "-c",
+                "echo \"$(date -Iseconds) INFO payments starting\"; case \"$PORT\" in \"\"|*[!0-9]*) echo \"$(date -Iseconds) FATAL invalid value for PORT: \\\"$PORT\\\" (expected an integer 1-65535)\"; exit 2;; esac; echo \"$(date -Iseconds) INFO starting payments v1.4.2\"; echo \"$(date -Iseconds) INFO listening on :8080\"; while true; do echo \"$(date -Iseconds) INFO handled request path=/api/v1/items status=200 latency_ms=$((RANDOM%40+5))\"; sleep 3; done"
+              ],
+              "args": null
+            }
+          ]
+        }
+      },
+      "previous_summary": {
+        "annotations": {},
+        "containers": [
+          {
+            "name": "payments",
+            "image": "busybox:1.36",
+            "command": [
+              "sh",
+              "-c",
+              "echo \"$(date -Iseconds) INFO payments starting\"; case \"$PORT\" in \"\"|*[!0-9]*) echo \"$(date -Iseconds) FATAL invalid value for PORT: \\\"$PORT\\\" (expected an integer 1-65535)\"; exit 2;; esac; echo \"$(date -Iseconds) INFO starting payments v1.4.2\"; echo \"$(date -Iseconds) INFO listening on :8080\"; while true; do echo \"$(date -Iseconds) INFO handled request path=/api/v1/items status=200 latency_ms=$((RANDOM%40+5))\"; sleep 3; done"
+            ],
+            "args": null
+          }
+        ]
+      }
+    },
+    "pod_state": {
+      "namespace": "kc-eval-08",
+      "name": "payments-6d7bd7849-fbl9m",
+      "controller_kind": "ReplicaSet",
+      "controller_name": "payments-6d7bd7849",
+      "deployment": "payments",
+      "crashlooping": true,
+      "restart_count": 4,
+      "reason": "repeated restarts"
+    },
+    "signals": [
+      "container_restarted pod=payments-6d7bd7849-fbl9m +1 (Error)",
+      "event:BackOff pod=payments-6d7bd7849-fbl9m Back-off restarting failed container payments in pod payments-6d7bd7849-fbl9m_kc-eval-08(4a956a23-1156-40de-b822-70579e2"
+    ]
+  }
+}
