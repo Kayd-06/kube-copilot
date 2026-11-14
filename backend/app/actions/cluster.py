@@ -52,6 +52,104 @@ def template_summary(template) -> dict[str, Any]:
     return {"annotations": annotations, "containers": containers}
 
 
+# Fields the API server fills with defaults; they never explain a broken rollout.
+_DEFAULT_NOISE = {
+    "terminationMessagePath", "terminationMessagePolicy", "dnsPolicy", "schedulerName",
+    "securityContext", "restartPolicy", "terminationGracePeriodSeconds", "creationTimestamp",
+}
+_MAX_DIFF_LINES = 25
+_MAX_VALUE_CHARS = 160
+
+
+def _plain(obj: Any) -> Any:
+    """A V1PodTemplateSpec (or already-plain dict) as JSON-style dicts with camelCase keys."""
+    if obj is None:
+        return None
+    if isinstance(obj, (dict, list, str, int, float, bool)):
+        return obj
+    return client.ApiClient().sanitize_for_serialization(obj)
+
+
+def _flatten(value: Any, path: str, out: dict[str, Any]) -> None:
+    """Flatten into dotted paths. Lists of named objects (containers, env, volumes...) are keyed by name."""
+    if isinstance(value, dict):
+        if not value:
+            return
+        for key, sub in value.items():
+            if key in _DEFAULT_NOISE and not path.endswith("labels") and not path.endswith("annotations"):
+                continue
+            if key == "pod-template-hash":
+                continue
+            _flatten(sub, f"{path}.{key}" if path else key, out)
+    elif isinstance(value, list):
+        if value and all(isinstance(v, dict) and "name" in v for v in value):
+            for item in value:
+                rest = {k: v for k, v in item.items() if k != "name"}
+                key = f"{path}[{item['name']}]"
+                if rest:
+                    _flatten(rest, key, out)
+                else:
+                    out[key] = "(present)"
+        elif value and all(isinstance(v, dict) for v in value):
+            for i, item in enumerate(value):
+                _flatten(item, f"{path}[{i}]", out)
+        elif value:
+            out[path] = value
+    elif value is not None:
+        out[path] = value
+
+
+def _short(value: Any) -> str:
+    text = json.dumps(value, default=str, separators=(",", ":")) if not isinstance(value, str) else json.dumps(value)
+    return text if len(text) <= _MAX_VALUE_CHARS else text[: _MAX_VALUE_CHARS - 1] + "…"
+
+
+def template_diff(previous: Any, current: Any) -> list[str]:
+    """Compact field-level diff of two pod templates (previous -> current).
+
+    Covers everything in the template: image, command/args, env and envFrom
+    (including ConfigMap/Secret refs), probes, resources, nodeSelector,
+    affinity, tolerations, volumes and mounts. Lines look like
+    `~ spec.containers[web].env[PORT].value: "8080" -> "eighty"`.
+    """
+    before: dict[str, Any] = {}
+    after: dict[str, Any] = {}
+    _flatten(_plain(previous) or {}, "", before)
+    _flatten(_plain(current) or {}, "", after)
+    lines = []
+    for key in sorted(set(before) | set(after)):
+        if key.startswith("metadata.annotations.") and key.endswith("restartedAt") and key in before and key in after:
+            lines.append(f"~ {key}: (rolling restart)")
+            continue
+        if key not in before:
+            lines.append(f"+ {key}: {_short(after[key])}")
+        elif key not in after:
+            lines.append(f"- {key}: {_short(before[key])}")
+        elif before[key] != after[key]:
+            lines.append(f"~ {key}: {_short(before[key])} -> {_short(after[key])}")
+    if len(lines) > _MAX_DIFF_LINES:
+        extra = len(lines) - _MAX_DIFF_LINES
+        lines = lines[:_MAX_DIFF_LINES] + [f"... {extra} more changed field(s)"]
+    return lines
+
+
+def template_refs(template: Any) -> dict[str, list[str]]:
+    """ConfigMaps/Secrets/PVCs the template references (env, envFrom, volumes)."""
+    flat: dict[str, Any] = {}
+    _flatten(_plain(template) or {}, "", flat)
+    refs: dict[str, set[str]] = {"configmaps": set(), "secrets": set(), "pvcs": set()}
+    for key, value in flat.items():
+        if not isinstance(value, str):
+            continue
+        if key.endswith(("configMapKeyRef.name", "configMapRef.name", "configMap.name")):
+            refs["configmaps"].add(value)
+        elif key.endswith(("secretKeyRef.name", "secretRef.name", "secret.secretName")):
+            refs["secrets"].add(value)
+        elif key.endswith("persistentVolumeClaim.claimName"):
+            refs["pvcs"].add(value)
+    return {k: sorted(v) for k, v in refs.items() if v}
+
+
 def deployment_summary(dep) -> dict[str, Any]:
     return {
         "replicas": dep.spec.replicas if dep.spec else None,
@@ -134,6 +232,10 @@ class ActionsCluster:
             previous_revision=_revision(prev.metadata) if prev is not None else None,
             summary=deployment_summary(dep),
             previous_summary=template_summary(prev.spec.template) if prev is not None else None,
+            template_diff=(
+                template_diff(prev.spec.template, dep.spec.template) if prev is not None and dep.spec else None
+            ),
+            template_refs=template_refs(dep.spec.template if dep.spec else None),
         )
 
     def pod_state(self, namespace: str, name: str) -> PodState | None:

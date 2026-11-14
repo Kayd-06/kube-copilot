@@ -10,24 +10,34 @@ import pytest
 from app.actions.proposer import build_context
 from app.llm_explainer import build_user_prompt
 from ml.llm_eval.cases import CASES, CASES_BY_ID
-from ml.llm_eval.fixtures import FIXTURE_DIR, load_all
+from ml.llm_eval.fixtures import FIXTURE_DIR, FIXTURE_DIR_V1, load_all
 from ml.llm_eval.run import Pacer, baselines, diagnose_inputs, runs_variant, summarize
 from ml.llm_eval.scoring import kubectl_refs, schema_check, score_hallucination, score_remediation, score_retrieval
 from ml.llm_eval.taxonomy import ACTIONS, CATEGORIES, matches, predict_category
 
 RUNBOOKS = {p.name for p in (FIXTURE_DIR.parents[2].parent / "knowledge" / "runbooks").glob("*.md")}
 FIXTURES = load_all()
+FIXTURES_V1 = load_all(FIXTURE_DIR_V1)
 
 
 def test_fixture_set_is_complete_and_sized():
-    assert 25 <= len(FIXTURES) <= 40
-    assert {f.id for f in FIXTURES} == set(CASES_BY_ID), "every case has exactly one fixture"
+    for fixtures in (FIXTURES, FIXTURES_V1):
+        assert 25 <= len(fixtures) <= 40
+        assert {f.id for f in fixtures} == set(CASES_BY_ID), "every case has exactly one fixture"
 
 
-@pytest.mark.parametrize("fx", FIXTURES, ids=lambda f: f.id)
+def test_v2_recaptures_keep_labels_and_add_context():
+    v1 = {f.id: f for f in FIXTURES_V1}
+    for fx in FIXTURES:
+        assert fx.labels == v1[fx.id].labels, "re-captures must not change labels"
+        if fx.raw["schema_version"] == 2 and fx.deployment and fx.deployment.previous_revision:
+            assert fx.deployment.template_diff is not None
+
+
+@pytest.mark.parametrize("fx", FIXTURES + FIXTURES_V1, ids=lambda f: f"{f.raw['schema_version']}-{f.id}")
 def test_fixture_schema_and_labels(fx):
     case = CASES_BY_ID[fx.id]
-    assert fx.raw["schema_version"] == 1
+    assert fx.raw["schema_version"] in (1, 2)
     assert fx.labels == case.labels(), "fixture labels must match the hand labels in cases.py"
     assert fx.labels["category"] in CATEGORIES
     assert fx.labels["expected_actions"] and set(fx.labels["expected_actions"]) <= set(ACTIONS)
@@ -122,7 +132,7 @@ def test_remediation_and_retrieval_scoring():
 def test_variants_and_summary_offline():
     fx = FIXTURES[0]
     assert runs_variant(fx, "diagnose", "full")
-    _, _, _, retrieved, _ = diagnose_inputs(fx, "no_rag")
+    _, _, _, retrieved, _, _ = diagnose_inputs(fx, "no_rag")
     assert retrieved is None
     records = [{
         "case": fx.id, "task": "diagnose", "variant": "full", "latency_s": 1.0, "prompt_tokens": 10,
@@ -147,3 +157,21 @@ def test_pacer_retries_rate_limits(monkeypatch):
 
     out, _ = Pacer(tpm=0).call(flaky, 100)
     assert out == "ok" and calls.n == 2
+
+
+def test_pacer_waits_for_daily_quota_when_allowed(monkeypatch):
+    slept = []
+    monkeypatch.setattr("time.sleep", slept.append)
+    calls = SimpleNamespace(n=0)
+
+    def tpd():
+        calls.n += 1
+        if calls.n == 1:
+            raise RuntimeError("429 Rate limit reached on tokens per day (TPD): Limit 200000. Please try again in 2m3.5s.")
+        return "ok"
+
+    out, _ = Pacer(tpm=0, wait_daily_s=600).call(tpd, 100)
+    assert out == "ok" and slept and slept[0] >= 123
+    calls.n = 0
+    with pytest.raises(Exception, match="TPD"):
+        Pacer(tpm=0, wait_daily_s=0).call(tpd, 100)

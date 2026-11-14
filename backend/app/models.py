@@ -13,6 +13,8 @@ class ContainerStateSummary(BaseModel):
     reason: str | None = None
     message: str | None = None
     exit_code: int | None = None
+    # requests/limits from the pod spec, e.g. {"limits": {"cpu": "20m", "memory": "64Mi"}}.
+    resources: dict[str, dict[str, str]] | None = None
 
 
 class PodSummary(BaseModel):
@@ -27,6 +29,24 @@ class PodSummary(BaseModel):
     node: str | None = None
     qos_class: str | None = None
     containers: list[ContainerStateSummary] = Field(default_factory=list)
+
+
+class ContainerUsage(BaseModel):
+    """Instant resource usage for one container (Prometheus, 5m windows)."""
+
+    name: str
+    cpu_cores: float | None = None
+    cpu_limit_cores: float | None = None
+    cpu_request_cores: float | None = None
+    # Share of CFS periods in which the container was throttled (0..1).
+    cpu_throttled_ratio: float | None = None
+    memory_mib: float | None = None
+    memory_limit_mib: float | None = None
+
+
+class PodUsage(BaseModel):
+    containers: list[ContainerUsage] = Field(default_factory=list)
+    window: str = "5m"
 
 
 class PodEvent(BaseModel):
@@ -142,6 +162,7 @@ class DiagnoseResponse(BaseModel):
     knowledge_unavailable: bool = False
     anomaly: AnomalyScore | None = None
     anomaly_unavailable: bool = False
+    usage: PodUsage | None = None
 
 
 class HealthResponse(BaseModel):

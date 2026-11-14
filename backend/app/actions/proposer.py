@@ -13,6 +13,7 @@ from app.actions.models import ActionRequest
 from app.actions.policy import DeploymentState, PolicyConfig
 from app.config import Settings, get_settings
 from app.llm_explainer import LLMError
+from app.logcompact import compact_logs
 from app.models import PodEvent, PodLogs, PodSummary
 
 logger = logging.getLogger(__name__)
@@ -84,12 +85,27 @@ approves every action, and a policy engine will refuse anything outside the rule
 Rules:
 - Only target the incident pod or its Deployment, in the incident namespace.
 - Prefer the single least disruptive action that addresses the root cause.
-- If the current revision is broken and the previous revision looks healthy
-  (different image/command), prefer rollback_deployment.
+- "Changes in the latest rollout" lists every pod-template field that differs
+  between the previous ReplicaSet revision and the current one (image,
+  command/args, env and envFrom, ConfigMap/Secret references, probes,
+  resources, nodeSelector/affinity, volumes). If the failure is consistent with
+  one of those changes (for example a new probe that fails, a changed env value
+  the app rejects, a lowered memory or CPU limit, a nodeSelector no node
+  matches, a reference to a ConfigMap/Secret/key that does not exist), prefer
+  rollback_deployment.
+- If the only changes are unrelated to the failure (for example a version label
+  or env var), rolling back will not help: the cause is outside the template
+  (a ConfigMap/Secret changed or deleted after the rollout, a killed pod, a
+  dependency). Do not roll back in that case.
 - restart_deployment and delete_pod do not fix a deterministic bug in the
-  current revision; do not propose them for that.
+  current revision; do not propose them for that. They do help when a pod is
+  stuck on state that a fresh pod would not have (for example it only checked
+  a dependency at startup and that dependency has recovered).
+- A healthy pod, or a workload that already replaced a killed pod, needs no action.
 - If nothing allowed would help, call no_action and explain what a human should change.
 """
+
+LOG_BUDGET_CHARS = 1500
 
 
 @dataclass
@@ -99,6 +115,7 @@ class ProposalResult:
     raw_calls: list[dict[str, Any]] = field(default_factory=list)
     prompt_tokens: int | None = None
     completion_tokens: int | None = None
+    retried_without_required_tool: bool = False
 
 
 def build_context(
@@ -108,9 +125,8 @@ def build_context(
     deployment: DeploymentState | None,
     signals: list[str] | None = None,
 ) -> str:
-    def tail(text: str | None, n: int = 30) -> str:
-        lines = (text or "").strip().splitlines()
-        return "\n".join(lines[-n:]) or "(empty)"
+    def tail(text: str | None) -> str:
+        return compact_logs((text or "").strip(), LOG_BUDGET_CHARS) or "(empty)"
 
     parts = [
         "## Incident pod",
@@ -147,11 +163,18 @@ def build_context(
                     "current_template": deployment.summary.get("template"),
                     "previous_revision": deployment.previous_revision,
                     "previous_template": deployment.previous_summary,
+                    "current_references": deployment.template_refs,
                 },
                 indent=2,
                 default=str,
             ),
         ]
+        if deployment.previous_revision is not None and deployment.template_diff is not None:
+            parts += [
+                f"## Changes in the latest rollout (pod template, revision {deployment.previous_revision} -> "
+                f"{deployment.revision}; ~ changed, + added, - removed)",
+                "\n".join(deployment.template_diff) or "(no pod-template differences)",
+            ]
     else:
         parts.append("## Owning Deployment\n(none: the pod is not managed by a Deployment)")
     if signals:
@@ -202,22 +225,35 @@ class ActionProposer:
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": context},
         ]
+        kwargs = dict(
+            model=self._settings.llm_model,
+            messages=messages,
+            tools=build_tools(config),
+            tool_choice="required",
+            temperature=0.0,
+        )
+        retried = False
         try:
-            response = self._get_client().chat.completions.create(
-                model=self._settings.llm_model,
-                messages=messages,
-                tools=build_tools(config),
-                tool_choice="required",
-                temperature=0.0,
-            )
+            response = self._get_client().chat.completions.create(**kwargs)
         except OpenAIError as exc:
-            raise LLMError(f"LLM tool call failed: {exc}") from exc
+            # Some models (seen with gpt-oss-20b on Groq) occasionally answer in prose and the provider
+            # rejects the reply with "Tool choice is required". Retry once letting the model choose; a
+            # prose-only answer then becomes a no-action note below.
+            if "tool choice is required" not in str(exc).lower() and "tool_use_failed" not in str(exc).lower():
+                raise LLMError(f"LLM tool call failed: {exc}") from exc
+            logger.info("Model did not call a tool; retrying once with tool_choice=auto")
+            retried = True
+            try:
+                response = self._get_client().chat.completions.create(**{**kwargs, "tool_choice": "auto"})
+            except OpenAIError as retry_exc:
+                raise LLMError(f"LLM tool call failed: {retry_exc}") from retry_exc
         message = response.choices[0].message if response.choices else None
         calls = [
             {"name": tc.function.name, "arguments": tc.function.arguments}
             for tc in ((message.tool_calls or []) if message is not None else [])
         ]
         result = parse_tool_calls(calls)
+        result.retried_without_required_tool = retried
         if not calls and message is not None and message.content:
             result.note = message.content.strip()[:1000]
         usage = getattr(response, "usage", None)

@@ -191,9 +191,10 @@ def test_build_user_prompt_includes_anomaly(sample_pod, sample_events, sample_lo
         ],
     )
     prompt = build_user_prompt(sample_pod, sample_events, sample_logs, anomaly=anomaly)
-    assert "flagged_as_anomaly: true" in prompt
+    assert "flagged: true" in prompt
     assert "mem_slope_mib_per_min" in prompt
     assert "Isolation Forest" in prompt
+    assert "weak evidence" in prompt
 
 def test_default_llm_model_is_gpt_oss(monkeypatch):
     monkeypatch.delenv("LLM_MODEL", raising=False)

@@ -46,6 +46,7 @@ from app.models import (
     KnowledgeSearchResponse,
     LifecycleSignalOut,
     MetricSample,
+    PodUsage,
     UnhealthyPodsResponse,
     WorkloadDisruption,
 )
@@ -167,9 +168,19 @@ def _citations(chunks: list[RetrievedChunk]) -> list[Citation]:
     ]
 
 
-def _retrieve(retriever: Retriever, pod, events, logs) -> RetrieveResult:
+def _pod_usage(prometheus: PrometheusClient, namespace: str, name: str) -> PodUsage | None:
+    """Best effort: per-container CPU use, throttling and memory vs limits. Never raises."""
     try:
-        return retriever.retrieve_for_pod(pod, events, logs)
+        usage = prometheus.pod_usage(namespace, name)
+        return usage if usage.containers else None
+    except Exception as exc:  # noqa: BLE001 — diagnose must still succeed without Prometheus
+        logger.info("Resource usage unavailable for %s/%s: %s", namespace, name, exc)
+        return None
+
+
+def _retrieve(retriever: Retriever, pod, events, logs, usage: PodUsage | None = None) -> RetrieveResult:
+    try:
+        return retriever.retrieve_for_pod(pod, events, logs, usage=usage)
     except KnowledgeUnavailableError as exc:
         logger.warning("Retrieval failed: %s", exc)
         return RetrieveResult(
@@ -300,12 +311,13 @@ async def diagnose_pod(
     lifecycle: LifecycleDetector = Depends(get_lifecycle_detector),
 ):
     pod, events, logs = _collect_evidence(k8s, namespace, name)
-    retrieved = _retrieve(retriever, pod, events, logs)
+    usage = _pod_usage(prometheus, namespace, name)
+    retrieved = _retrieve(retriever, pod, events, logs, usage)
     anomaly, anomaly_unavailable = _score_pod(scorer, prometheus, namespace, name, lifecycle)
 
     if stream:
         return StreamingResponse(
-            _diagnosis_sse(llm, pod, events, logs, retrieved, anomaly, anomaly_unavailable),
+            _diagnosis_sse(llm, pod, events, logs, retrieved, anomaly, anomaly_unavailable, usage),
             media_type="text/event-stream",
             headers={
                 "Cache-Control": "no-cache",
@@ -316,7 +328,7 @@ async def diagnose_pod(
 
     with track_diagnose_latency():
         try:
-            diagnosis = llm.explain(pod, events, logs, retrieved=retrieved.chunks, anomaly=anomaly)
+            diagnosis = llm.explain(pod, events, logs, retrieved=retrieved.chunks, anomaly=anomaly, usage=usage)
             record_llm_call(True)
         except LLMError as exc:
             record_llm_call(False)
@@ -330,6 +342,7 @@ async def diagnose_pod(
         knowledge_unavailable=retrieved.knowledge_unavailable,
         anomaly=anomaly,
         anomaly_unavailable=anomaly_unavailable,
+        usage=usage,
     )
 
 
@@ -346,6 +359,7 @@ async def _diagnosis_sse(
     retrieved: RetrieveResult,
     anomaly: AnomalyScore | None = None,
     anomaly_unavailable: bool = False,
+    usage: PodUsage | None = None,
 ) -> AsyncIterator[str]:
     citations = [c.model_dump(mode="json") for c in _citations(retrieved.chunks)]
     anomaly_payload = anomaly.model_dump(mode="json") if anomaly is not None else None
@@ -359,6 +373,7 @@ async def _diagnosis_sse(
             "knowledge_unavailable": retrieved.knowledge_unavailable,
             "anomaly": anomaly_payload,
             "anomaly_unavailable": anomaly_unavailable,
+            "usage": usage.model_dump(mode="json") if usage is not None else None,
         },
     )
     yield _sse(
@@ -383,7 +398,7 @@ async def _diagnosis_sse(
     with track_diagnose_latency():
         try:
             async for piece in llm.aexplain_stream(
-                pod, events, logs, retrieved=retrieved.chunks, anomaly=anomaly
+                pod, events, logs, retrieved=retrieved.chunks, anomaly=anomaly, usage=usage
             ):
                 chunks.append(piece)
                 yield _sse("token", json.dumps({"text": piece}))

@@ -133,7 +133,7 @@ class FakeLLM:
         self.stream_chunks = stream_chunks
         self.calls = []
 
-    def explain(self, pod, events, logs, retrieved=None, anomaly=None):
+    def explain(self, pod, events, logs, retrieved=None, anomaly=None, usage=None):
         from app.llm_explainer import LLMError
 
         self.calls.append(("explain", pod, events, logs, retrieved, anomaly))
@@ -141,7 +141,7 @@ class FakeLLM:
             raise LLMError(self.error)
         return self.diagnosis
 
-    def explain_stream(self, pod, events, logs, retrieved=None, anomaly=None):
+    def explain_stream(self, pod, events, logs, retrieved=None, anomaly=None, usage=None):
         from app.llm_explainer import LLMError
 
         self.calls.append(("stream", pod, events, logs, retrieved, anomaly))
@@ -153,7 +153,7 @@ class FakeLLM:
         for piece in chunks or []:
             yield piece
 
-    async def aexplain_stream(self, pod, events, logs, retrieved=None, anomaly=None):
+    async def aexplain_stream(self, pod, events, logs, retrieved=None, anomaly=None, usage=None):
         for piece in self.explain_stream(pod, events, logs, retrieved, anomaly):
             yield piece
 
@@ -172,7 +172,7 @@ class FakeRetriever:
         self.saved = []
         self.queries = []
 
-    def retrieve_for_pod(self, pod, events, logs, top_k=None):
+    def retrieve_for_pod(self, pod, events, logs, top_k=None, usage=None):
         self.queries.append(("pod", pod, events, logs, top_k))
         return RetrieveResult(
             chunks=list(self.chunks),
