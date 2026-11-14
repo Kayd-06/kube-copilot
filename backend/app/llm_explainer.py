@@ -52,9 +52,10 @@ How to weigh the evidence:
    testing, a node drain, eviction or a manual delete) and the ReplicaSet
    replaced it. Say so explicitly and name the replaced pod.
 3. Resource usage: compare usage with the requests and limits. A container
-   throttled in a large share of its CFS periods (roughly 25% or more) while its
-   CPU use sits at its CPU limit is CPU-throttled: the limit is too low for the
-   load, even when nothing crashes and the logs look normal.
+   throttled in a large share of its CFS periods (roughly 25% or more) is
+   CPU-throttled: its CPU limit is too low for its load, even when nothing
+   crashes, the logs look normal and the averaged CPU use looks below the limit
+   (throttling happens in 100 ms bursts).
 4. The anomaly score is weak, uncalibrated evidence: the model also flags many
    healthy pods. Never name a root cause from the anomaly score alone; it needs
    corroboration from status, events, logs, lifecycle signals or resource usage.
