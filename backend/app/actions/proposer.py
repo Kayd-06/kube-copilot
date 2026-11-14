@@ -97,6 +97,8 @@ class ProposalResult:
     requests: list[ActionRequest] = field(default_factory=list)
     note: str = ""
     raw_calls: list[dict[str, Any]] = field(default_factory=list)
+    prompt_tokens: int | None = None
+    completion_tokens: int | None = None
 
 
 def build_context(
@@ -218,4 +220,8 @@ class ActionProposer:
         result = parse_tool_calls(calls)
         if not calls and message is not None and message.content:
             result.note = message.content.strip()[:1000]
+        usage = getattr(response, "usage", None)
+        if usage is not None:
+            result.prompt_tokens = getattr(usage, "prompt_tokens", None)
+            result.completion_tokens = getattr(usage, "completion_tokens", None)
         return result

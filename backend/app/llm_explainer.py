@@ -6,6 +6,7 @@ import json
 import logging
 import re
 from collections.abc import AsyncIterator, Iterator
+from dataclasses import dataclass
 
 from openai import APIError, OpenAI, OpenAIError
 
@@ -42,6 +43,17 @@ commands that would gather the missing signal.
 
 class LLMError(Exception):
     """Raised when the LLM call fails or cannot be configured."""
+
+
+@dataclass
+class DiagnosisRun:
+    """One non-streaming diagnosis with what an evaluation needs to score it."""
+
+    diagnosis: Diagnosis
+    raw_text: str
+    parsed: bool
+    prompt_tokens: int | None = None
+    completion_tokens: int | None = None
 
 
 def parse_diagnosis(text: str) -> Diagnosis:
@@ -248,6 +260,17 @@ class LLMExplainer:
         retrieved: list[RetrievedChunk] | None = None,
         anomaly: AnomalyScore | None = None,
     ) -> Diagnosis:
+        return self.explain_detailed(pod, events, logs, retrieved, anomaly).diagnosis
+
+    def explain_detailed(
+        self,
+        pod: PodSummary,
+        events: list[PodEvent],
+        logs: PodLogs,
+        retrieved: list[RetrievedChunk] | None = None,
+        anomaly: AnomalyScore | None = None,
+    ) -> DiagnosisRun:
+        """Like explain(), but also returns the raw text, parse status and token usage (used by evals)."""
         messages = [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": build_user_prompt(pod, events, logs, retrieved, anomaly)},
@@ -273,11 +296,21 @@ class LLMExplainer:
         text = ""
         if response.choices:
             text = response.choices[0].message.content or ""
+        usage = getattr(response, "usage", None)
+        prompt_tokens = getattr(usage, "prompt_tokens", None) if usage is not None else None
+        completion_tokens = getattr(usage, "completion_tokens", None) if usage is not None else None
         try:
-            return parse_diagnosis(text)
+            diagnosis, parsed = parse_diagnosis(text), True
         except (json.JSONDecodeError, ValueError, TypeError) as exc:
             logger.warning("Failed to parse diagnosis JSON: %s", exc)
-            return fallback_diagnosis(text, pod)
+            diagnosis, parsed = fallback_diagnosis(text, pod), False
+        return DiagnosisRun(
+            diagnosis=diagnosis,
+            raw_text=text,
+            parsed=parsed,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+        )
 
     def explain_stream(
         self,

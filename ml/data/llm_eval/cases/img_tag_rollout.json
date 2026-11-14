@@ -1,0 +1,253 @@
+{
+  "schema_version": 1,
+  "id": "img_tag_rollout",
+  "title": "Rollout to a nginx tag that does not exist",
+  "labels": {
+    "category": "image_pull",
+    "expected_actions": [
+      "rollback_deployment"
+    ],
+    "expected_runbooks": [
+      "imagepullbackoff.md"
+    ],
+    "difficulty": "easy",
+    "fault": "Deployment updated from nginx:1.27-alpine to the non-existent tag nginx:1.27-alpine-typo.",
+    "notes": ""
+  },
+  "namespace": "kc-eval-01",
+  "workload": "checkout",
+  "pod_name": "checkout-6866774fbf-8mhjh",
+  "captured_at": "2026-11-13T17:47:23+00:00",
+  "cluster": "kind kube-copilot (single node, Kubernetes v1.32.2)",
+  "diagnose_input": {
+    "pod": {
+      "name": "checkout-6866774fbf-8mhjh",
+      "namespace": "kc-eval-01",
+      "phase": "Pending",
+      "reason": "ErrImagePull",
+      "message": "failed to pull and unpack image \"docker.io/library/nginx:1.27-alpine-typo\": failed to resolve reference \"docker.io/library/nginx:1.27-alpine-typo\": failed to do request: Head \"https://registry-1.docker.io/v2/library/nginx/manifests/1.27-alpine-typo\": dial tcp: lookup registry-1.docker.io on 172.18.0.1:53: server misbehaving",
+      "restart_count": 0,
+      "ready": false,
+      "created_at": "2026-11-13T17:45:49Z",
+      "node": "kube-copilot-control-plane",
+      "qos_class": "Burstable",
+      "containers": [
+        {
+          "name": "checkout",
+          "ready": false,
+          "restart_count": 0,
+          "state": "waiting",
+          "reason": "ErrImagePull",
+          "message": "failed to pull and unpack image \"docker.io/library/nginx:1.27-alpine-typo\": failed to resolve reference \"docker.io/library/nginx:1.27-alpine-typo\": failed to do request: Head \"https://registry-1.docker.io/v2/library/nginx/manifests/1.27-alpine-typo\": dial tcp: lookup registry-1.docker.io on 172.18.0.1:53: server misbehaving",
+          "exit_code": null
+        }
+      ]
+    },
+    "events": [
+      {
+        "type": "Normal",
+        "reason": "Scheduled",
+        "message": "Successfully assigned kc-eval-01/checkout-6866774fbf-8mhjh to kube-copilot-control-plane",
+        "count": 1,
+        "first_timestamp": "2026-11-13T17:45:49Z",
+        "last_timestamp": "2026-11-13T17:45:49Z",
+        "source": "default-scheduler"
+      },
+      {
+        "type": "Normal",
+        "reason": "Pulling",
+        "message": "Pulling image \"nginx:1.27-alpine-typo\"",
+        "count": 3,
+        "first_timestamp": "2026-11-13T17:45:49Z",
+        "last_timestamp": "2026-11-13T17:46:57Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Warning",
+        "reason": "Failed",
+        "message": "Failed to pull image \"nginx:1.27-alpine-typo\": failed to pull and unpack image \"docker.io/library/nginx:1.27-alpine-typo\": failed to resolve reference \"docker.io/library/nginx:1.27-alpine-typo\": failed to do request: Head \"https://registry-1.docker.io/v2/library/nginx/manifests/1.27-alpine-typo\": dial tcp: lookup registry-1.docker.io on 172.18.0.1:53: server misbehaving",
+        "count": 3,
+        "first_timestamp": "2026-11-13T17:46:06Z",
+        "last_timestamp": "2026-11-13T17:47:05Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Warning",
+        "reason": "Failed",
+        "message": "Error: ErrImagePull",
+        "count": 3,
+        "first_timestamp": "2026-11-13T17:46:06Z",
+        "last_timestamp": "2026-11-13T17:47:05Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "BackOff",
+        "message": "Back-off pulling image \"nginx:1.27-alpine-typo\"",
+        "count": 3,
+        "first_timestamp": "2026-11-13T17:46:06Z",
+        "last_timestamp": "2026-11-13T17:47:19Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Warning",
+        "reason": "Failed",
+        "message": "Error: ImagePullBackOff",
+        "count": 3,
+        "first_timestamp": "2026-11-13T17:46:06Z",
+        "last_timestamp": "2026-11-13T17:47:19Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      }
+    ],
+    "logs": {
+      "current": "(logs unavailable: Bad Request)",
+      "previous": null,
+      "container": "checkout"
+    },
+    "retrieval_query": "Pending ErrImagePull failed to pull and unpack image \"docker.io/library/nginx:1.27-alpine-typo\": failed to resolve reference \"docker.io/library/nginx:1.27-alpine-typo\": failed to do request: Head \"https://registry-1.docker.io/v2/library/nginx/manifests/1.27-alpine-typo\": dial tcp: lookup registry-1.docker.io on 172.18.0.1:53: server misbehaving ErrImagePull failed to pull and unpack image \"docker.io/library/nginx:1.27-alpine-typo\": failed to resolve reference \"docker.io/library/nginx:1.27-alpine-typo\": failed to do request: Head \"https://registry-1.docker.io/v2/library/nginx/manifests/1.27-alpine-typo\": dial tcp: lookup registry-1.docker.io on 172.18.0.1:53: server misbehaving Scheduled Successfully assigned kc-eval-01/checkout-6866774fbf-8mhjh to kube-copilot-control-plane Pulling Pulling image \"nginx:1.27-alpine-typo\" Failed Failed to pull image \"nginx:1.27-alpine-typo\": failed to pull and unpack image \"docker.io/library/nginx:1.27-alpine-typo\": failed to resolve reference \"docker.io/library/nginx:1.27-alpine-typo\": failed to do request: Head \"https://registry-1.docker.io/v2/library/nginx/manifests/1.27-alpine-typo\": dial tcp: lookup registry-1.docker.io on 172.18.0.1:53: server misbehaving Failed Error: ErrImagePull BackOff Back-off pulling image \"nginx:1.27-alpine-typo\" Failed Error: ImagePullBackOff",
+    "retrieved": [
+      {
+        "title": "ImagePullBackOff and ErrImagePull",
+        "source": "imagepullbackoff.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- Pod stays `Pending` or shows `STATUS` as `ImagePullBackOff` / `ErrImagePull`.\n- Events include `Failed` from `kubelet` with messages such as `Failed to pull image`, `not found`, `unauthorized`, `denied`, or `invalid image name`.\n- There are no application logs because the container has not started.",
+        "score": 0.7701352045347414,
+        "kind": "runbook"
+      },
+      {
+        "title": "ImagePullBackOff and ErrImagePull",
+        "source": "imagepullbackoff.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Read the event message \u2014 it usually names the exact reference and the registry error:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get events -n <ns> --field-selector involvedObject.name=<pod>\n   ```\n\n2. Confirm the image the pod is actually asking for:\n\n   ```bash\n   kubectl get pod <pod> -n <ns> -o jsonpath='{range .spec.containers[*]}{.name}{\" \"}{.image}{\"\\n\"}{end}'\n   ```\n\n3. If it is a private image, check that a pull Secret exists in the same namespace and is referenced on the ServiceAccount or pod:\n\n   ```bash\n   kubectl get sa default -n <ns> -o yaml\n   kubectl get secret -n <ns>\n   ```\n\n4. From a node or a debug pod, try `crictl pull` / `docker pull` with the same reference to distinguish \"does not exist\" from \"auth\" and \"network\".",
+        "score": 0.7693534511075254,
+        "kind": "runbook"
+      },
+      {
+        "title": "ImagePullBackOff and ErrImagePull",
+        "source": "imagepullbackoff.md",
+        "section": "ImagePullBackOff and ErrImagePull",
+        "text": "# ImagePullBackOff and ErrImagePull\n\nThe kubelet could not pull the container image, so the pod never starts. `ErrImagePull` is the immediate failure; `ImagePullBackOff` is the retry/backoff state that follows.",
+        "score": 0.7627186549784855,
+        "kind": "runbook"
+      },
+      {
+        "title": "ImagePullBackOff and ErrImagePull",
+        "source": "imagepullbackoff.md",
+        "section": "Common causes",
+        "text": "## Common causes\n\n- The image name or tag is wrong (typo, tag that was never pushed, or `latest` that does not exist).\n- The image is in a private registry and the pod has no `imagePullSecrets`, or the Secret is in the wrong namespace.\n- The registry is unreachable (DNS, network policy, or a corporate proxy).\n- `imagePullPolicy: Always` combined with an unstable or deleted tag.\n- An invalid reference such as a missing host, a bad digest, or uppercase characters where the registry does not allow them.",
+        "score": 0.7466156765722631,
+        "kind": "runbook"
+      },
+      {
+        "title": "CreateContainerError",
+        "source": "create-container-error.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- Pod is `Waiting` with reason `CreateContainerError`.\n- Events include `Failed` from the kubelet with a runtime error (device mapper, `no space left on device`, seccomp / AppArmor / SELinux denial, invalid capability, or a missing device plugin).\n- The image has often already been pulled (`ImagePullBackOff` is not the current reason).\n- Application logs are typically unavailable because the container never started.",
+        "score": 0.7424695796498462,
+        "kind": "runbook"
+      }
+    ],
+    "knowledge_unavailable": false,
+    "anomaly": {
+      "namespace": "kc-eval-01",
+      "name": "checkout-6866774fbf-8mhjh",
+      "score": 0.0,
+      "is_anomaly": true,
+      "threshold": 0.013067,
+      "metric_anomaly": false,
+      "detectors": [
+        "lifecycle"
+      ],
+      "lifecycle_signals": [
+        {
+          "kind": "event:Failed",
+          "at": "2026-11-13T17:47:05Z",
+          "workload": "checkout",
+          "pod": "checkout-6866774fbf-8mhjh",
+          "detail": "Failed to pull image \"nginx:1.27-alpine-typo\": failed to pull and unpack image \"docker.io/library/nginx:1.27-alpine-typo"
+        },
+        {
+          "kind": "event:Failed",
+          "at": "2026-11-13T17:47:05Z",
+          "workload": "checkout",
+          "pod": "checkout-6866774fbf-8mhjh",
+          "detail": "Error: ErrImagePull"
+        },
+        {
+          "kind": "event:BackOff",
+          "at": "2026-11-13T17:47:19Z",
+          "workload": "checkout",
+          "pod": "checkout-6866774fbf-8mhjh",
+          "detail": "Back-off pulling image \"nginx:1.27-alpine-typo\""
+        },
+        {
+          "kind": "event:Failed",
+          "at": "2026-11-13T17:47:19Z",
+          "workload": "checkout",
+          "pod": "checkout-6866774fbf-8mhjh",
+          "detail": "Error: ImagePullBackOff"
+        }
+      ],
+      "contributing_features": [],
+      "series": [],
+      "warning": "Insufficient metric history for kc-eval-01/checkout-6866774fbf-8mhjh (0 sample(s); need at least 3)."
+    },
+    "anomaly_unavailable": false
+  },
+  "propose_input": {
+    "deployment": {
+      "namespace": "kc-eval-01",
+      "name": "checkout",
+      "replicas": 1,
+      "ready": 1,
+      "available": 1,
+      "updated": 1,
+      "generation": 2,
+      "observed_generation": 2,
+      "revision": 2,
+      "previous_revision": 1,
+      "summary": {
+        "replicas": 1,
+        "revision": 2,
+        "template": {
+          "annotations": {},
+          "containers": [
+            {
+              "name": "checkout",
+              "image": "nginx:1.27-alpine-typo",
+              "command": null,
+              "args": null
+            }
+          ]
+        }
+      },
+      "previous_summary": {
+        "annotations": {},
+        "containers": [
+          {
+            "name": "checkout",
+            "image": "nginx:1.27-alpine",
+            "command": null,
+            "args": null
+          }
+        ]
+      }
+    },
+    "pod_state": {
+      "namespace": "kc-eval-01",
+      "name": "checkout-6866774fbf-8mhjh",
+      "controller_kind": "ReplicaSet",
+      "controller_name": "checkout-6866774fbf",
+      "deployment": "checkout",
+      "crashlooping": false,
+      "restart_count": 0,
+      "reason": null
+    },
+    "signals": [
+      "event:Failed pod=checkout-6866774fbf-8mhjh Failed to pull image \"nginx:1.27-alpine-typo\": failed to pull and unpack image \"docker.io/library/nginx:1.27-alpine-typo",
+      "event:Failed pod=checkout-6866774fbf-8mhjh Error: ErrImagePull",
+      "event:BackOff pod=checkout-6866774fbf-8mhjh Back-off pulling image \"nginx:1.27-alpine-typo\"",
+      "event:Failed pod=checkout-6866774fbf-8mhjh Error: ImagePullBackOff"
+    ]
+  }
+}

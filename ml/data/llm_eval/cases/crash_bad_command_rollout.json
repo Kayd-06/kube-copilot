@@ -1,0 +1,245 @@
+{
+  "schema_version": 1,
+  "id": "crash_bad_command_rollout",
+  "title": "Rollout with a command that does not exist in the image",
+  "labels": {
+    "category": "app_crash",
+    "expected_actions": [
+      "rollback_deployment"
+    ],
+    "expected_runbooks": [
+      "create-container-error.md",
+      "crashloopbackoff.md"
+    ],
+    "difficulty": "easy",
+    "fault": "Deployment updated to run /app/server, which does not exist in the image (exec fails).",
+    "notes": ""
+  },
+  "namespace": "kc-eval-04",
+  "workload": "api",
+  "pod_name": "api-7bff56b497-2vj8k",
+  "captured_at": "2026-11-13T17:47:20+00:00",
+  "cluster": "kind kube-copilot (single node, Kubernetes v1.32.2)",
+  "diagnose_input": {
+    "pod": {
+      "name": "api-7bff56b497-2vj8k",
+      "namespace": "kc-eval-04",
+      "phase": "Running",
+      "reason": "RunContainerError",
+      "message": "failed to create containerd task: failed to create shim task: OCI runtime create failed: runc create failed: unable to start container process: error during container init: exec: \"/app/server\": stat /app/server: no such file or directory",
+      "restart_count": 4,
+      "ready": false,
+      "created_at": "2026-11-13T17:45:49Z",
+      "node": "kube-copilot-control-plane",
+      "qos_class": "Burstable",
+      "containers": [
+        {
+          "name": "api",
+          "ready": false,
+          "restart_count": 4,
+          "state": "waiting",
+          "reason": "RunContainerError",
+          "message": "failed to create containerd task: failed to create shim task: OCI runtime create failed: runc create failed: unable to start container process: error during container init: exec: \"/app/server\": stat /app/server: no such file or directory",
+          "exit_code": null
+        }
+      ]
+    },
+    "events": [
+      {
+        "type": "Normal",
+        "reason": "Scheduled",
+        "message": "Successfully assigned kc-eval-04/api-7bff56b497-2vj8k to kube-copilot-control-plane",
+        "count": 1,
+        "first_timestamp": "2026-11-13T17:45:49Z",
+        "last_timestamp": "2026-11-13T17:45:49Z",
+        "source": "default-scheduler"
+      },
+      {
+        "type": "Normal",
+        "reason": "Pulled",
+        "message": "Container image \"busybox:1.36\" already present on machine",
+        "count": 5,
+        "first_timestamp": "2026-11-13T17:45:49Z",
+        "last_timestamp": "2026-11-13T17:47:15Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Created",
+        "message": "Created container: api",
+        "count": 5,
+        "first_timestamp": "2026-11-13T17:45:49Z",
+        "last_timestamp": "2026-11-13T17:47:15Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Warning",
+        "reason": "Failed",
+        "message": "Error: failed to create containerd task: failed to create shim task: OCI runtime create failed: runc create failed: unable to start container process: error during container init: exec: \"/app/server\": stat /app/server: no such file or directory",
+        "count": 5,
+        "first_timestamp": "2026-11-13T17:45:49Z",
+        "last_timestamp": "2026-11-13T17:47:15Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Warning",
+        "reason": "BackOff",
+        "message": "Back-off restarting failed container api in pod api-7bff56b497-2vj8k_kc-eval-04(d5e866c4-e1c1-4857-b99e-482bdf74016e)",
+        "count": 8,
+        "first_timestamp": "2026-11-13T17:45:50Z",
+        "last_timestamp": "2026-11-13T17:47:16Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      }
+    ],
+    "logs": {
+      "current": "",
+      "previous": "",
+      "container": "api"
+    },
+    "retrieval_query": "Running RunContainerError failed to create containerd task: failed to create shim task: OCI runtime create failed: runc create failed: unable to start container process: error during container init: exec: \"/app/server\": stat /app/server: no such file or directory RunContainerError failed to create containerd task: failed to create shim task: OCI runtime create failed: runc create failed: unable to start container process: error during container init: exec: \"/app/server\": stat /app/server: no such file or directory Scheduled Successfully assigned kc-eval-04/api-7bff56b497-2vj8k to kube-copilot-control-plane Pulled Container image \"busybox:1.36\" already present on machine Created Created container: api Failed Error: failed to create containerd task: failed to create shim task: OCI runtime create failed: runc create failed: unable to start container process: error during container init: exec: \"/app/server\": stat /app/server: no such file or directory BackOff Back-off restarting failed container api in pod api-7bff56b497-2vj8k_kc-eval-04(d5e866c4-e1c1-4857-b99e-482bdf74016e)",
+    "retrieved": [
+      {
+        "title": "CreateContainerError",
+        "source": "create-container-error.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- Pod is `Waiting` with reason `CreateContainerError`.\n- Events include `Failed` from the kubelet with a runtime error (device mapper, `no space left on device`, seccomp / AppArmor / SELinux denial, invalid capability, or a missing device plugin).\n- The image has often already been pulled (`ImagePullBackOff` is not the current reason).\n- Application logs are typically unavailable because the container never started.",
+        "score": 0.8345763490429146,
+        "kind": "runbook"
+      },
+      {
+        "title": "CreateContainerError",
+        "source": "create-container-error.md",
+        "section": "CreateContainerError",
+        "text": "# CreateContainerError\n\nThe kubelet tried to create the container and the runtime rejected it. Unlike `CreateContainerConfigError` (missing config objects), `CreateContainerError` usually means the runtime call itself failed: a bad device, an invalid security context, a full disk, or an image that is present but cannot be instantiated.",
+        "score": 0.8179954226510477,
+        "kind": "runbook"
+      },
+      {
+        "title": "CreateContainerError",
+        "source": "create-container-error.md",
+        "section": "Common causes",
+        "text": "## Common causes\n\n- The node disk is full, so the runtime cannot create the container's writable layer.\n- A security context asks for a capability, seccomp profile, AppArmor profile, or user that the node or policy will not allow.\n- A device plugin (GPU, FPGA) is required but not healthy, or the requested resource is gone.\n- An invalid `command` / working directory / symlink inside the image, or a corrupted image snapshot.\n- Runtime bugs or leftover half-created containers after a kubelet crash.",
+        "score": 0.8060027558185624,
+        "kind": "runbook"
+      },
+      {
+        "title": "CreateContainerConfigError",
+        "source": "create-container-config-error.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- Pod is `Pending` or `Waiting` with reason `CreateContainerConfigError`.\n- Events include `Failed` with a message such as `Error: secret \"...\" not found`, `couldn't find key ... in ConfigMap ...`, or `configmap \"...\" not found`.\n- Restart count is usually zero. `kubectl logs` will fail or return an \"unavailable\" message.",
+        "score": 0.8023573841585835,
+        "kind": "runbook"
+      },
+      {
+        "title": "CreateContainerConfigError",
+        "source": "create-container-config-error.md",
+        "section": "CreateContainerConfigError",
+        "text": "# CreateContainerConfigError\n\nThe kubelet refused to create the container because its configuration is invalid. This happens before the image even starts, so there are no application logs. The most common triggers are missing Secrets, ConfigMaps, or projected keys that the pod spec references.",
+        "score": 0.7828379864797065,
+        "kind": "runbook"
+      }
+    ],
+    "knowledge_unavailable": false,
+    "anomaly": {
+      "namespace": "kc-eval-04",
+      "name": "api-7bff56b497-2vj8k",
+      "score": 0.0,
+      "is_anomaly": true,
+      "threshold": 0.013067,
+      "metric_anomaly": false,
+      "detectors": [
+        "lifecycle"
+      ],
+      "lifecycle_signals": [
+        {
+          "kind": "container_restarted",
+          "at": "2026-11-13T17:47:15Z",
+          "workload": "api",
+          "pod": "api-7bff56b497-2vj8k",
+          "detail": "+1 (StartError)"
+        },
+        {
+          "kind": "event:Failed",
+          "at": "2026-11-13T17:47:15Z",
+          "workload": "api",
+          "pod": "api-7bff56b497-2vj8k",
+          "detail": "Error: failed to create containerd task: failed to create shim task: OCI runtime create failed: runc create failed: unab"
+        },
+        {
+          "kind": "event:BackOff",
+          "at": "2026-11-13T17:47:16Z",
+          "workload": "api",
+          "pod": "api-7bff56b497-2vj8k",
+          "detail": "Back-off restarting failed container api in pod api-7bff56b497-2vj8k_kc-eval-04(d5e866c4-e1c1-4857-b99e-482bdf74016e)"
+        }
+      ],
+      "contributing_features": [],
+      "series": [],
+      "warning": "Insufficient metric history for kc-eval-04/api-7bff56b497-2vj8k (0 sample(s); need at least 3)."
+    },
+    "anomaly_unavailable": false
+  },
+  "propose_input": {
+    "deployment": {
+      "namespace": "kc-eval-04",
+      "name": "api",
+      "replicas": 1,
+      "ready": 1,
+      "available": 1,
+      "updated": 1,
+      "generation": 2,
+      "observed_generation": 2,
+      "revision": 2,
+      "previous_revision": 1,
+      "summary": {
+        "replicas": 1,
+        "revision": 2,
+        "template": {
+          "annotations": {},
+          "containers": [
+            {
+              "name": "api",
+              "image": "busybox:1.36",
+              "command": [
+                "/app/server",
+                "--port",
+                "8080"
+              ],
+              "args": null
+            }
+          ]
+        }
+      },
+      "previous_summary": {
+        "annotations": {},
+        "containers": [
+          {
+            "name": "api",
+            "image": "busybox:1.36",
+            "command": [
+              "sh",
+              "-c",
+              "echo \"$(date -Iseconds) INFO starting api v1.4.2\"; echo \"$(date -Iseconds) INFO listening on :8080\"; while true; do echo \"$(date -Iseconds) INFO handled request path=/api/v1/items status=200 latency_ms=$((RANDOM%40+5))\"; sleep 3; done"
+            ],
+            "args": null
+          }
+        ]
+      }
+    },
+    "pod_state": {
+      "namespace": "kc-eval-04",
+      "name": "api-7bff56b497-2vj8k",
+      "controller_kind": "ReplicaSet",
+      "controller_name": "api-7bff56b497",
+      "deployment": "api",
+      "crashlooping": true,
+      "restart_count": 4,
+      "reason": "repeated restarts"
+    },
+    "signals": [
+      "container_restarted pod=api-7bff56b497-2vj8k +1 (StartError)",
+      "event:Failed pod=api-7bff56b497-2vj8k Error: failed to create containerd task: failed to create shim task: OCI runtime create failed: runc create failed: unab",
+      "event:BackOff pod=api-7bff56b497-2vj8k Back-off restarting failed container api in pod api-7bff56b497-2vj8k_kc-eval-04(d5e866c4-e1c1-4857-b99e-482bdf74016e)"
+    ]
+  }
+}

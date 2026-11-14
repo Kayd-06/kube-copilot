@@ -1,0 +1,260 @@
+{
+  "schema_version": 1,
+  "id": "healthy_noisy_logs",
+  "title": "Healthy worker that logs routine warnings",
+  "labels": {
+    "category": "healthy",
+    "expected_actions": [
+      "no_action"
+    ],
+    "expected_runbooks": [],
+    "difficulty": "hard",
+    "fault": "No fault injected; the worker logs benign retry/cache warnings.",
+    "notes": ""
+  },
+  "namespace": "kc-eval-33",
+  "workload": "sync",
+  "pod_name": "sync-659bbf857b-j5fhs",
+  "captured_at": "2026-11-13T17:49:54+00:00",
+  "cluster": "kind kube-copilot (single node, Kubernetes v1.32.2)",
+  "diagnose_input": {
+    "pod": {
+      "name": "sync-659bbf857b-j5fhs",
+      "namespace": "kc-eval-33",
+      "phase": "Running",
+      "reason": null,
+      "message": null,
+      "restart_count": 0,
+      "ready": true,
+      "created_at": "2026-11-13T17:48:51Z",
+      "node": "kube-copilot-control-plane",
+      "qos_class": "Burstable",
+      "containers": [
+        {
+          "name": "sync",
+          "ready": true,
+          "restart_count": 0,
+          "state": "running",
+          "reason": null,
+          "message": null,
+          "exit_code": null
+        }
+      ]
+    },
+    "events": [
+      {
+        "type": "Normal",
+        "reason": "Scheduled",
+        "message": "Successfully assigned kc-eval-33/sync-659bbf857b-j5fhs to kube-copilot-control-plane",
+        "count": 1,
+        "first_timestamp": "2026-11-13T17:48:51Z",
+        "last_timestamp": "2026-11-13T17:48:51Z",
+        "source": "default-scheduler"
+      },
+      {
+        "type": "Normal",
+        "reason": "Pulled",
+        "message": "Container image \"busybox:1.36\" already present on machine",
+        "count": 1,
+        "first_timestamp": "2026-11-13T17:48:51Z",
+        "last_timestamp": "2026-11-13T17:48:51Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Created",
+        "message": "Created container: sync",
+        "count": 1,
+        "first_timestamp": "2026-11-13T17:48:51Z",
+        "last_timestamp": "2026-11-13T17:48:51Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Started",
+        "message": "Started container sync",
+        "count": 1,
+        "first_timestamp": "2026-11-13T17:48:51Z",
+        "last_timestamp": "2026-11-13T17:48:51Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      }
+    ],
+    "logs": {
+      "current": "2026-11-13T17:48:51.984111732Z 2026-11-13T17:48:51+00:00 INFO sync worker started\n2026-11-13T17:48:51.984917565Z 2026-11-13T17:48:51+00:00 WARN upstream timeout on attempt 1/3, retrying\n2026-11-13T17:48:51.985758868Z 2026-11-13T17:48:51+00:00 INFO sync 1 ok after retry (records=120)\n2026-11-13T17:48:51.986595953Z 2026-11-13T17:48:51+00:00 WARN cache hit ratio 0.41 below target 0.60\n2026-11-13T17:48:55.987915887Z 2026-11-13T17:48:55+00:00 WARN upstream timeout on attempt 1/3, retrying\n2026-11-13T17:48:55.990688789Z 2026-11-13T17:48:55+00:00 INFO sync 2 ok after retry (records=120)\n2026-11-13T17:48:55.991766488Z 2026-11-13T17:48:55+00:00 WARN cache hit ratio 0.41 below target 0.60\n2026-11-13T17:48:59.993342536Z 2026-11-13T17:48:59+00:00 WARN upstream timeout on attempt 1/3, retrying\n2026-11-13T17:48:59.994072576Z 2026-11-13T17:48:59+00:00 INFO sync 3 ok after retry (records=120)\n2026-11-13T17:48:59.994713309Z 2026-11-13T17:48:59+00:00 WARN cache hit ratio 0.41 below target 0.60\n2026-11-13T17:49:03.996501199Z 2026-11-13T17:49:03+00:00 WARN upstream timeout on attempt 1/3, retrying\n2026-11-13T17:49:03.997309130Z 2026-11-13T17:49:03+00:00 INFO sync 4 ok after retry (records=120)\n2026-11-13T17:49:03.998301597Z 2026-11-13T17:49:03+00:00 WARN cache hit ratio 0.41 below target 0.60\n2026-11-13T17:49:07.999738432Z 2026-11-13T17:49:07+00:00 WARN upstream timeout on attempt 1/3, retrying\n2026-11-13T17:49:08.000663155Z 2026-11-13T17:49:07+00:00 INFO sync 5 ok after retry (records=120)\n2026-11-13T17:49:08.001739566Z 2026-11-13T17:49:07+00:00 WARN cache hit ratio 0.41 below target 0.60\n2026-11-13T17:49:12.003750901Z 2026-11-13T17:49:11+00:00 WARN upstream timeout on attempt 1/3, retrying\n2026-11-13T17:49:12.004743260Z 2026-11-13T17:49:11+00:00 INFO sync 6 ok after retry (records=120)\n2026-11-13T17:49:12.006139892Z 2026-11-13T17:49:11+00:00 WARN cache hit ratio 0.41 below target 0.60\n2026-11-13T17:49:16.007905782Z 2026-11-13T17:49:16+00:00 WARN upstream timeout on attempt 1/3, retrying\n2026-11-13T17:49:16.008887018Z 2026-11-13T17:49:16+00:00 INFO sync 7 ok after retry (records=120)\n2026-11-13T17:49:16.009962007Z 2026-11-13T17:49:16+00:00 WARN cache hit ratio 0.41 below target 0.60\n2026-11-13T17:49:20.011601702Z 2026-11-13T17:49:20+00:00 WARN upstream timeout on attempt 1/3, retrying\n2026-11-13T17:49:20.012639659Z 2026-11-13T17:49:20+00:00 INFO sync 8 ok after retry (records=120)\n2026-11-13T17:49:20.013405160Z 2026-11-13T17:49:20+00:00 WARN cache hit ratio 0.41 below target 0.60\n2026-11-13T17:49:24.014952794Z 2026-11-13T17:49:24+00:00 WARN upstream timeout on attempt 1/3, retrying\n2026-11-13T17:49:24.016118255Z 2026-11-13T17:49:24+00:00 INFO sync 9 ok after retry (records=120)\n2026-11-13T17:49:24.016980351Z 2026-11-13T17:49:24+00:00 WARN cache hit ratio 0.41 below target 0.60\n2026-11-13T17:49:28.018791862Z 2026-11-13T17:49:28+00:00 WARN upstream timeout on attempt 1/3, retrying\n2026-11-13T17:49:28.020071276Z 2026-11-13T17:49:28+00:00 INFO sync 10 ok after retry (records=120)\n2026-11-13T17:49:28.020859343Z 2026-11-13T17:49:28+00:00 WARN cache hit ratio 0.41 below target 0.60\n2026-11-13T17:49:32.022814889Z 2026-11-13T17:49:32+00:00 WARN upstream timeout on attempt 1/3, retrying\n2026-11-13T17:49:32.023643619Z 2026-11-13T17:49:32+00:00 INFO sync 11 ok after retry (records=120)\n2026-11-13T17:49:32.024744444Z 2026-11-13T17:49:32+00:00 WARN cache hit ratio 0.41 below target 0.60\n2026-11-13T17:49:36.026278588Z 2026-11-13T17:49:36+00:00 WARN upstream timeout on attempt 1/3, retrying\n2026-11-13T17:49:36.027788832Z 2026-11-13T17:49:36+00:00 INFO sync 12 ok after retry (records=120)\n2026-11-13T17:49:36.028942572Z 2026-11-13T17:49:36+00:00 WARN cache hit ratio 0.41 below target 0.60\n2026-11-13T17:49:40.030489958Z 2026-11-13T17:49:40+00:00 WARN upstream timeout on attempt 1/3, retrying\n2026-11-13T17:49:40.031429773Z 2026-11-13T17:49:40+00:00 INFO sync 13 ok after retry (records=120)\n2026-11-13T17:49:40.032307660Z 2026-11-13T17:49:40+00:00 WARN cache hit ratio 0.41 below target 0.60\n2026-11-13T17:49:44.034220216Z 2026-11-13T17:49:44+00:00 WARN upstream timeout on attempt 1/3, retrying\n2026-11-13T17:49:44.035263012Z 2026-11-13T17:49:44+00:00 INFO sync 14 ok after retry (records=120)\n2026-11-13T17:49:44.036536355Z 2026-11-13T17:49:44+00:00 WARN cache hit ratio 0.41 below target 0.60\n2026-11-13T17:49:48.037665548Z 2026-11-13T17:49:48+00:00 WARN upstream timeout on attempt 1/3, retrying\n2026-11-13T17:49:48.038764229Z 2026-11-13T17:49:48+00:00 INFO sync 15 ok after retry (records=120)\n2026-11-13T17:49:48.039843125Z 2026-11-13T17:49:48+00:00 WARN cache hit ratio 0.41 below target 0.60\n2026-11-13T17:49:52.041273047Z 2026-11-13T17:49:52+00:00 WARN upstream timeout on attempt 1/3, retrying\n2026-11-13T17:49:52.042588250Z 2026-11-13T17:49:52+00:00 INFO sync 16 ok after retry (records=120)\n2026-11-13T17:49:52.044192370Z 2026-11-13T17:49:52+00:00 WARN cache hit ratio 0.41 below target 0.60\n",
+      "previous": null,
+      "container": "sync"
+    },
+    "retrieval_query": "Running Scheduled Successfully assigned kc-eval-33/sync-659bbf857b-j5fhs to kube-copilot-control-plane Pulled Container image \"busybox:1.36\" already present on machine Created Created container: sync Started Started container sync 2026-11-13T17:49:16.007905782Z 2026-11-13T17:49:16+00:00 WARN upstream timeout on attempt 1/3, retrying 2026-11-13T17:49:16.008887018Z 2026-11-13T17:49:16+00:00 INFO sync 7 ok after retry (records=120) 2026-11-13T17:49:16.009962007Z 2026-11-13T17:49:16+00:00 WARN cache hit ratio 0.41 below target 0.60 2026-11-13T17:49:20.011601702Z 2026-11-13T17:49:20+00:00 WARN upstream timeout on attempt 1/3, retrying 2026-11-13T17:49:20.012639659Z 2026-11-13T17:49:20+00:00 INFO sync 8 ok after retry (records=120) 2026-11-13T17:49:20.013405160Z 2026-11-13T17:49:20+00:00 WARN cache hit ratio 0.41 below target 0.60 2026-11-13T17:49:24.014952794Z 2026-11-13T17:49:24+00:00 WARN upstream timeout on attempt 1/3, retrying 2026-11-13T17:49:24.016118255Z 2026-11-13T17:49:24+00:00 INFO sync 9 ok after retry (records=120) 2026-11-13T17:49:24.016980351Z 2026-11-13T17:49:24+00:00 WARN cache hit ratio 0.41 below target 0.60 2026-11-13T17:49:28.018791862Z 2026-11-13T17:49:28+00:00 WARN upstream timeout on attempt 1/3, retrying 2026-11-13T17:49:28.020071276Z 2026-11-13T17:49:28+00:00 INFO sync 10 ok after retry (records=120) 2026-11-13T17:49:28.020859343Z 2026-11-13T17:49:28+00:00 WARN cache hit ratio 0.41 below target 0.60 2026-11-13T17:49:32.022814889Z 2026-11-13T17:49:32+00:00 WARN upstream timeout on attempt 1/3, retrying 2026-11-13T17:49:32.023643619Z 2026-11-13T17:49:32+00:00 INFO sync 11 ok after retry (records=120) 2026-11-13T17:49:32.024744444Z 2026-11-13T17:49:32+00:00 WARN cache hit ratio 0.41 below target 0.60 2026-11-13T17:49:36.026278588Z 2026-11-13T17:49:36+00:00 WARN upstream timeout on attempt 1/3, retrying 2026-11-13T17:49:36.027788832Z 2026-11-13T17:49:36+00:00 INFO sync 12 ok after retry (records=120) 2026-11-13T17:49:36.028942572Z 2026-11-13T17:49:36+00:00 WARN cache hit ratio 0.41 below target 0.60 2026-11-13T17:49:40.030489958Z 2026-11-13T17:49:40+00:00 WARN upstream timeout on attempt 1/3, retrying 2026-11-13T17:49:40.031429773Z 2026-11-13T17:49:40+00:00 INFO sync 13 ok after retry (records=120) 2026-11-13T17:49:40.032307660Z 2026-11-13T17:49:40+00:00 WARN cache hit ratio 0.41 below target 0.60 2026-11-13T17:49:44.034220216Z 2026-11-13T17:49:44+00:00 WARN upstream timeout on attempt 1/3, retrying 2026-11-13T17:49:44.035263012Z 2026-11-13T17:49:44+00:00 INFO sync 14 ok after retry (records=120) 2026-11-13T17:49:44.036536355Z 2026-11-13T17:49:44+00:00 WARN cache hit ratio 0.41 below target 0.60 2026-11-13T17:49:48.037665548Z 2026-11-13T17:49:48+00:00 WARN upstream timeout on attempt 1/3, retrying 2026-11-13T17:49:48.038764229Z 2026-11-13T17:49:48+00:00 INFO sync 15 ok after retry (records=120) 2026-11-13T17:49:48.039843125Z 2026-11-13T17:49:48+00:00 WARN cache hit ratio 0.41 below target 0.60 2026-11-13T17:49:52.041273047Z 2026-11-13T17:49:52+00:00 WARN upstream timeout on attempt 1/3, retrying 2026-11-13T17:49:52.042588250Z 2026-11-13T17:49:52+00:00 INFO sync 16 ok after retry (records=120) 2026-11-13T17:49:52.044192370Z 2026-11-13T17:49:52+00:00 WARN cache hit ratio 0.41 below target 0.60",
+    "retrieved": [
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Fixes",
+        "text": "## Fixes\n\n- If the command is wrong (for example a demo container that ends in `exit 1`), correct `command`/`args` or the image entrypoint so the main process stays in the foreground.\n- If a config value is missing, add the env var or volume and roll the workload.\n- If a dependency is down, fix that service or make startup retry instead of exiting.\n- If a liveness probe is too aggressive, increase `initialDelaySeconds` / `failureThreshold` (see probe-failures).\n- After a fix, roll the deployment and confirm the restart count stops climbing:\n\n  ```bash\n  kubectl rollout status deploy/<name> -n <ns>\n  kubectl get pod <pod> -n <ns> --watch\n  ```",
+        "score": 0.7916980235168406,
+        "kind": "runbook"
+      },
+      {
+        "title": "Pending and unschedulable pods",
+        "source": "pending-unschedulable.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Read the `FailedScheduling` message first \u2014 it usually lists every reason a node was skipped:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get events -n <ns> --field-selector reason=FailedScheduling\n   ```\n\n2. Compare requests to allocatable resources:\n\n   ```bash\n   kubectl get pod <pod> -n <ns> -o jsonpath='{.spec.containers[*].resources.requests}'\n   kubectl get nodes -o custom-columns=NAME:.metadata.name,STATUS:.status.conditions[-1],CPU:.status.allocatable.cpu,MEM:.status.allocatable.memory\n   kubectl describe node <node>\n   ```\n\n3. Check taints, affinity, and selectors on the pod against labels and taints on the nodes.\n4. If the message mentions a PVC or volume, inspect the claim (see the PVC pending runbook).",
+        "score": 0.7627428411211514,
+        "kind": "runbook"
+      },
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- `kubectl get pods` shows `STATUS` as `CrashLoopBackOff` or `Error` with a climbing restart count.\n- The pod phase may still be `Running` because a container is mid-backoff, not because the app is healthy.\n- Current logs are often empty or just a short \"waiting\" message. The useful signal is usually in the **previous** container logs (`kubectl logs --previous`).\n- Events include `BackOff`, `Failed`, or `Unhealthy` from the kubelet.",
+        "score": 0.7603066526078104,
+        "kind": "runbook"
+      },
+      {
+        "title": "OOMKilled",
+        "source": "oomkilled.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Confirm the termination reason and the current limits:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get pod <pod> -n <ns> -o jsonpath='{.spec.containers[*].resources}'\n   ```\n\n2. Compare usage if metrics are available:\n\n   ```bash\n   kubectl top pod <pod> -n <ns> --containers\n   ```\n\n3. Read previous logs for allocation errors, heap dumps, or a sudden stop.\n4. Check whether the node itself is under memory pressure (`kubectl describe node <node>` and look for evictions or `MemoryPressure`).",
+        "score": 0.7576390336569654,
+        "kind": "runbook"
+      },
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Read the last termination reason and exit code:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get pod <pod> -n <ns> -o jsonpath='{range .status.containerStatuses[*]}{.name}{\" \"}{.state}{\" \"}{.lastState.terminated}{\"\\n\"}{end}'\n   ```\n\n2. Always fetch previous logs if `restartCount > 0`:\n\n   ```bash\n   kubectl logs <pod> -n <ns> --previous --tail=200\n   kubectl logs <pod> -n <ns> --tail=200\n   ```\n\n3. Confirm the command that actually ran (`command` / `args` in the pod spec) and whether the image entrypoint expects different arguments.\n4. If logs mention a missing file, env var, or connection refused, inspect the related ConfigMap, Secret, and Service.",
+        "score": 0.7531323270550818,
+        "kind": "runbook"
+      }
+    ],
+    "knowledge_unavailable": false,
+    "anomaly": {
+      "namespace": "kc-eval-33",
+      "name": "sync-659bbf857b-j5fhs",
+      "score": 0.9823,
+      "is_anomaly": true,
+      "threshold": 0.013067,
+      "metric_anomaly": true,
+      "detectors": [
+        "isolation_forest"
+      ],
+      "lifecycle_signals": [],
+      "contributing_features": [
+        {
+          "name": "mem_slope_mib_per_min",
+          "value": -2.2328125,
+          "zscore": -9.032487574459113,
+          "direction": "low"
+        },
+        {
+          "name": "mem_last_mib",
+          "value": 0.3515625,
+          "zscore": -4.966132557435926,
+          "direction": "low"
+        },
+        {
+          "name": "mem_mean_mib",
+          "value": 1.1,
+          "zscore": -4.919590205991104,
+          "direction": "low"
+        },
+        {
+          "name": "mem_to_limit_ratio",
+          "value": 0.0054931640625,
+          "zscore": -2.719350042972448,
+          "direction": "low"
+        },
+        {
+          "name": "cpu_mean",
+          "value": 0.00032105456738621053,
+          "zscore": -2.6397462676976793,
+          "direction": "low"
+        }
+      ],
+      "series": [
+        {
+          "ts": 1794592134.0,
+          "cpu": 0.0,
+          "memory_mib": 2.215,
+          "mem_to_limit_ratio": 0.0346,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794592149.0,
+          "cpu": 0.0,
+          "memory_mib": 2.215,
+          "mem_to_limit_ratio": 0.0346,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794592164.0,
+          "cpu": 0.0004,
+          "memory_mib": 0.359,
+          "mem_to_limit_ratio": 0.0056,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794592179.0,
+          "cpu": 0.0006,
+          "memory_mib": 0.359,
+          "mem_to_limit_ratio": 0.0056,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794592194.0,
+          "cpu": 0.0006,
+          "memory_mib": 0.352,
+          "mem_to_limit_ratio": 0.0055,
+          "restarts": 0.0
+        }
+      ],
+      "warning": null
+    },
+    "anomaly_unavailable": false
+  },
+  "propose_input": {
+    "deployment": {
+      "namespace": "kc-eval-33",
+      "name": "sync",
+      "replicas": 1,
+      "ready": 1,
+      "available": 1,
+      "updated": 1,
+      "generation": 1,
+      "observed_generation": 1,
+      "revision": 1,
+      "previous_revision": null,
+      "summary": {
+        "replicas": 1,
+        "revision": 1,
+        "template": {
+          "annotations": {},
+          "containers": [
+            {
+              "name": "sync",
+              "image": "busybox:1.36",
+              "command": [
+                "sh",
+                "-c",
+                "echo \"$(date -Iseconds) INFO sync worker started\"; n=0; while true; do n=$((n+1)); echo \"$(date -Iseconds) WARN upstream timeout on attempt 1/3, retrying\"; echo \"$(date -Iseconds) INFO sync $n ok after retry (records=120)\"; echo \"$(date -Iseconds) WARN cache hit ratio 0.41 below target 0.60\"; sleep 4; done"
+              ],
+              "args": null
+            }
+          ]
+        }
+      },
+      "previous_summary": null
+    },
+    "pod_state": {
+      "namespace": "kc-eval-33",
+      "name": "sync-659bbf857b-j5fhs",
+      "controller_kind": "ReplicaSet",
+      "controller_name": "sync-659bbf857b",
+      "deployment": "sync",
+      "crashlooping": false,
+      "restart_count": 0,
+      "reason": null
+    },
+    "signals": []
+  }
+}

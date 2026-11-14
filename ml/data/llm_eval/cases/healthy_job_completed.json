@@ -1,0 +1,160 @@
+{
+  "schema_version": 1,
+  "id": "healthy_job_completed",
+  "title": "Completed Job pod",
+  "labels": {
+    "category": "healthy",
+    "expected_actions": [
+      "no_action"
+    ],
+    "expected_runbooks": [],
+    "difficulty": "medium",
+    "fault": "No fault; a one-off Job ran to completion (exit 0).",
+    "notes": ""
+  },
+  "namespace": "kc-eval-34",
+  "workload": "nightly-report",
+  "pod_name": "nightly-report-d862w",
+  "captured_at": "2026-11-13T17:49:10+00:00",
+  "cluster": "kind kube-copilot (single node, Kubernetes v1.32.2)",
+  "diagnose_input": {
+    "pod": {
+      "name": "nightly-report-d862w",
+      "namespace": "kc-eval-34",
+      "phase": "Succeeded",
+      "reason": "Completed",
+      "message": null,
+      "restart_count": 0,
+      "ready": false,
+      "created_at": "2026-11-13T17:48:54Z",
+      "node": "kube-copilot-control-plane",
+      "qos_class": "Burstable",
+      "containers": [
+        {
+          "name": "report",
+          "ready": false,
+          "restart_count": 0,
+          "state": "terminated",
+          "reason": "Completed",
+          "message": null,
+          "exit_code": 0
+        }
+      ]
+    },
+    "events": [
+      {
+        "type": "Normal",
+        "reason": "Scheduled",
+        "message": "Successfully assigned kc-eval-34/nightly-report-d862w to kube-copilot-control-plane",
+        "count": 1,
+        "first_timestamp": "2026-11-13T17:48:54Z",
+        "last_timestamp": "2026-11-13T17:48:54Z",
+        "source": "default-scheduler"
+      },
+      {
+        "type": "Normal",
+        "reason": "Pulled",
+        "message": "Container image \"busybox:1.36\" already present on machine",
+        "count": 1,
+        "first_timestamp": "2026-11-13T17:48:54Z",
+        "last_timestamp": "2026-11-13T17:48:54Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Created",
+        "message": "Created container: report",
+        "count": 1,
+        "first_timestamp": "2026-11-13T17:48:54Z",
+        "last_timestamp": "2026-11-13T17:48:54Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Started",
+        "message": "Started container report",
+        "count": 1,
+        "first_timestamp": "2026-11-13T17:48:54Z",
+        "last_timestamp": "2026-11-13T17:48:54Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      }
+    ],
+    "logs": {
+      "current": "2026-11-13T17:48:54.728004291Z INFO generating nightly report\n2026-11-13T17:48:56.728249654Z INFO wrote 1342 rows to report-2026-11-13.csv\n2026-11-13T17:48:56.728270111Z INFO done\n",
+      "previous": null,
+      "container": "report"
+    },
+    "retrieval_query": "Succeeded Completed Completed exit code 0 Scheduled Successfully assigned kc-eval-34/nightly-report-d862w to kube-copilot-control-plane Pulled Container image \"busybox:1.36\" already present on machine Created Created container: report Started Started container report 2026-11-13T17:48:54.728004291Z INFO generating nightly report 2026-11-13T17:48:56.728249654Z INFO wrote 1342 rows to report-2026-11-13.csv 2026-11-13T17:48:56.728270111Z INFO done",
+    "retrieved": [
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Read the last termination reason and exit code:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get pod <pod> -n <ns> -o jsonpath='{range .status.containerStatuses[*]}{.name}{\" \"}{.state}{\" \"}{.lastState.terminated}{\"\\n\"}{end}'\n   ```\n\n2. Always fetch previous logs if `restartCount > 0`:\n\n   ```bash\n   kubectl logs <pod> -n <ns> --previous --tail=200\n   kubectl logs <pod> -n <ns> --tail=200\n   ```\n\n3. Confirm the command that actually ran (`command` / `args` in the pod spec) and whether the image entrypoint expects different arguments.\n4. If logs mention a missing file, env var, or connection refused, inspect the related ConfigMap, Secret, and Service.",
+        "score": 0.7664733887516472,
+        "kind": "runbook"
+      },
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Fixes",
+        "text": "## Fixes\n\n- If the command is wrong (for example a demo container that ends in `exit 1`), correct `command`/`args` or the image entrypoint so the main process stays in the foreground.\n- If a config value is missing, add the env var or volume and roll the workload.\n- If a dependency is down, fix that service or make startup retry instead of exiting.\n- If a liveness probe is too aggressive, increase `initialDelaySeconds` / `failureThreshold` (see probe-failures).\n- After a fix, roll the deployment and confirm the restart count stops climbing:\n\n  ```bash\n  kubectl rollout status deploy/<name> -n <ns>\n  kubectl get pod <pod> -n <ns> --watch\n  ```",
+        "score": 0.7601417057881759,
+        "kind": "runbook"
+      },
+      {
+        "title": "Pending and unschedulable pods",
+        "source": "pending-unschedulable.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Read the `FailedScheduling` message first \u2014 it usually lists every reason a node was skipped:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get events -n <ns> --field-selector reason=FailedScheduling\n   ```\n\n2. Compare requests to allocatable resources:\n\n   ```bash\n   kubectl get pod <pod> -n <ns> -o jsonpath='{.spec.containers[*].resources.requests}'\n   kubectl get nodes -o custom-columns=NAME:.metadata.name,STATUS:.status.conditions[-1],CPU:.status.allocatable.cpu,MEM:.status.allocatable.memory\n   kubectl describe node <node>\n   ```\n\n3. Check taints, affinity, and selectors on the pod against labels and taints on the nodes.\n4. If the message mentions a PVC or volume, inspect the claim (see the PVC pending runbook).",
+        "score": 0.7526400472630808,
+        "kind": "runbook"
+      },
+      {
+        "title": "Pending and unschedulable pods",
+        "source": "pending-unschedulable.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- `kubectl get pods` shows `STATUS` as `Pending` for longer than a few seconds.\n- `kubectl describe pod` has a `PodScheduled` condition set to `False` with reason `Unschedulable`.\n- Events include `FailedScheduling` with a message such as `0/N nodes are available: ...`.\n- The pod has no `nodeName` yet (unless it is stuck later in volume attach or image pull).",
+        "score": 0.7502014018319463,
+        "kind": "runbook"
+      },
+      {
+        "title": "OOMKilled",
+        "source": "oomkilled.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Confirm the termination reason and the current limits:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get pod <pod> -n <ns> -o jsonpath='{.spec.containers[*].resources}'\n   ```\n\n2. Compare usage if metrics are available:\n\n   ```bash\n   kubectl top pod <pod> -n <ns> --containers\n   ```\n\n3. Read previous logs for allocation errors, heap dumps, or a sudden stop.\n4. Check whether the node itself is under memory pressure (`kubectl describe node <node>` and look for evictions or `MemoryPressure`).",
+        "score": 0.7481560444587684,
+        "kind": "runbook"
+      }
+    ],
+    "knowledge_unavailable": false,
+    "anomaly": {
+      "namespace": "kc-eval-34",
+      "name": "nightly-report-d862w",
+      "score": 0.0,
+      "is_anomaly": false,
+      "threshold": 0.013067,
+      "metric_anomaly": false,
+      "detectors": [],
+      "lifecycle_signals": [],
+      "contributing_features": [],
+      "series": [],
+      "warning": "Insufficient metric history for kc-eval-34/nightly-report-d862w (0 sample(s); need at least 3)."
+    },
+    "anomaly_unavailable": false
+  },
+  "propose_input": {
+    "deployment": null,
+    "pod_state": {
+      "namespace": "kc-eval-34",
+      "name": "nightly-report-d862w",
+      "controller_kind": "Job",
+      "controller_name": "nightly-report",
+      "deployment": null,
+      "crashlooping": false,
+      "restart_count": 0,
+      "reason": null
+    },
+    "signals": []
+  }
+}

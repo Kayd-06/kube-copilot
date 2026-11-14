@@ -6,7 +6,8 @@
 	images kind-load helm-lint helm-install helm-uninstall \
 	grafana-up grafana-forward chaos-up chaos-run chaos-stop chaos-down \
 	collect collect-dry-run train-real eval-lifecycle \
-	actions-demo-up backend-dev-actions actions-e2e help
+	actions-demo-up backend-dev-actions actions-e2e \
+	eval eval-ablations eval-dry-run eval-capture eval-judge help
 
 KIND_CLUSTER ?= kube-copilot
 IMAGE_TAG ?= dev
@@ -56,6 +57,11 @@ help:
 	@echo "  actions-demo-up  Deploy the healthy copilot-demo/web target for safe actions"
 	@echo "  backend-dev-actions  Run the API on :8000 with safe actions enabled for copilot-demo"
 	@echo "  actions-e2e      Inject faults, propose, approve and verify via the API (needs backend-dev-actions)"
+	@echo "  eval             Score Diagnose + the action proposer on the frozen incidents (LLM_MODEL=..., needs a key)"
+	@echo "  eval-ablations   Same, plus without-RAG and without-lifecycle-signals variants"
+	@echo "  eval-dry-run     No API calls: check fixtures, prompt sizes and model-free baselines"
+	@echo "  eval-capture     Re-create the incidents on kind and refresh ml/data/llm_eval/cases (ONLY=id1,id2)"
+	@echo "  eval-judge       Optional LLM judge + agreement with the hand checks (RESULTS=..., JUDGE_MODEL=...)"
 
 cluster-up:
 	kind create cluster --config demo/kind-config.yaml
@@ -249,3 +255,26 @@ collect-dry-run:
 # unless PROMETHEUS_URL is set.
 collect:
 	PYTHONPATH=. $(ROOT_PY) -m ml.collect $(COLLECT_ARGS)
+
+# --- LLM evaluation (see ml/llm_eval and ml/data/llm_eval/README.md) ---------
+# LLM_MODEL overrides the model; LLM_API_KEY or GROQ_API_KEY must be set.
+EVAL_ARGS ?=
+EVAL_MODEL_ARG := $(if $(LLM_MODEL),--model $(LLM_MODEL),)
+eval:
+	PYTHONPATH=.:backend $(ROOT_PY) -m ml.llm_eval.run $(EVAL_MODEL_ARG) $(EVAL_ARGS)
+
+eval-ablations:
+	PYTHONPATH=.:backend $(ROOT_PY) -m ml.llm_eval.run $(EVAL_MODEL_ARG) --variants full,no_rag,no_signals $(EVAL_ARGS)
+
+eval-dry-run:
+	PYTHONPATH=.:backend $(ROOT_PY) -m ml.llm_eval.run --dry-run
+
+# Needs: make cluster-up metrics-up chaos-up and Prometheus on :9090 (make metrics-forward).
+ONLY ?=
+eval-capture:
+	PYTHONPATH=.:backend $(ROOT_PY) -m ml.llm_eval.capture $(if $(ONLY),--only $(ONLY),)
+
+RESULTS ?= ml/reports/llm_eval/openai_gpt-oss-120b.json
+JUDGE_MODEL ?= openai/gpt-oss-20b
+eval-judge:
+	PYTHONPATH=.:backend $(ROOT_PY) -m ml.llm_eval.judge --results $(RESULTS) --judge-model $(JUDGE_MODEL)

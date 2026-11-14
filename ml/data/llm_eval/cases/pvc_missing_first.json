@@ -1,0 +1,168 @@
+{
+  "schema_version": 1,
+  "id": "pvc_missing_first",
+  "title": "Pod mounts a PVC that was never created",
+  "labels": {
+    "category": "pvc_pending",
+    "expected_actions": [
+      "no_action"
+    ],
+    "expected_runbooks": [
+      "pvc-pending.md"
+    ],
+    "difficulty": "medium",
+    "fault": "Deployment mounts PVC exports-data, which does not exist.",
+    "notes": ""
+  },
+  "namespace": "kc-eval-26",
+  "workload": "exports",
+  "pod_name": "exports-7fc6559c67-sv6vx",
+  "captured_at": "2026-11-13T17:48:53+00:00",
+  "cluster": "kind kube-copilot (single node, Kubernetes v1.32.2)",
+  "diagnose_input": {
+    "pod": {
+      "name": "exports-7fc6559c67-sv6vx",
+      "namespace": "kc-eval-26",
+      "phase": "Pending",
+      "reason": "Unschedulable",
+      "message": "0/1 nodes are available: persistentvolumeclaim \"exports-data\" not found. preemption: 0/1 nodes are available: 1 Preemption is not helpful for scheduling.",
+      "restart_count": 0,
+      "ready": false,
+      "created_at": "2026-11-13T17:48:08Z",
+      "node": null,
+      "qos_class": "Burstable",
+      "containers": []
+    },
+    "events": [
+      {
+        "type": "Warning",
+        "reason": "FailedScheduling",
+        "message": "0/1 nodes are available: persistentvolumeclaim \"exports-data\" not found. preemption: 0/1 nodes are available: 1 Preemption is not helpful for scheduling.",
+        "count": 1,
+        "first_timestamp": "2026-11-13T17:48:08Z",
+        "last_timestamp": "2026-11-13T17:48:08Z",
+        "source": "default-scheduler"
+      }
+    ],
+    "logs": {
+      "current": "",
+      "previous": null,
+      "container": null
+    },
+    "retrieval_query": "Pending Unschedulable 0/1 nodes are available: persistentvolumeclaim \"exports-data\" not found. preemption: 0/1 nodes are available: 1 Preemption is not helpful for scheduling. FailedScheduling 0/1 nodes are available: persistentvolumeclaim \"exports-data\" not found. preemption: 0/1 nodes are available: 1 Preemption is not helpful for scheduling.",
+    "retrieved": [
+      {
+        "title": "Pending and unschedulable pods",
+        "source": "pending-unschedulable.md",
+        "section": "Common causes",
+        "text": "## Common causes\n\n- Requests for CPU or memory are larger than the allocatable resources on any node.\n- A `nodeSelector`, `nodeAffinity`, `taint`/`toleration`, or topology constraint matches no node.\n- PersistentVolumeClaim is unbound, so the pod cannot schedule (`pvc-pending` runbook).\n- The only candidate nodes are `NotReady`, cordoned (`SchedulingDisabled`), or out of disk / memory / PID pressure.\n- A required port (`hostPort`) or an extended resource (GPU) is already taken.",
+        "score": 0.7808316559918844,
+        "kind": "runbook"
+      },
+      {
+        "title": "Pending and unschedulable pods",
+        "source": "pending-unschedulable.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Read the `FailedScheduling` message first \u2014 it usually lists every reason a node was skipped:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get events -n <ns> --field-selector reason=FailedScheduling\n   ```\n\n2. Compare requests to allocatable resources:\n\n   ```bash\n   kubectl get pod <pod> -n <ns> -o jsonpath='{.spec.containers[*].resources.requests}'\n   kubectl get nodes -o custom-columns=NAME:.metadata.name,STATUS:.status.conditions[-1],CPU:.status.allocatable.cpu,MEM:.status.allocatable.memory\n   kubectl describe node <node>\n   ```\n\n3. Check taints, affinity, and selectors on the pod against labels and taints on the nodes.\n4. If the message mentions a PVC or volume, inspect the claim (see the PVC pending runbook).",
+        "score": 0.7668998701339358,
+        "kind": "runbook"
+      },
+      {
+        "title": "FailedMount and volume mount errors",
+        "source": "failed-mount.md",
+        "section": "Common causes",
+        "text": "## Common causes\n\n- The PersistentVolume is not attached (CSI attach failure, wrong zone, volume already attached to another node in RWO mode).\n- A Secret, ConfigMap, or projected service-account token referenced as a volume is missing (closely related to CreateContainerConfigError).\n- `subPath` points at a path that does not exist, or the volume is not ready yet.\n- NFS / CSI driver pods are down, or a kubelet plugin socket is missing on the node.\n- SELinux, permissions, or a read-only mount conflict with what the process needs.",
+        "score": 0.750799176074139,
+        "kind": "runbook"
+      },
+      {
+        "title": "Pending and unschedulable pods",
+        "source": "pending-unschedulable.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- `kubectl get pods` shows `STATUS` as `Pending` for longer than a few seconds.\n- `kubectl describe pod` has a `PodScheduled` condition set to `False` with reason `Unschedulable`.\n- Events include `FailedScheduling` with a message such as `0/N nodes are available: ...`.\n- The pod has no `nodeName` yet (unless it is stuck later in volume attach or image pull).",
+        "score": 0.7504603172172892,
+        "kind": "runbook"
+      },
+      {
+        "title": "PersistentVolumeClaim pending",
+        "source": "pvc-pending.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- `kubectl get pvc` shows `STATUS` as `Pending`.\n- Pod events include `FailedScheduling` (`persistentvolumeclaim \"...\" not found` or `unbound immediate PersistentVolumeClaims`) or later `FailedMount`.\n- `kubectl describe pvc` explains why the provisioner or binder did not satisfy the claim.",
+        "score": 0.7405691220696651,
+        "kind": "runbook"
+      }
+    ],
+    "knowledge_unavailable": false,
+    "anomaly": {
+      "namespace": "kc-eval-26",
+      "name": "exports-7fc6559c67-sv6vx",
+      "score": 0.0,
+      "is_anomaly": true,
+      "threshold": 0.013067,
+      "metric_anomaly": false,
+      "detectors": [
+        "lifecycle"
+      ],
+      "lifecycle_signals": [
+        {
+          "kind": "event:FailedScheduling",
+          "at": "2026-11-13T17:48:08Z",
+          "workload": "exports",
+          "pod": "exports-7fc6559c67-sv6vx",
+          "detail": "0/1 nodes are available: persistentvolumeclaim \"exports-data\" not found. preemption: 0/1 nodes are available: 1 Preempti"
+        }
+      ],
+      "contributing_features": [],
+      "series": [],
+      "warning": "Insufficient metric history for kc-eval-26/exports-7fc6559c67-sv6vx (0 sample(s); need at least 3)."
+    },
+    "anomaly_unavailable": false
+  },
+  "propose_input": {
+    "deployment": {
+      "namespace": "kc-eval-26",
+      "name": "exports",
+      "replicas": 1,
+      "ready": 0,
+      "available": 0,
+      "updated": 1,
+      "generation": 1,
+      "observed_generation": 1,
+      "revision": 1,
+      "previous_revision": null,
+      "summary": {
+        "replicas": 1,
+        "revision": 1,
+        "template": {
+          "annotations": {},
+          "containers": [
+            {
+              "name": "exports",
+              "image": "busybox:1.36",
+              "command": [
+                "sh",
+                "-c",
+                "echo \"$(date -Iseconds) INFO starting exports v1.4.2\"; echo \"$(date -Iseconds) INFO listening on :8080\"; while true; do echo \"$(date -Iseconds) INFO handled request path=/api/v1/items status=200 latency_ms=$((RANDOM%40+5))\"; sleep 3; done"
+              ],
+              "args": null
+            }
+          ]
+        }
+      },
+      "previous_summary": null
+    },
+    "pod_state": {
+      "namespace": "kc-eval-26",
+      "name": "exports-7fc6559c67-sv6vx",
+      "controller_kind": "ReplicaSet",
+      "controller_name": "exports-7fc6559c67",
+      "deployment": "exports",
+      "crashlooping": false,
+      "restart_count": 0,
+      "reason": null
+    },
+    "signals": [
+      "event:FailedScheduling pod=exports-7fc6559c67-sv6vx 0/1 nodes are available: persistentvolumeclaim \"exports-data\" not found. preemption: 0/1 nodes are available: 1 Preempti"
+    ]
+  }
+}

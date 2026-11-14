@@ -1,0 +1,303 @@
+{
+  "schema_version": 1,
+  "id": "cpu_throttle_first",
+  "title": "CPU-bound worker under a 20m CPU limit",
+  "labels": {
+    "category": "cpu_throttling",
+    "expected_actions": [
+      "no_action",
+      "scale_deployment"
+    ],
+    "expected_runbooks": [],
+    "difficulty": "hard",
+    "fault": "CPU-bound worker with limits.cpu=20m; it is throttled and each batch takes many seconds.",
+    "notes": "Nothing fails; only metrics and slow batch times show it. No runbook covers throttling."
+  },
+  "namespace": "kc-eval-21",
+  "workload": "thumbnailer",
+  "pod_name": "thumbnailer-777cb64948-m7bj2",
+  "captured_at": "2026-11-13T17:49:56+00:00",
+  "cluster": "kind kube-copilot (single node, Kubernetes v1.32.2)",
+  "diagnose_input": {
+    "pod": {
+      "name": "thumbnailer-777cb64948-m7bj2",
+      "namespace": "kc-eval-21",
+      "phase": "Running",
+      "reason": null,
+      "message": null,
+      "restart_count": 0,
+      "ready": true,
+      "created_at": "2026-11-13T17:47:20Z",
+      "node": "kube-copilot-control-plane",
+      "qos_class": "Burstable",
+      "containers": [
+        {
+          "name": "thumbnailer",
+          "ready": true,
+          "restart_count": 0,
+          "state": "running",
+          "reason": null,
+          "message": null,
+          "exit_code": null
+        }
+      ]
+    },
+    "events": [
+      {
+        "type": "Normal",
+        "reason": "Scheduled",
+        "message": "Successfully assigned kc-eval-21/thumbnailer-777cb64948-m7bj2 to kube-copilot-control-plane",
+        "count": 1,
+        "first_timestamp": "2026-11-13T17:47:20Z",
+        "last_timestamp": "2026-11-13T17:47:20Z",
+        "source": "default-scheduler"
+      },
+      {
+        "type": "Normal",
+        "reason": "Pulled",
+        "message": "Container image \"busybox:1.36\" already present on machine",
+        "count": 1,
+        "first_timestamp": "2026-11-13T17:47:22Z",
+        "last_timestamp": "2026-11-13T17:47:22Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Created",
+        "message": "Created container: thumbnailer",
+        "count": 1,
+        "first_timestamp": "2026-11-13T17:47:22Z",
+        "last_timestamp": "2026-11-13T17:47:22Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Started",
+        "message": "Started container thumbnailer",
+        "count": 1,
+        "first_timestamp": "2026-11-13T17:47:24Z",
+        "last_timestamp": "2026-11-13T17:47:24Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      }
+    ],
+    "logs": {
+      "current": "2026-11-13T17:47:24.411567571Z 2026-11-13T17:47:24+00:00 INFO thumbnailer started\n2026-11-13T17:47:26.312713986Z 2026-11-13T17:47:26+00:00 INFO batch 1: 30000 items in 2s\n2026-11-13T17:47:28.612365740Z 2026-11-13T17:47:28+00:00 INFO batch 2: 30000 items in 2s\n2026-11-13T17:47:30.512779713Z 2026-11-13T17:47:30+00:00 INFO batch 3: 30000 items in 2s\n2026-11-13T17:47:32.514414663Z 2026-11-13T17:47:32+00:00 INFO batch 4: 30000 items in 2s\n2026-11-13T17:47:35.011701109Z 2026-11-13T17:47:34+00:00 INFO batch 5: 30000 items in 2s\n2026-11-13T17:47:37.313636605Z 2026-11-13T17:47:37+00:00 INFO batch 6: 30000 items in 2s\n2026-11-13T17:47:39.413597373Z 2026-11-13T17:47:39+00:00 INFO batch 7: 30000 items in 2s\n2026-11-13T17:47:41.613873826Z 2026-11-13T17:47:41+00:00 INFO batch 8: 30000 items in 2s\n2026-11-13T17:47:43.911621244Z 2026-11-13T17:47:43+00:00 INFO batch 9: 30000 items in 2s\n2026-11-13T17:47:45.814200815Z 2026-11-13T17:47:45+00:00 INFO batch 10: 30000 items in 2s\n2026-11-13T17:47:48.012687573Z 2026-11-13T17:47:48+00:00 INFO batch 11: 30000 items in 3s\n2026-11-13T17:47:50.012778723Z 2026-11-13T17:47:50+00:00 INFO batch 12: 30000 items in 1s\n2026-11-13T17:47:52.111600442Z 2026-11-13T17:47:52+00:00 INFO batch 13: 30000 items in 1s\n2026-11-13T17:47:54.211662624Z 2026-11-13T17:47:54+00:00 INFO batch 14: 30000 items in 2s\n2026-11-13T17:47:56.213105596Z 2026-11-13T17:47:56+00:00 INFO batch 15: 30000 items in 2s\n2026-11-13T17:47:58.214807056Z 2026-11-13T17:47:58+00:00 INFO batch 16: 30000 items in 2s\n2026-11-13T17:48:00.512251813Z 2026-11-13T17:48:00+00:00 INFO batch 17: 30000 items in 2s\n2026-11-13T17:48:02.511759339Z 2026-11-13T17:48:02+00:00 INFO batch 18: 30000 items in 2s\n2026-11-13T17:48:04.611450531Z 2026-11-13T17:48:04+00:00 INFO batch 19: 30000 items in 2s\n2026-11-13T17:48:06.687145931Z 2026-11-13T17:48:06+00:00 INFO batch 20: 30000 items in 2s\n2026-11-13T17:48:08.812449805Z 2026-11-13T17:48:08+00:00 INFO batch 21: 30000 items in 2s\n2026-11-13T17:48:10.886225385Z 2026-11-13T17:48:10+00:00 INFO batch 22: 30000 items in 2s\n2026-11-13T17:48:13.111652081Z 2026-11-13T17:48:13+00:00 INFO batch 23: 30000 items in 2s\n2026-11-13T17:48:15.411913315Z 2026-11-13T17:48:15+00:00 INFO batch 24: 30000 items in 2s\n2026-11-13T17:48:17.585769494Z 2026-11-13T17:48:17+00:00 INFO batch 25: 30000 items in 2s\n2026-11-13T17:48:19.713519982Z 2026-11-13T17:48:19+00:00 INFO batch 26: 30000 items in 2s\n2026-11-13T17:48:21.713451016Z 2026-11-13T17:48:21+00:00 INFO batch 27: 30000 items in 2s\n2026-11-13T17:48:23.885817967Z 2026-11-13T17:48:23+00:00 INFO batch 28: 30000 items in 2s\n2026-11-13T17:48:26.313586034Z 2026-11-13T17:48:26+00:00 INFO batch 29: 30000 items in 3s\n2026-11-13T17:48:28.486126023Z 2026-11-13T17:48:28+00:00 INFO batch 30: 30000 items in 2s\n2026-11-13T17:48:30.885716633Z 2026-11-13T17:48:30+00:00 INFO batch 31: 30000 items in 2s\n2026-11-13T17:48:33.113323985Z 2026-11-13T17:48:33+00:00 INFO batch 32: 30000 items in 3s\n2026-11-13T17:48:35.613801959Z 2026-11-13T17:48:35+00:00 INFO batch 33: 30000 items in 2s\n2026-11-13T17:48:37.712036566Z 2026-11-13T17:48:37+00:00 INFO batch 34: 30000 items in 2s\n2026-11-13T17:48:39.514867179Z 2026-11-13T17:48:39+00:00 INFO batch 35: 30000 items in 2s\n2026-11-13T17:48:41.515256797Z 2026-11-13T17:48:41+00:00 INFO batch 36: 30000 items in 2s\n2026-11-13T17:48:43.511717652Z 2026-11-13T17:48:43+00:00 INFO batch 37: 30000 items in 2s\n2026-11-13T17:48:45.414622043Z 2026-11-13T17:48:45+00:00 INFO batch 38: 30000 items in 2s\n2026-11-13T17:48:47.511450494Z 2026-11-13T17:48:47+00:00 INFO batch 39: 30000 items in 2s\n2026-11-13T17:48:49.811399265Z 2026-11-13T17:48:49+00:00 INFO batch 40: 30000 items in 2s\n2026-11-13T17:48:52.012390588Z 2026-11-13T17:48:52+00:00 INFO batch 41: 30000 items in 2s\n2026-11-13T17:48:54.213032424Z 2026-11-13T17:48:54+00:00 INFO batch 42: 30000 items in 2s\n2026-11-13T17:48:56.411431888Z 2026-11-13T17:48:56+00:00 INFO batch 43: 30000 items in 2s\n2026-11-13T17:48:58.414150960Z 2026-11-13T17:48:58+00:00 INFO batch 44: 30000 items in 2s\n2026-11-13T17:49:00.511556442Z 2026-11-13T17:49:00+00:00 INFO batch 45: 30000 items in 2s\n2026-11-13T17:49:02.716719667Z 2026-11-13T17:49:02+00:00 INFO batch 46: 30000 items in 2s\n2026-11-13T17:49:04.911383293Z 2026-11-13T17:49:04+00:00 INFO batch 47: 30000 items in 2s\n2026-11-13T17:49:06.985951868Z 2026-11-13T17:49:06+00:00 INFO batch 48: 30000 items in 2s\n2026-11-13T17:49:09.285887060Z 2026-11-13T17:49:09+00:00 INFO batch 49: 30000 items in 3s\n2026-11-13T17:49:11.513528594Z 2026-11-13T17:49:11+00:00 INFO batch 50: 30000 items in 2s\n2026-11-13T17:49:13.611478603Z 2026-11-13T17:49:13+00:00 INFO batch 51: 30000 items in 2s\n2026-11-13T17:49:15.612643735Z 2026-11-13T17:49:15+00:00 INFO batch 52: 30000 items in 2s\n2026-11-13T17:49:17.414534638Z 2026-11-13T17:49:17+00:00 INFO batch 53: 30000 items in 2s\n2026-11-13T17:49:19.711524333Z 2026-11-13T17:49:19+00:00 INFO batch 54: 30000 items in 2s\n2026-11-13T17:49:21.713136467Z 2026-11-13T17:49:21+00:00 INFO batch 55: 30000 items in 2s\n2026-11-13T17:49:23.786159976Z 2026-11-13T17:49:23+00:00 INFO batch 56: 30000 items in 2s\n2026-11-13T17:49:25.911481497Z 2026-11-13T17:49:25+00:00 INFO batch 57: 30000 items in 2s\n2026-11-13T17:49:28.114545966Z 2026-11-13T17:49:28+00:00 INFO batch 58: 30000 items in 3s\n2026-11-13T17:49:30.313722752Z 2026-11-13T17:49:30+00:00 INFO batch 59: 30000 items in 2s\n2026-11-13T17:49:32.512943889Z 2026-11-13T17:49:32+00:00 INFO batch 60: 30000 items in 2s\n2026-11-13T17:49:34.611589496Z 2026-11-13T17:49:34+00:00 INFO batch 61: 30000 items in 2s\n2026-11-13T17:49:36.811923150Z 2026-11-13T17:49:36+00:00 INFO batch 62: 30000 items in 2s\n2026-11-13T17:49:38.814303034Z 2026-11-13T17:49:38+00:00 INFO batch 63: 30000 items in 2s\n2026-11-13T17:49:41.013547865Z 2026-11-13T17:49:41+00:00 INFO batch 64: 30000 items in 1s\n2026-11-13T17:49:43.186035244Z 2026-11-13T17:49:43+00:00 INFO batch 65: 30000 items in 2s\n2026-11-13T17:49:45.313330010Z 2026-11-13T17:49:45+00:00 INFO batch 66: 30000 items in 2s\n2026-11-13T17:49:47.314239064Z 2026-11-13T17:49:47+00:00 INFO batch 67: 30000 items in 2s\n2026-11-13T17:49:49.611456490Z 2026-11-13T17:49:49+00:00 INFO batch 68: 30000 items in 2s\n2026-11-13T17:49:51.714607725Z 2026-11-13T17:49:51+00:00 INFO batch 69: 30000 items in 2s\n2026-11-13T17:49:53.988570557Z 2026-11-13T17:49:53+00:00 INFO batch 70: 30000 items in 2s\n2026-11-13T17:49:56.286076265Z 2026-11-13T17:49:56+00:00 INFO batch 71: 30000 items in 3s\n",
+      "previous": null,
+      "container": "thumbnailer"
+    },
+    "retrieval_query": "Running Scheduled Successfully assigned kc-eval-21/thumbnailer-777cb64948-m7bj2 to kube-copilot-control-plane Pulled Container image \"busybox:1.36\" already present on machine Created Created container: thumbnailer Started Started container thumbnailer 2026-11-13T17:48:54.213032424Z 2026-11-13T17:48:54+00:00 INFO batch 42: 30000 items in 2s 2026-11-13T17:48:56.411431888Z 2026-11-13T17:48:56+00:00 INFO batch 43: 30000 items in 2s 2026-11-13T17:48:58.414150960Z 2026-11-13T17:48:58+00:00 INFO batch 44: 30000 items in 2s 2026-11-13T17:49:00.511556442Z 2026-11-13T17:49:00+00:00 INFO batch 45: 30000 items in 2s 2026-11-13T17:49:02.716719667Z 2026-11-13T17:49:02+00:00 INFO batch 46: 30000 items in 2s 2026-11-13T17:49:04.911383293Z 2026-11-13T17:49:04+00:00 INFO batch 47: 30000 items in 2s 2026-11-13T17:49:06.985951868Z 2026-11-13T17:49:06+00:00 INFO batch 48: 30000 items in 2s 2026-11-13T17:49:09.285887060Z 2026-11-13T17:49:09+00:00 INFO batch 49: 30000 items in 3s 2026-11-13T17:49:11.513528594Z 2026-11-13T17:49:11+00:00 INFO batch 50: 30000 items in 2s 2026-11-13T17:49:13.611478603Z 2026-11-13T17:49:13+00:00 INFO batch 51: 30000 items in 2s 2026-11-13T17:49:15.612643735Z 2026-11-13T17:49:15+00:00 INFO batch 52: 30000 items in 2s 2026-11-13T17:49:17.414534638Z 2026-11-13T17:49:17+00:00 INFO batch 53: 30000 items in 2s 2026-11-13T17:49:19.711524333Z 2026-11-13T17:49:19+00:00 INFO batch 54: 30000 items in 2s 2026-11-13T17:49:21.713136467Z 2026-11-13T17:49:21+00:00 INFO batch 55: 30000 items in 2s 2026-11-13T17:49:23.786159976Z 2026-11-13T17:49:23+00:00 INFO batch 56: 30000 items in 2s 2026-11-13T17:49:25.911481497Z 2026-11-13T17:49:25+00:00 INFO batch 57: 30000 items in 2s 2026-11-13T17:49:28.114545966Z 2026-11-13T17:49:28+00:00 INFO batch 58: 30000 items in 3s 2026-11-13T17:49:30.313722752Z 2026-11-13T17:49:30+00:00 INFO batch 59: 30000 items in 2s 2026-11-13T17:49:32.512943889Z 2026-11-13T17:49:32+00:00 INFO batch 60: 30000 items in 2s 2026-11-13T17:49:34.611589496Z 2026-11-13T17:49:34+00:00 INFO batch 61: 30000 items in 2s 2026-11-13T17:49:36.811923150Z 2026-11-13T17:49:36+00:00 INFO batch 62: 30000 items in 2s 2026-11-13T17:49:38.814303034Z 2026-11-13T17:49:38+00:00 INFO batch 63: 30000 items in 2s 2026-11-13T17:49:41.013547865Z 2026-11-13T17:49:41+00:00 INFO batch 64: 30000 items in 1s 2026-11-13T17:49:43.186035244Z 2026-11-13T17:49:43+00:00 INFO batch 65: 30000 items in 2s 2026-11-13T17:49:45.313330010Z 2026-11-13T17:49:45+00:00 INFO batch 66: 30000 items in 2s 2026-11-13T17:49:47.314239064Z 2026-11-13T17:49:47+00:00 INFO batch 67: 30000 items in 2s 2026-11-13T17:49:49.611456490Z 2026-11-13T17:49:49+00:00 INFO batch 68: 30000 items in 2s 2026-11-13T17:49:51.714607725Z 2026-11-13T17:49:51+00:00 INFO batch 69: 30000 items in 2s 2026-11-13T17:49:53.988570557Z 2026-11-13T17:49:53+00:00 INFO batch 70: 30000 items in 2s 2026-11-13T17:49:56.286076265Z 2026-11-13T17:49:56+00:00 INFO batch 71: 30000 items in 3s",
+    "retrieved": [
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Fixes",
+        "text": "## Fixes\n\n- If the command is wrong (for example a demo container that ends in `exit 1`), correct `command`/`args` or the image entrypoint so the main process stays in the foreground.\n- If a config value is missing, add the env var or volume and roll the workload.\n- If a dependency is down, fix that service or make startup retry instead of exiting.\n- If a liveness probe is too aggressive, increase `initialDelaySeconds` / `failureThreshold` (see probe-failures).\n- After a fix, roll the deployment and confirm the restart count stops climbing:\n\n  ```bash\n  kubectl rollout status deploy/<name> -n <ns>\n  kubectl get pod <pod> -n <ns> --watch\n  ```",
+        "score": 0.7808643194408089,
+        "kind": "runbook"
+      },
+      {
+        "title": "ImagePullBackOff and ErrImagePull",
+        "source": "imagepullbackoff.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- Pod stays `Pending` or shows `STATUS` as `ImagePullBackOff` / `ErrImagePull`.\n- Events include `Failed` from `kubelet` with messages such as `Failed to pull image`, `not found`, `unauthorized`, `denied`, or `invalid image name`.\n- There are no application logs because the container has not started.",
+        "score": 0.7669850389755728,
+        "kind": "runbook"
+      },
+      {
+        "title": "CreateContainerError",
+        "source": "create-container-error.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- Pod is `Waiting` with reason `CreateContainerError`.\n- Events include `Failed` from the kubelet with a runtime error (device mapper, `no space left on device`, seccomp / AppArmor / SELinux denial, invalid capability, or a missing device plugin).\n- The image has often already been pulled (`ImagePullBackOff` is not the current reason).\n- Application logs are typically unavailable because the container never started.",
+        "score": 0.7525147283662867,
+        "kind": "runbook"
+      },
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Read the last termination reason and exit code:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get pod <pod> -n <ns> -o jsonpath='{range .status.containerStatuses[*]}{.name}{\" \"}{.state}{\" \"}{.lastState.terminated}{\"\\n\"}{end}'\n   ```\n\n2. Always fetch previous logs if `restartCount > 0`:\n\n   ```bash\n   kubectl logs <pod> -n <ns> --previous --tail=200\n   kubectl logs <pod> -n <ns> --tail=200\n   ```\n\n3. Confirm the command that actually ran (`command` / `args` in the pod spec) and whether the image entrypoint expects different arguments.\n4. If logs mention a missing file, env var, or connection refused, inspect the related ConfigMap, Secret, and Service.",
+        "score": 0.7446062061614203,
+        "kind": "runbook"
+      },
+      {
+        "title": "Pending and unschedulable pods",
+        "source": "pending-unschedulable.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- `kubectl get pods` shows `STATUS` as `Pending` for longer than a few seconds.\n- `kubectl describe pod` has a `PodScheduled` condition set to `False` with reason `Unschedulable`.\n- Events include `FailedScheduling` with a message such as `0/N nodes are available: ...`.\n- The pod has no `nodeName` yet (unless it is stuck later in volume attach or image pull).",
+        "score": 0.7401378231627089,
+        "kind": "runbook"
+      }
+    ],
+    "knowledge_unavailable": false,
+    "anomaly": {
+      "namespace": "kc-eval-21",
+      "name": "thumbnailer-777cb64948-m7bj2",
+      "score": 0.7539,
+      "is_anomaly": true,
+      "threshold": 0.013067,
+      "metric_anomaly": true,
+      "detectors": [
+        "isolation_forest"
+      ],
+      "lifecycle_signals": [],
+      "contributing_features": [
+        {
+          "name": "mem_mean_mib",
+          "value": 0.3430397727272727,
+          "zscore": -4.972086778804463,
+          "direction": "low"
+        },
+        {
+          "name": "mem_last_mib",
+          "value": 0.359375,
+          "zscore": -4.965591379857772,
+          "direction": "low"
+        },
+        {
+          "name": "mem_to_limit_ratio",
+          "value": 0.005615234375,
+          "zscore": -2.7185187704991645,
+          "direction": "low"
+        },
+        {
+          "name": "net_rx_mib_per_min",
+          "value": 4.13466467162685e-05,
+          "zscore": -2.258294543862731,
+          "direction": "low"
+        },
+        {
+          "name": "cpu_mean",
+          "value": 0.011904744503755298,
+          "zscore": -2.250442005655,
+          "direction": "low"
+        }
+      ],
+      "series": [
+        {
+          "ts": 1794592046.0,
+          "cpu": 0.0,
+          "memory_mib": 0.207,
+          "mem_to_limit_ratio": 0.0032,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794592061.0,
+          "cpu": 0.0033,
+          "memory_mib": 0.355,
+          "mem_to_limit_ratio": 0.0056,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794592076.0,
+          "cpu": 0.0058,
+          "memory_mib": 0.355,
+          "mem_to_limit_ratio": 0.0056,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794592091.0,
+          "cpu": 0.0083,
+          "memory_mib": 0.355,
+          "mem_to_limit_ratio": 0.0056,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794592106.0,
+          "cpu": 0.0108,
+          "memory_mib": 0.355,
+          "mem_to_limit_ratio": 0.0056,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794592121.0,
+          "cpu": 0.0133,
+          "memory_mib": 0.355,
+          "mem_to_limit_ratio": 0.0056,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794592136.0,
+          "cpu": 0.0158,
+          "memory_mib": 0.355,
+          "mem_to_limit_ratio": 0.0056,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794592151.0,
+          "cpu": 0.0183,
+          "memory_mib": 0.355,
+          "mem_to_limit_ratio": 0.0056,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794592166.0,
+          "cpu": 0.02,
+          "memory_mib": 0.359,
+          "mem_to_limit_ratio": 0.0056,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794592181.0,
+          "cpu": 0.0173,
+          "memory_mib": 0.359,
+          "mem_to_limit_ratio": 0.0056,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794592196.0,
+          "cpu": 0.0182,
+          "memory_mib": 0.359,
+          "mem_to_limit_ratio": 0.0056,
+          "restarts": 0.0
+        }
+      ],
+      "warning": null
+    },
+    "anomaly_unavailable": false
+  },
+  "propose_input": {
+    "deployment": {
+      "namespace": "kc-eval-21",
+      "name": "thumbnailer",
+      "replicas": 1,
+      "ready": 1,
+      "available": 1,
+      "updated": 1,
+      "generation": 1,
+      "observed_generation": 1,
+      "revision": 1,
+      "previous_revision": null,
+      "summary": {
+        "replicas": 1,
+        "revision": 1,
+        "template": {
+          "annotations": {},
+          "containers": [
+            {
+              "name": "thumbnailer",
+              "image": "busybox:1.36",
+              "command": [
+                "sh",
+                "-c",
+                "echo \"$(date -Iseconds) INFO thumbnailer started\"; b=0; while true; do b=$((b+1)); s=$(date +%s); i=0; while [ $i -lt 30000 ]; do i=$((i+1)); done; e=$(date +%s); echo \"$(date -Iseconds) INFO batch $b: 30000 items in $((e-s))s\"; done"
+              ],
+              "args": null
+            }
+          ]
+        }
+      },
+      "previous_summary": null
+    },
+    "pod_state": {
+      "namespace": "kc-eval-21",
+      "name": "thumbnailer-777cb64948-m7bj2",
+      "controller_kind": "ReplicaSet",
+      "controller_name": "thumbnailer-777cb64948",
+      "deployment": "thumbnailer",
+      "crashlooping": false,
+      "restart_count": 0,
+      "reason": null
+    },
+    "signals": []
+  }
+}
