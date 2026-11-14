@@ -1,0 +1,269 @@
+{
+  "schema_version": 1,
+  "id": "pod_kill_single",
+  "title": "One replica killed by Chaos Mesh",
+  "labels": {
+    "category": "pod_disruption",
+    "expected_actions": [
+      "no_action"
+    ],
+    "expected_runbooks": [],
+    "difficulty": "medium",
+    "fault": "Chaos Mesh PodChaos pod-kill on one of 2 replicas of search; the ReplicaSet replaced it.",
+    "notes": "Target is the healthy replacement pod; only lifecycle signals show the kill."
+  },
+  "namespace": "kc-eval-30",
+  "workload": "search",
+  "pod_name": "search-5d8cb9fc88-xnq79",
+  "captured_at": "2026-11-13T17:54:35+00:00",
+  "cluster": "kind kube-copilot (single node, Kubernetes v1.32.2)",
+  "diagnose_input": {
+    "pod": {
+      "name": "search-5d8cb9fc88-xnq79",
+      "namespace": "kc-eval-30",
+      "phase": "Running",
+      "reason": null,
+      "message": null,
+      "restart_count": 0,
+      "ready": true,
+      "created_at": "2026-11-13T17:54:00Z",
+      "node": "kube-copilot-control-plane",
+      "qos_class": "Burstable",
+      "containers": [
+        {
+          "name": "search",
+          "ready": true,
+          "restart_count": 0,
+          "state": "running",
+          "reason": null,
+          "message": null,
+          "exit_code": null
+        }
+      ]
+    },
+    "events": [
+      {
+        "type": "Normal",
+        "reason": "Scheduled",
+        "message": "Successfully assigned kc-eval-30/search-5d8cb9fc88-xnq79 to kube-copilot-control-plane",
+        "count": 1,
+        "first_timestamp": "2026-11-13T17:54:00Z",
+        "last_timestamp": "2026-11-13T17:54:00Z",
+        "source": "default-scheduler"
+      },
+      {
+        "type": "Normal",
+        "reason": "Pulled",
+        "message": "Container image \"nginx:1.27-alpine\" already present on machine",
+        "count": 1,
+        "first_timestamp": "2026-11-13T17:54:00Z",
+        "last_timestamp": "2026-11-13T17:54:00Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Created",
+        "message": "Created container: search",
+        "count": 1,
+        "first_timestamp": "2026-11-13T17:54:00Z",
+        "last_timestamp": "2026-11-13T17:54:00Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Started",
+        "message": "Started container search",
+        "count": 1,
+        "first_timestamp": "2026-11-13T17:54:00Z",
+        "last_timestamp": "2026-11-13T17:54:00Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      }
+    ],
+    "logs": {
+      "current": "2026-11-13T17:54:00.940846839Z /docker-entrypoint.sh: /docker-entrypoint.d/ is not empty, will attempt to perform configuration\n2026-11-13T17:54:00.941055187Z /docker-entrypoint.sh: Looking for shell scripts in /docker-entrypoint.d/\n2026-11-13T17:54:00.941928046Z /docker-entrypoint.sh: Launching /docker-entrypoint.d/10-listen-on-ipv6-by-default.sh\n2026-11-13T17:54:00.945064120Z 10-listen-on-ipv6-by-default.sh: info: Getting the checksum of /etc/nginx/conf.d/default.conf\n2026-11-13T17:54:00.954265919Z 10-listen-on-ipv6-by-default.sh: info: Enabled listen on IPv6 in /etc/nginx/conf.d/default.conf\n2026-11-13T17:54:00.954360274Z /docker-entrypoint.sh: Sourcing /docker-entrypoint.d/15-local-resolvers.envsh\n2026-11-13T17:54:00.954430624Z /docker-entrypoint.sh: Launching /docker-entrypoint.d/20-envsubst-on-templates.sh\n2026-11-13T17:54:00.957020285Z /docker-entrypoint.sh: Launching /docker-entrypoint.d/30-tune-worker-processes.sh\n2026-11-13T17:54:00.958018060Z /docker-entrypoint.sh: Configuration complete; ready for start up\n2026-11-13T17:54:00.964609173Z 2026/11/13 17:54:00 [notice] 1#1: using the \"epoll\" event method\n2026-11-13T17:54:00.964622537Z 2026/11/13 17:54:00 [notice] 1#1: nginx/1.27.5\n2026-11-13T17:54:00.964624519Z 2026/11/13 17:54:00 [notice] 1#1: built by gcc 14.2.0 (Alpine 14.2.0) \n2026-11-13T17:54:00.964625668Z 2026/11/13 17:54:00 [notice] 1#1: OS: Linux 6.12.113+\n2026-11-13T17:54:00.964626817Z 2026/11/13 17:54:00 [notice] 1#1: getrlimit(RLIMIT_NOFILE): 1048576:1048576\n2026-11-13T17:54:00.964628062Z 2026/11/13 17:54:00 [notice] 1#1: start worker processes\n2026-11-13T17:54:00.964629043Z 2026/11/13 17:54:00 [notice] 1#1: start worker process 34\n2026-11-13T17:54:00.964630143Z 2026/11/13 17:54:00 [notice] 1#1: start worker process 35\n2026-11-13T17:54:00.964630927Z 2026/11/13 17:54:00 [notice] 1#1: start worker process 36\n2026-11-13T17:54:00.964631788Z 2026/11/13 17:54:00 [notice] 1#1: start worker process 37\n2026-11-13T17:54:00.964632635Z 2026/11/13 17:54:00 [notice] 1#1: start worker process 38\n2026-11-13T17:54:00.964708796Z 2026/11/13 17:54:00 [notice] 1#1: start worker process 39\n2026-11-13T17:54:00.964821676Z 2026/11/13 17:54:00 [notice] 1#1: start worker process 40\n2026-11-13T17:54:00.964930942Z 2026/11/13 17:54:00 [notice] 1#1: start worker process 41\n",
+      "previous": null,
+      "container": "search"
+    },
+    "retrieval_query": "Running Scheduled Successfully assigned kc-eval-30/search-5d8cb9fc88-xnq79 to kube-copilot-control-plane Pulled Container image \"nginx:1.27-alpine\" already present on machine Created Created container: search Started Started container search 2026-11-13T17:54:00.940846839Z /docker-entrypoint.sh: /docker-entrypoint.d/ is not empty, will attempt to perform configuration 2026-11-13T17:54:00.941055187Z /docker-entrypoint.sh: Looking for shell scripts in /docker-entrypoint.d/ 2026-11-13T17:54:00.941928046Z /docker-entrypoint.sh: Launching /docker-entrypoint.d/10-listen-on-ipv6-by-default.sh 2026-11-13T17:54:00.945064120Z 10-listen-on-ipv6-by-default.sh: info: Getting the checksum of /etc/nginx/conf.d/default.conf 2026-11-13T17:54:00.954265919Z 10-listen-on-ipv6-by-default.sh: info: Enabled listen on IPv6 in /etc/nginx/conf.d/default.conf 2026-11-13T17:54:00.954360274Z /docker-entrypoint.sh: Sourcing /docker-entrypoint.d/15-local-resolvers.envsh 2026-11-13T17:54:00.954430624Z /docker-entrypoint.sh: Launching /docker-entrypoint.d/20-envsubst-on-templates.sh 2026-11-13T17:54:00.957020285Z /docker-entrypoint.sh: Launching /docker-entrypoint.d/30-tune-worker-processes.sh 2026-11-13T17:54:00.958018060Z /docker-entrypoint.sh: Configuration complete; ready for start up 2026-11-13T17:54:00.964609173Z 2026/11/13 17:54:00 [notice] 1#1: using the \"epoll\" event method 2026-11-13T17:54:00.964622537Z 2026/11/13 17:54:00 [notice] 1#1: nginx/1.27.5 2026-11-13T17:54:00.964624519Z 2026/11/13 17:54:00 [notice] 1#1: built by gcc 14.2.0 (Alpine 14.2.0) 2026-11-13T17:54:00.964625668Z 2026/11/13 17:54:00 [notice] 1#1: OS: Linux 6.12.113+ 2026-11-13T17:54:00.964626817Z 2026/11/13 17:54:00 [notice] 1#1: getrlimit(RLIMIT_NOFILE): 1048576:1048576 2026-11-13T17:54:00.964628062Z 2026/11/13 17:54:00 [notice] 1#1: start worker processes 2026-11-13T17:54:00.964629043Z 2026/11/13 17:54:00 [notice] 1#1: start worker process 34 2026-11-13T17:54:00.964630143Z 2026/11/13 17:54:00 [notice] 1#1: start worker process 35 2026-11-13T17:54:00.964630927Z 2026/11/13 17:54:00 [notice] 1#1: start worker process 36 2026-11-13T17:54:00.964631788Z 2026/11/13 17:54:00 [notice] 1#1: start worker process 37 2026-11-13T17:54:00.964632635Z 2026/11/13 17:54:00 [notice] 1#1: start worker process 38 2026-11-13T17:54:00.964708796Z 2026/11/13 17:54:00 [notice] 1#1: start worker process 39 2026-11-13T17:54:00.964821676Z 2026/11/13 17:54:00 [notice] 1#1: start worker process 40 2026-11-13T17:54:00.964930942Z 2026/11/13 17:54:00 [notice] 1#1: start worker process 41",
+    "retrieved": [
+      {
+        "title": "OOMKilled",
+        "source": "oomkilled.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Confirm the termination reason and the current limits:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get pod <pod> -n <ns> -o jsonpath='{.spec.containers[*].resources}'\n   ```\n\n2. Compare usage if metrics are available:\n\n   ```bash\n   kubectl top pod <pod> -n <ns> --containers\n   ```\n\n3. Read previous logs for allocation errors, heap dumps, or a sudden stop.\n4. Check whether the node itself is under memory pressure (`kubectl describe node <node>` and look for evictions or `MemoryPressure`).",
+        "score": 0.7363991464097583,
+        "kind": "runbook"
+      },
+      {
+        "title": "ImagePullBackOff and ErrImagePull",
+        "source": "imagepullbackoff.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Read the event message \u2014 it usually names the exact reference and the registry error:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get events -n <ns> --field-selector involvedObject.name=<pod>\n   ```\n\n2. Confirm the image the pod is actually asking for:\n\n   ```bash\n   kubectl get pod <pod> -n <ns> -o jsonpath='{range .spec.containers[*]}{.name}{\" \"}{.image}{\"\\n\"}{end}'\n   ```\n\n3. If it is a private image, check that a pull Secret exists in the same namespace and is referenced on the ServiceAccount or pod:\n\n   ```bash\n   kubectl get sa default -n <ns> -o yaml\n   kubectl get secret -n <ns>\n   ```\n\n4. From a node or a debug pod, try `crictl pull` / `docker pull` with the same reference to distinguish \"does not exist\" from \"auth\" and \"network\".",
+        "score": 0.7358870162704456,
+        "kind": "runbook"
+      },
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Fixes",
+        "text": "## Fixes\n\n- If the command is wrong (for example a demo container that ends in `exit 1`), correct `command`/`args` or the image entrypoint so the main process stays in the foreground.\n- If a config value is missing, add the env var or volume and roll the workload.\n- If a dependency is down, fix that service or make startup retry instead of exiting.\n- If a liveness probe is too aggressive, increase `initialDelaySeconds` / `failureThreshold` (see probe-failures).\n- After a fix, roll the deployment and confirm the restart count stops climbing:\n\n  ```bash\n  kubectl rollout status deploy/<name> -n <ns>\n  kubectl get pod <pod> -n <ns> --watch\n  ```",
+        "score": 0.7327977307646147,
+        "kind": "runbook"
+      },
+      {
+        "title": "DNS issues inside the cluster",
+        "source": "dns-issues.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Confirm the Service and endpoints exist, then test DNS from a throwaway pod in the same namespace:\n\n   ```bash\n   kubectl get svc,endpoints <svc> -n <ns>\n   kubectl get pods -n kube-system -l k8s-app=kube-dns\n   kubectl -n <ns> run dns-test --rm -it --restart=Never --image=busybox:1.36 -- nslookup kubernetes.default\n   kubectl -n <ns> run dns-test --rm -it --restart=Never --image=busybox:1.36 -- nslookup <svc>.<ns>.svc.cluster.local\n   ```\n\n2. Inspect the failing pod's resolv config and DNS policy:\n\n   ```bash\n   kubectl exec <pod> -n <ns> -- cat /etc/resolv.conf\n   kubectl get pod <pod> -n <ns> -o jsonpath='{.spec.dnsPolicy} {.spec.dnsConfig}'\n   ```\n\n3. Check CoreDNS logs and NetworkPolicies that might block port 53.",
+        "score": 0.7299271324195173,
+        "kind": "runbook"
+      },
+      {
+        "title": "Memory leak (rising working set)",
+        "source": "memory-leak.md",
+        "section": "Checks",
+        "text": "## Checks\n\n```bash\nkubectl top pod <pod> -n <ns>\nkubectl describe pod <pod> -n <ns>\nkubectl get pod <pod> -n <ns> -o jsonpath='{.spec.containers[*].resources}'\n```\n\nIn Prometheus, look at `container_memory_working_set_bytes` over 5\u201315 minutes, not a single sample.",
+        "score": 0.7274644594957462,
+        "kind": "runbook"
+      }
+    ],
+    "knowledge_unavailable": false,
+    "anomaly": {
+      "namespace": "kc-eval-30",
+      "name": "search-5d8cb9fc88-xnq79",
+      "score": 0.978,
+      "is_anomaly": true,
+      "threshold": 0.013067,
+      "metric_anomaly": true,
+      "detectors": [
+        "isolation_forest",
+        "lifecycle"
+      ],
+      "lifecycle_signals": [
+        {
+          "kind": "event:Killing",
+          "at": "2026-11-13T17:54:00Z",
+          "workload": "search",
+          "pod": "search-5d8cb9fc88-4lh62",
+          "detail": "Stopping container search"
+        },
+        {
+          "kind": "event:SuccessfulCreate",
+          "at": "2026-11-13T17:54:00Z",
+          "workload": "search",
+          "pod": null,
+          "detail": "Created pod: search-5d8cb9fc88-xnq79"
+        },
+        {
+          "kind": "pod_replaced",
+          "at": "2026-11-13T17:54:00Z",
+          "workload": "search",
+          "pod": "search-5d8cb9fc88-xnq79",
+          "detail": "new pod, no scale-up"
+        }
+      ],
+      "contributing_features": [
+        {
+          "name": "mem_slope_mib_per_min",
+          "value": 8.640625,
+          "zscore": 34.87519151514479,
+          "direction": "high"
+        },
+        {
+          "name": "mem_mean_mib",
+          "value": 5.380208333333333,
+          "zscore": -4.622749948958386,
+          "direction": "low"
+        },
+        {
+          "name": "mem_last_mib",
+          "value": 6.8203125,
+          "zscore": -4.5180375227242,
+          "direction": "low"
+        },
+        {
+          "name": "cpu_mean",
+          "value": 0.000326799963748414,
+          "zscore": -2.639553176609846,
+          "direction": "low"
+        },
+        {
+          "name": "net_rx_mib_per_min",
+          "value": 0.000304108204711505,
+          "zscore": -2.2576520864667464,
+          "direction": "low"
+        }
+      ],
+      "series": [
+        {
+          "ts": 1794592445.0,
+          "cpu": 0.0,
+          "memory_mib": 2.5,
+          "mem_to_limit_ratio": 0.0,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794592460.0,
+          "cpu": 0.0004,
+          "memory_mib": 6.82,
+          "mem_to_limit_ratio": 0.1066,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794592475.0,
+          "cpu": 0.0006,
+          "memory_mib": 6.82,
+          "mem_to_limit_ratio": 0.1066,
+          "restarts": 0.0
+        }
+      ],
+      "warning": null
+    },
+    "anomaly_unavailable": false
+  },
+  "propose_input": {
+    "deployment": {
+      "namespace": "kc-eval-30",
+      "name": "search",
+      "replicas": 2,
+      "ready": 2,
+      "available": 2,
+      "updated": 2,
+      "generation": 1,
+      "observed_generation": 1,
+      "revision": 1,
+      "previous_revision": null,
+      "summary": {
+        "replicas": 2,
+        "revision": 1,
+        "template": {
+          "annotations": {},
+          "containers": [
+            {
+              "name": "search",
+              "image": "nginx:1.27-alpine",
+              "command": null,
+              "args": null
+            }
+          ]
+        }
+      },
+      "previous_summary": null
+    },
+    "pod_state": {
+      "namespace": "kc-eval-30",
+      "name": "search-5d8cb9fc88-xnq79",
+      "controller_kind": "ReplicaSet",
+      "controller_name": "search-5d8cb9fc88",
+      "deployment": "search",
+      "crashlooping": false,
+      "restart_count": 0,
+      "reason": null
+    },
+    "signals": [
+      "event:Killing pod=search-5d8cb9fc88-4lh62 Stopping container search",
+      "event:SuccessfulCreate pod=- Created pod: search-5d8cb9fc88-xnq79",
+      "pod_replaced pod=search-5d8cb9fc88-xnq79 new pod, no scale-up"
+    ]
+  }
+}

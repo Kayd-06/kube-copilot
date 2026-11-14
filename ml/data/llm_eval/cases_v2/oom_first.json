@@ -1,0 +1,297 @@
+{
+  "schema_version": 1,
+  "id": "oom_first",
+  "title": "Catalog load exceeds a 48Mi limit",
+  "labels": {
+    "category": "oom_killed",
+    "expected_actions": [
+      "no_action"
+    ],
+    "expected_runbooks": [
+      "oomkilled.md"
+    ],
+    "difficulty": "easy",
+    "fault": "Revision 1 loads ~300MB into memory with a 48Mi limit and is OOMKilled.",
+    "notes": ""
+  },
+  "namespace": "kc-eval-14",
+  "workload": "catalog",
+  "pod_name": "catalog-844dc6cf48-nzj6s",
+  "captured_at": "2026-11-13T17:48:25+00:00",
+  "cluster": "kind kube-copilot (single node, Kubernetes v1.32.2)",
+  "diagnose_input": {
+    "pod": {
+      "name": "catalog-844dc6cf48-nzj6s",
+      "namespace": "kc-eval-14",
+      "phase": "Running",
+      "reason": "OOMKilled",
+      "message": "back-off 40s restarting failed container=catalog pod=catalog-844dc6cf48-nzj6s_kc-eval-14(3d4499ed-a385-43c3-9b2d-e9721a3e7e99)",
+      "restart_count": 3,
+      "ready": false,
+      "created_at": "2026-11-13T17:47:03Z",
+      "node": "kube-copilot-control-plane",
+      "qos_class": "Burstable",
+      "containers": [
+        {
+          "name": "catalog",
+          "ready": false,
+          "restart_count": 3,
+          "state": "waiting",
+          "reason": "CrashLoopBackOff",
+          "message": "back-off 40s restarting failed container=catalog pod=catalog-844dc6cf48-nzj6s_kc-eval-14(3d4499ed-a385-43c3-9b2d-e9721a3e7e99)",
+          "exit_code": 137
+        }
+      ]
+    },
+    "events": [
+      {
+        "type": "Normal",
+        "reason": "Scheduled",
+        "message": "Successfully assigned kc-eval-14/catalog-844dc6cf48-nzj6s to kube-copilot-control-plane",
+        "count": 1,
+        "first_timestamp": "2026-11-13T17:47:03Z",
+        "last_timestamp": "2026-11-13T17:47:03Z",
+        "source": "default-scheduler"
+      },
+      {
+        "type": "Normal",
+        "reason": "Pulled",
+        "message": "Container image \"busybox:1.36\" already present on machine",
+        "count": 4,
+        "first_timestamp": "2026-11-13T17:47:04Z",
+        "last_timestamp": "2026-11-13T17:47:58Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Created",
+        "message": "Created container: catalog",
+        "count": 4,
+        "first_timestamp": "2026-11-13T17:47:04Z",
+        "last_timestamp": "2026-11-13T17:47:58Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Started",
+        "message": "Started container catalog",
+        "count": 4,
+        "first_timestamp": "2026-11-13T17:47:04Z",
+        "last_timestamp": "2026-11-13T17:47:58Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Warning",
+        "reason": "BackOff",
+        "message": "Back-off restarting failed container catalog in pod catalog-844dc6cf48-nzj6s_kc-eval-14(3d4499ed-a385-43c3-9b2d-e9721a3e7e99)",
+        "count": 5,
+        "first_timestamp": "2026-11-13T17:47:12Z",
+        "last_timestamp": "2026-11-13T17:48:14Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      }
+    ],
+    "logs": {
+      "current": "2026-11-13T17:47:58.480841787Z 2026-11-13T17:47:58+00:00 INFO loading product catalog into memory\n",
+      "previous": "2026-11-13T17:47:58.480841787Z 2026-11-13T17:47:58+00:00 INFO loading product catalog into memory\n",
+      "container": "catalog"
+    },
+    "retrieval_query": "Running OOMKilled back-off 40s restarting failed container=catalog pod=catalog-844dc6cf48-nzj6s_kc-eval-14(3d4499ed-a385-43c3-9b2d-e9721a3e7e99) CrashLoopBackOff back-off 40s restarting failed container=catalog pod=catalog-844dc6cf48-nzj6s_kc-eval-14(3d4499ed-a385-43c3-9b2d-e9721a3e7e99) exit code 137 Scheduled Successfully assigned kc-eval-14/catalog-844dc6cf48-nzj6s to kube-copilot-control-plane Pulled Container image \"busybox:1.36\" already present on machine Created Created container: catalog Started Started container catalog BackOff Back-off restarting failed container catalog in pod catalog-844dc6cf48-nzj6s_kc-eval-14(3d4499ed-a385-43c3-9b2d-e9721a3e7e99) 2026-11-13T17:47:58.480841787Z 2026-11-13T17:47:58+00:00 INFO loading product catalog into memory 2026-11-13T17:47:58.480841787Z 2026-11-13T17:47:58+00:00 INFO loading product catalog into memory",
+    "retrieved": [
+      {
+        "title": "OOMKilled",
+        "source": "oomkilled.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- Container `lastState.terminated.reason` is `OOMKilled`.\n- Restart count climbs; the pod may also show `CrashLoopBackOff` once the kubelet starts backing off.\n- Events may include `OOMKilling` from the kubelet. Logs often stop abruptly, sometimes in the middle of a request or a large allocation.\n- `kubectl describe pod` shows a memory `limit` that is close to, or below, what the process actually uses.",
+        "score": 0.7703431076816346,
+        "kind": "runbook"
+      },
+      {
+        "title": "OOMKilled",
+        "source": "oomkilled.md",
+        "section": "OOMKilled",
+        "text": "# OOMKilled\n\nThe container was killed because it exceeded its memory limit (or, less often, the node itself ran out of memory). Kubernetes reports the last terminated reason as `OOMKilled` with exit code `137`.",
+        "score": 0.7656094071360332,
+        "kind": "runbook"
+      },
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- `kubectl get pods` shows `STATUS` as `CrashLoopBackOff` or `Error` with a climbing restart count.\n- The pod phase may still be `Running` because a container is mid-backoff, not because the app is healthy.\n- Current logs are often empty or just a short \"waiting\" message. The useful signal is usually in the **previous** container logs (`kubectl logs --previous`).\n- Events include `BackOff`, `Failed`, or `Unhealthy` from the kubelet.",
+        "score": 0.7601156421546376,
+        "kind": "runbook"
+      },
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Common causes",
+        "text": "## Common causes\n\n- The container command or entrypoint exits immediately (`exit 1`, a missing binary, or a typo in `args`).\n- The process crashes on startup because a required env var, ConfigMap key, or Secret is missing or malformed.\n- The application cannot reach a dependency (database, API, cache) and treats that as fatal.\n- A failed liveness probe kills a slow-starting process, which then crash-loops (see the probe-failures runbook).\n- The process is being OOM-killed; that often surfaces as `OOMKilled` rather than a generic crash, but both can appear together. Check the last terminated state.",
+        "score": 0.7475523287354812,
+        "kind": "runbook"
+      },
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Read the last termination reason and exit code:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get pod <pod> -n <ns> -o jsonpath='{range .status.containerStatuses[*]}{.name}{\" \"}{.state}{\" \"}{.lastState.terminated}{\"\\n\"}{end}'\n   ```\n\n2. Always fetch previous logs if `restartCount > 0`:\n\n   ```bash\n   kubectl logs <pod> -n <ns> --previous --tail=200\n   kubectl logs <pod> -n <ns> --tail=200\n   ```\n\n3. Confirm the command that actually ran (`command` / `args` in the pod spec) and whether the image entrypoint expects different arguments.\n4. If logs mention a missing file, env var, or connection refused, inspect the related ConfigMap, Secret, and Service.",
+        "score": 0.7444411822941983,
+        "kind": "runbook"
+      }
+    ],
+    "knowledge_unavailable": false,
+    "anomaly": {
+      "namespace": "kc-eval-14",
+      "name": "catalog-844dc6cf48-nzj6s",
+      "score": 0.9956,
+      "is_anomaly": true,
+      "threshold": 0.013067,
+      "metric_anomaly": true,
+      "detectors": [
+        "isolation_forest",
+        "lifecycle"
+      ],
+      "lifecycle_signals": [
+        {
+          "kind": "container_restarted",
+          "at": "2026-11-13T17:48:01Z",
+          "workload": "catalog",
+          "pod": "catalog-844dc6cf48-nzj6s",
+          "detail": "+1 (OOMKilled)"
+        },
+        {
+          "kind": "event:BackOff",
+          "at": "2026-11-13T17:48:14Z",
+          "workload": "catalog",
+          "pod": "catalog-844dc6cf48-nzj6s",
+          "detail": "Back-off restarting failed container catalog in pod catalog-844dc6cf48-nzj6s_kc-eval-14(3d4499ed-a385-43c3-9b2d-e9721a3e"
+        }
+      ],
+      "contributing_features": [
+        {
+          "name": "restart_rate_per_min",
+          "value": 2.4,
+          "zscore": 39.694712301470794,
+          "direction": "high"
+        },
+        {
+          "name": "restart_delta",
+          "value": 3.0,
+          "zscore": 17.95012546133618,
+          "direction": "high"
+        },
+        {
+          "name": "restart_last",
+          "value": 3.0,
+          "zscore": 11.43625171309188,
+          "direction": "high"
+        },
+        {
+          "name": "mem_mean_mib",
+          "value": 2.64453125,
+          "zscore": -4.812474145851103,
+          "direction": "low"
+        },
+        {
+          "name": "mem_last_mib",
+          "value": 2.64453125,
+          "zscore": -4.807296938247651,
+          "direction": "low"
+        }
+      ],
+      "series": [
+        {
+          "ts": 1794592029.0,
+          "cpu": 0.0,
+          "memory_mib": 2.645,
+          "mem_to_limit_ratio": 0.0551,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794592044.0,
+          "cpu": 0.0,
+          "memory_mib": 2.645,
+          "mem_to_limit_ratio": 0.0551,
+          "restarts": 1.0
+        },
+        {
+          "ts": 1794592059.0,
+          "cpu": 0.0,
+          "memory_mib": 2.645,
+          "mem_to_limit_ratio": 0.0551,
+          "restarts": 2.0
+        },
+        {
+          "ts": 1794592074.0,
+          "cpu": 0.0,
+          "memory_mib": 2.645,
+          "mem_to_limit_ratio": 0.0551,
+          "restarts": 2.0
+        },
+        {
+          "ts": 1794592089.0,
+          "cpu": 0.0,
+          "memory_mib": 2.645,
+          "mem_to_limit_ratio": 0.0551,
+          "restarts": 3.0
+        },
+        {
+          "ts": 1794592104.0,
+          "cpu": 0.0,
+          "memory_mib": 2.645,
+          "mem_to_limit_ratio": 0.0551,
+          "restarts": 3.0
+        }
+      ],
+      "warning": null
+    },
+    "anomaly_unavailable": false
+  },
+  "propose_input": {
+    "deployment": {
+      "namespace": "kc-eval-14",
+      "name": "catalog",
+      "replicas": 1,
+      "ready": 0,
+      "available": 0,
+      "updated": 1,
+      "generation": 1,
+      "observed_generation": 1,
+      "revision": 1,
+      "previous_revision": null,
+      "summary": {
+        "replicas": 1,
+        "revision": 1,
+        "template": {
+          "annotations": {},
+          "containers": [
+            {
+              "name": "catalog",
+              "image": "busybox:1.36",
+              "command": [
+                "sh",
+                "-c",
+                "echo \"$(date -Iseconds) INFO loading product catalog into memory\"; sleep 3; head -c 300m /dev/zero | tail; echo done"
+              ],
+              "args": null
+            }
+          ]
+        }
+      },
+      "previous_summary": null
+    },
+    "pod_state": {
+      "namespace": "kc-eval-14",
+      "name": "catalog-844dc6cf48-nzj6s",
+      "controller_kind": "ReplicaSet",
+      "controller_name": "catalog-844dc6cf48",
+      "deployment": "catalog",
+      "crashlooping": true,
+      "restart_count": 3,
+      "reason": "CrashLoopBackOff"
+    },
+    "signals": [
+      "container_restarted pod=catalog-844dc6cf48-nzj6s +1 (OOMKilled)",
+      "event:BackOff pod=catalog-844dc6cf48-nzj6s Back-off restarting failed container catalog in pod catalog-844dc6cf48-nzj6s_kc-eval-14(3d4499ed-a385-43c3-9b2d-e9721a3e"
+    ]
+  }
+}
