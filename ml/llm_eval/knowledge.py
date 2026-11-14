@@ -28,7 +28,7 @@ def get_retriever():
         return _RETRIEVER
 
 
-def retrieve(pod, events, logs):
+def retrieve(pod, events, logs, usage=None):
     retriever = get_retriever()
     with _LOCK:  # the in-memory client is not thread-safe
-        return retriever.retrieve_for_pod(pod, events, logs)
+        return retriever.retrieve_for_pod(pod, events, logs, usage=usage)
