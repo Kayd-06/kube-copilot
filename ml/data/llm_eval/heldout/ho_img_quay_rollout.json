@@ -1,0 +1,288 @@
+{
+  "schema_version": 2,
+  "id": "ho_img_quay_rollout",
+  "title": "Rollout to an image on a registry path that does not exist",
+  "labels": {
+    "category": "image_pull",
+    "expected_actions": [
+      "rollback_deployment"
+    ],
+    "expected_runbooks": [
+      "imagepullbackoff.md"
+    ],
+    "difficulty": "easy",
+    "fault": "Deployment updated from busybox to quay.io/acme-billing/invoice:7.2.0, which does not exist.",
+    "notes": ""
+  },
+  "namespace": "kc-ho-01",
+  "workload": "invoice",
+  "pod_name": "invoice-55cfc95887-8j4gb",
+  "captured_at": "2026-11-14T08:32:44+00:00",
+  "cluster": "kind kube-copilot (single node, Kubernetes v1.32.2)",
+  "diagnose_input": {
+    "pod": {
+      "name": "invoice-55cfc95887-8j4gb",
+      "namespace": "kc-ho-01",
+      "phase": "Pending",
+      "reason": "ErrImagePull",
+      "message": "failed to pull and unpack image \"quay.io/acme-billing/invoice:7.2.0\": failed to resolve reference \"quay.io/acme-billing/invoice:7.2.0\": failed to do request: Head \"https://quay.io/v2/acme-billing/invoice/manifests/7.2.0\": dial tcp: lookup quay.io on 172.18.0.1:53: server misbehaving",
+      "restart_count": 0,
+      "ready": false,
+      "created_at": "2026-11-14T08:31:19Z",
+      "node": "kube-copilot-control-plane",
+      "qos_class": "Burstable",
+      "containers": [
+        {
+          "name": "invoice",
+          "ready": false,
+          "restart_count": 0,
+          "state": "waiting",
+          "reason": "ErrImagePull",
+          "message": "failed to pull and unpack image \"quay.io/acme-billing/invoice:7.2.0\": failed to resolve reference \"quay.io/acme-billing/invoice:7.2.0\": failed to do request: Head \"https://quay.io/v2/acme-billing/invoice/manifests/7.2.0\": dial tcp: lookup quay.io on 172.18.0.1:53: server misbehaving",
+          "exit_code": null,
+          "resources": {
+            "requests": {
+              "cpu": "10m",
+              "memory": "16Mi"
+            },
+            "limits": {
+              "memory": "64Mi"
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "type": "Normal",
+        "reason": "Scheduled",
+        "message": "Successfully assigned kc-ho-01/invoice-55cfc95887-8j4gb to kube-copilot-control-plane",
+        "count": 1,
+        "first_timestamp": "2026-11-14T08:31:19Z",
+        "last_timestamp": "2026-11-14T08:31:19Z",
+        "source": "default-scheduler"
+      },
+      {
+        "type": "Normal",
+        "reason": "Pulling",
+        "message": "Pulling image \"quay.io/acme-billing/invoice:7.2.0\"",
+        "count": 3,
+        "first_timestamp": "2026-11-14T08:31:20Z",
+        "last_timestamp": "2026-11-14T08:32:12Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Warning",
+        "reason": "Failed",
+        "message": "Failed to pull image \"quay.io/acme-billing/invoice:7.2.0\": failed to pull and unpack image \"quay.io/acme-billing/invoice:7.2.0\": failed to resolve reference \"quay.io/acme-billing/invoice:7.2.0\": failed to do request: Head \"https://quay.io/v2/acme-billing/invoice/manifests/7.2.0\": dial tcp: lookup quay.io on 172.18.0.1:53: server misbehaving",
+        "count": 3,
+        "first_timestamp": "2026-11-14T08:31:28Z",
+        "last_timestamp": "2026-11-14T08:32:20Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Warning",
+        "reason": "Failed",
+        "message": "Error: ErrImagePull",
+        "count": 3,
+        "first_timestamp": "2026-11-14T08:31:28Z",
+        "last_timestamp": "2026-11-14T08:32:20Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "BackOff",
+        "message": "Back-off pulling image \"quay.io/acme-billing/invoice:7.2.0\"",
+        "count": 3,
+        "first_timestamp": "2026-11-14T08:31:28Z",
+        "last_timestamp": "2026-11-14T08:32:35Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Warning",
+        "reason": "Failed",
+        "message": "Error: ImagePullBackOff",
+        "count": 3,
+        "first_timestamp": "2026-11-14T08:31:28Z",
+        "last_timestamp": "2026-11-14T08:32:35Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      }
+    ],
+    "logs": {
+      "current": "(logs unavailable: Bad Request)",
+      "previous": null,
+      "container": "invoice"
+    },
+    "retrieval_query": "Pending ErrImagePull failed to pull and unpack image \"quay.io/acme-billing/invoice:7.2.0\": failed to resolve reference \"quay.io/acme-billing/invoice:7.2.0\": failed to do request: Head \"https://quay.io/v2/acme-billing/invoice/manifests/7.2.0\": dial tcp: lookup quay.io on 172.18.0.1:53: server misbehaving ErrImagePull failed to pull and unpack image \"quay.io/acme-billing/invoice:7.2.0\": failed to resolve reference \"quay.io/acme-billing/invoice:7.2.0\": failed to do request: Head \"https://quay.io/v2/acme-billing/invoice/manifests/7.2.0\": dial tcp: lookup quay.io on 172.18.0.1:53: server misbehaving Scheduled Successfully assigned kc-ho-01/invoice-55cfc95887-8j4gb to kube-copilot-control-plane Pulling Pulling image \"quay.io/acme-billing/invoice:7.2.0\" Failed Failed to pull image \"quay.io/acme-billing/invoice:7.2.0\": failed to pull and unpack image \"quay.io/acme-billing/invoice:7.2.0\": failed to resolve reference \"quay.io/acme-billing/invoice:7.2.0\": failed to do request: Head \"https://quay.io/v2/acme-billing/invoice/manifests/7.2.0\": dial tcp: lookup quay.io on 172.18.0.1:53: server misbehaving Failed Error: ErrImagePull BackOff Back-off pulling image \"quay.io/acme-billing/invoice:7.2.0\" Failed Error: ImagePullBackOff",
+    "retrieved": [
+      {
+        "title": "ImagePullBackOff and ErrImagePull",
+        "source": "imagepullbackoff.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- Pod stays `Pending` or shows `STATUS` as `ImagePullBackOff` / `ErrImagePull`.\n- Events include `Failed` from `kubelet` with messages such as `Failed to pull image`, `not found`, `unauthorized`, `denied`, or `invalid image name`.\n- There are no application logs because the container has not started.",
+        "score": 0.74816147033399,
+        "kind": "runbook"
+      },
+      {
+        "title": "ImagePullBackOff and ErrImagePull",
+        "source": "imagepullbackoff.md",
+        "section": "ImagePullBackOff and ErrImagePull",
+        "text": "# ImagePullBackOff and ErrImagePull\n\nThe kubelet could not pull the container image, so the pod never starts. `ErrImagePull` is the immediate failure; `ImagePullBackOff` is the retry/backoff state that follows.",
+        "score": 0.7450256043726188,
+        "kind": "runbook"
+      },
+      {
+        "title": "ImagePullBackOff and ErrImagePull",
+        "source": "imagepullbackoff.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Read the event message \u2014 it usually names the exact reference and the registry error:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get events -n <ns> --field-selector involvedObject.name=<pod>\n   ```\n\n2. Confirm the image the pod is actually asking for:\n\n   ```bash\n   kubectl get pod <pod> -n <ns> -o jsonpath='{range .spec.containers[*]}{.name}{\" \"}{.image}{\"\\n\"}{end}'\n   ```\n\n3. If it is a private image, check that a pull Secret exists in the same namespace and is referenced on the ServiceAccount or pod:\n\n   ```bash\n   kubectl get sa default -n <ns> -o yaml\n   kubectl get secret -n <ns>\n   ```\n\n4. From a node or a debug pod, try `crictl pull` / `docker pull` with the same reference to distinguish \"does not exist\" from \"auth\" and \"network\".",
+        "score": 0.735828465203293,
+        "kind": "runbook"
+      },
+      {
+        "title": "CreateContainerError",
+        "source": "create-container-error.md",
+        "section": "Common causes",
+        "text": "## Common causes\n\n- The node disk is full, so the runtime cannot create the container's writable layer.\n- A security context asks for a capability, seccomp profile, AppArmor profile, or user that the node or policy will not allow.\n- A device plugin (GPU, FPGA) is required but not healthy, or the requested resource is gone.\n- An invalid `command` / working directory / symlink inside the image, or a corrupted image snapshot.\n- Runtime bugs or leftover half-created containers after a kubelet crash.",
+        "score": 0.7148077687375692,
+        "kind": "runbook"
+      },
+      {
+        "title": "ImagePullBackOff and ErrImagePull",
+        "source": "imagepullbackoff.md",
+        "section": "Common causes",
+        "text": "## Common causes\n\n- The image name or tag is wrong (typo, tag that was never pushed, or `latest` that does not exist).\n- The image is in a private registry and the pod has no `imagePullSecrets`, or the Secret is in the wrong namespace.\n- The registry is unreachable (DNS, network policy, or a corporate proxy).\n- `imagePullPolicy: Always` combined with an unstable or deleted tag.\n- An invalid reference such as a missing host, a bad digest, or uppercase characters where the registry does not allow them.",
+        "score": 0.7108977492323105,
+        "kind": "runbook"
+      }
+    ],
+    "knowledge_unavailable": false,
+    "anomaly": {
+      "namespace": "kc-ho-01",
+      "name": "invoice-55cfc95887-8j4gb",
+      "score": 0.0,
+      "is_anomaly": true,
+      "threshold": 0.013067,
+      "metric_anomaly": false,
+      "detectors": [
+        "lifecycle"
+      ],
+      "lifecycle_signals": [
+        {
+          "kind": "event:Failed",
+          "at": "2026-11-14T08:32:20Z",
+          "workload": "invoice",
+          "pod": "invoice-55cfc95887-8j4gb",
+          "detail": "Failed to pull image \"quay.io/acme-billing/invoice:7.2.0\": failed to pull and unpack image \"quay.io/acme-billing/invoice"
+        },
+        {
+          "kind": "event:Failed",
+          "at": "2026-11-14T08:32:20Z",
+          "workload": "invoice",
+          "pod": "invoice-55cfc95887-8j4gb",
+          "detail": "Error: ErrImagePull"
+        },
+        {
+          "kind": "event:BackOff",
+          "at": "2026-11-14T08:32:35Z",
+          "workload": "invoice",
+          "pod": "invoice-55cfc95887-8j4gb",
+          "detail": "Back-off pulling image \"quay.io/acme-billing/invoice:7.2.0\""
+        },
+        {
+          "kind": "event:Failed",
+          "at": "2026-11-14T08:32:35Z",
+          "workload": "invoice",
+          "pod": "invoice-55cfc95887-8j4gb",
+          "detail": "Error: ImagePullBackOff"
+        }
+      ],
+      "contributing_features": [],
+      "series": [],
+      "warning": "Insufficient metric history for kc-ho-01/invoice-55cfc95887-8j4gb (0 sample(s); need at least 3)."
+    },
+    "anomaly_unavailable": false,
+    "usage": {
+      "containers": [
+        {
+          "name": "invoice",
+          "cpu_cores": null,
+          "cpu_limit_cores": null,
+          "cpu_request_cores": 0.01,
+          "cpu_throttled_ratio": null,
+          "memory_mib": null,
+          "memory_limit_mib": 64.0
+        }
+      ],
+      "window": "5m"
+    }
+  },
+  "propose_input": {
+    "deployment": {
+      "namespace": "kc-ho-01",
+      "name": "invoice",
+      "replicas": 1,
+      "ready": 1,
+      "available": 1,
+      "updated": 1,
+      "generation": 2,
+      "observed_generation": 2,
+      "revision": 2,
+      "previous_revision": 1,
+      "summary": {
+        "replicas": 1,
+        "revision": 2,
+        "template": {
+          "annotations": {},
+          "containers": [
+            {
+              "name": "invoice",
+              "image": "quay.io/acme-billing/invoice:7.2.0",
+              "command": [
+                "sh",
+                "-c",
+                "echo \"$(date -Iseconds) INFO starting invoice v1.4.2\"; echo \"$(date -Iseconds) INFO listening on :8080\"; while true; do echo \"$(date -Iseconds) INFO handled request path=/api/v1/items status=200 latency_ms=$((RANDOM%40+5))\"; sleep 3; done"
+              ],
+              "args": null
+            }
+          ]
+        }
+      },
+      "previous_summary": {
+        "annotations": {},
+        "containers": [
+          {
+            "name": "invoice",
+            "image": "busybox:1.36",
+            "command": [
+              "sh",
+              "-c",
+              "echo \"$(date -Iseconds) INFO starting invoice v1.4.2\"; echo \"$(date -Iseconds) INFO listening on :8080\"; while true; do echo \"$(date -Iseconds) INFO handled request path=/api/v1/items status=200 latency_ms=$((RANDOM%40+5))\"; sleep 3; done"
+            ],
+            "args": null
+          }
+        ]
+      },
+      "template_diff": [
+        "~ spec.containers[invoice].image: \"busybox:1.36\" -> \"quay.io/acme-billing/invoice:7.2.0\""
+      ],
+      "template_refs": {}
+    },
+    "pod_state": {
+      "namespace": "kc-ho-01",
+      "name": "invoice-55cfc95887-8j4gb",
+      "controller_kind": "ReplicaSet",
+      "controller_name": "invoice-55cfc95887",
+      "deployment": "invoice",
+      "crashlooping": false,
+      "restart_count": 0,
+      "reason": null
+    },
+    "signals": [
+      "event:Failed pod=invoice-55cfc95887-8j4gb Failed to pull image \"quay.io/acme-billing/invoice:7.2.0\": failed to pull and unpack image \"quay.io/acme-billing/invoice",
+      "event:Failed pod=invoice-55cfc95887-8j4gb Error: ErrImagePull",
+      "event:BackOff pod=invoice-55cfc95887-8j4gb Back-off pulling image \"quay.io/acme-billing/invoice:7.2.0\"",
+      "event:Failed pod=invoice-55cfc95887-8j4gb Error: ImagePullBackOff"
+    ]
+  }
+}

@@ -1,0 +1,293 @@
+{
+  "schema_version": 2,
+  "id": "ho_healthy_mailer",
+  "title": "Healthy mailer with a generous CPU limit",
+  "labels": {
+    "category": "healthy",
+    "expected_actions": [
+      "no_action"
+    ],
+    "expected_runbooks": [],
+    "difficulty": "medium",
+    "fault": "No fault injected; a quiet worker with a 200m CPU limit it barely uses.",
+    "notes": ""
+  },
+  "namespace": "kc-ho-09",
+  "workload": "mailer",
+  "pod_name": "mailer-7c44b58958-67w5q",
+  "captured_at": "2026-11-14T08:34:02+00:00",
+  "cluster": "kind kube-copilot (single node, Kubernetes v1.32.2)",
+  "diagnose_input": {
+    "pod": {
+      "name": "mailer-7c44b58958-67w5q",
+      "namespace": "kc-ho-09",
+      "phase": "Running",
+      "reason": null,
+      "message": null,
+      "restart_count": 0,
+      "ready": true,
+      "created_at": "2026-11-14T08:32:44Z",
+      "node": "kube-copilot-control-plane",
+      "qos_class": "Burstable",
+      "containers": [
+        {
+          "name": "mailer",
+          "ready": true,
+          "restart_count": 0,
+          "state": "running",
+          "reason": null,
+          "message": null,
+          "exit_code": null,
+          "resources": {
+            "requests": {
+              "cpu": "10m",
+              "memory": "16Mi"
+            },
+            "limits": {
+              "cpu": "200m",
+              "memory": "64Mi"
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "type": "Normal",
+        "reason": "Scheduled",
+        "message": "Successfully assigned kc-ho-09/mailer-7c44b58958-67w5q to kube-copilot-control-plane",
+        "count": 1,
+        "first_timestamp": "2026-11-14T08:32:44Z",
+        "last_timestamp": "2026-11-14T08:32:44Z",
+        "source": "default-scheduler"
+      },
+      {
+        "type": "Normal",
+        "reason": "Pulled",
+        "message": "Container image \"busybox:1.36\" already present on machine",
+        "count": 1,
+        "first_timestamp": "2026-11-14T08:32:44Z",
+        "last_timestamp": "2026-11-14T08:32:44Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Created",
+        "message": "Created container: mailer",
+        "count": 1,
+        "first_timestamp": "2026-11-14T08:32:44Z",
+        "last_timestamp": "2026-11-14T08:32:44Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Started",
+        "message": "Started container mailer",
+        "count": 1,
+        "first_timestamp": "2026-11-14T08:32:44Z",
+        "last_timestamp": "2026-11-14T08:32:44Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      }
+    ],
+    "logs": {
+      "current": "2026-11-14T08:32:44.849569579Z 2026-11-14T08:32:44+00:00 INFO mailer started (batch=50)\n2026-11-14T08:32:44.850650813Z 2026-11-14T08:32:44+00:00 INFO sent batch 1 (50 messages, 0 bounced)\n2026-11-14T08:32:44.851409284Z 2026-11-14T08:32:44+00:00 DEBUG queue depth 3, retry budget ok\n2026-11-14T08:32:49.852757526Z 2026-11-14T08:32:49+00:00 INFO sent batch 2 (50 messages, 0 bounced)\n2026-11-14T08:32:49.853547917Z 2026-11-14T08:32:49+00:00 DEBUG queue depth 3, retry budget ok\n2026-11-14T08:32:54.855356926Z 2026-11-14T08:32:54+00:00 INFO sent batch 3 (50 messages, 0 bounced)\n2026-11-14T08:32:54.856111642Z 2026-11-14T08:32:54+00:00 DEBUG queue depth 3, retry budget ok\n2026-11-14T08:32:59.857672621Z 2026-11-14T08:32:59+00:00 INFO sent batch 4 (50 messages, 0 bounced)\n2026-11-14T08:32:59.858727958Z 2026-11-14T08:32:59+00:00 DEBUG queue depth 3, retry budget ok\n2026-11-14T08:33:04.860138393Z 2026-11-14T08:33:04+00:00 INFO sent batch 5 (50 messages, 0 bounced)\n2026-11-14T08:33:04.861505822Z 2026-11-14T08:33:04+00:00 DEBUG queue depth 3, retry budget ok\n2026-11-14T08:33:09.862602218Z 2026-11-14T08:33:09+00:00 INFO sent batch 6 (50 messages, 0 bounced)\n2026-11-14T08:33:09.863523397Z 2026-11-14T08:33:09+00:00 DEBUG queue depth 3, retry budget ok\n2026-11-14T08:33:14.864786895Z 2026-11-14T08:33:14+00:00 INFO sent batch 7 (50 messages, 0 bounced)\n2026-11-14T08:33:14.866029746Z 2026-11-14T08:33:14+00:00 DEBUG queue depth 3, retry budget ok\n2026-11-14T08:33:19.867178345Z 2026-11-14T08:33:19+00:00 INFO sent batch 8 (50 messages, 0 bounced)\n2026-11-14T08:33:19.868085517Z 2026-11-14T08:33:19+00:00 DEBUG queue depth 3, retry budget ok\n2026-11-14T08:33:24.869371450Z 2026-11-14T08:33:24+00:00 INFO sent batch 9 (50 messages, 0 bounced)\n2026-11-14T08:33:24.870853522Z 2026-11-14T08:33:24+00:00 DEBUG queue depth 3, retry budget ok\n2026-11-14T08:33:29.871973273Z 2026-11-14T08:33:29+00:00 INFO sent batch 10 (50 messages, 0 bounced)\n2026-11-14T08:33:29.872724399Z 2026-11-14T08:33:29+00:00 DEBUG queue depth 3, retry budget ok\n2026-11-14T08:33:34.873826236Z 2026-11-14T08:33:34+00:00 INFO sent batch 11 (50 messages, 0 bounced)\n2026-11-14T08:33:34.874630230Z 2026-11-14T08:33:34+00:00 DEBUG queue depth 3, retry budget ok\n2026-11-14T08:33:39.876064512Z 2026-11-14T08:33:39+00:00 INFO sent batch 12 (50 messages, 0 bounced)\n2026-11-14T08:33:39.877365007Z 2026-11-14T08:33:39+00:00 DEBUG queue depth 3, retry budget ok\n2026-11-14T08:33:44.878356429Z 2026-11-14T08:33:44+00:00 INFO sent batch 13 (50 messages, 0 bounced)\n2026-11-14T08:33:44.879130382Z 2026-11-14T08:33:44+00:00 DEBUG queue depth 3, retry budget ok\n2026-11-14T08:33:49.880836208Z 2026-11-14T08:33:49+00:00 INFO sent batch 14 (50 messages, 0 bounced)\n2026-11-14T08:33:49.881966914Z 2026-11-14T08:33:49+00:00 DEBUG queue depth 3, retry budget ok\n2026-11-14T08:33:54.883375135Z 2026-11-14T08:33:54+00:00 INFO sent batch 15 (50 messages, 0 bounced)\n2026-11-14T08:33:54.884193626Z 2026-11-14T08:33:54+00:00 DEBUG queue depth 3, retry budget ok\n2026-11-14T08:33:59.885412287Z 2026-11-14T08:33:59+00:00 INFO sent batch 16 (50 messages, 0 bounced)\n2026-11-14T08:33:59.886372705Z 2026-11-14T08:33:59+00:00 DEBUG queue depth 3, retry budget ok\n",
+      "previous": null,
+      "container": "mailer"
+    },
+    "retrieval_query": "Running Scheduled Successfully assigned kc-ho-09/mailer-7c44b58958-67w5q to kube-copilot-control-plane Pulled Container image \"busybox:1.36\" already present on machine Created Created container: mailer Started Started container mailer 2026-11-14T08:32:49.852757526Z 2026-11-14T08:32:49+00:00 INFO sent batch 2 (50 messages, 0 bounced) 2026-11-14T08:32:49.853547917Z 2026-11-14T08:32:49+00:00 DEBUG queue depth 3, retry budget ok 2026-11-14T08:32:54.855356926Z 2026-11-14T08:32:54+00:00 INFO sent batch 3 (50 messages, 0 bounced) 2026-11-14T08:32:54.856111642Z 2026-11-14T08:32:54+00:00 DEBUG queue depth 3, retry budget ok 2026-11-14T08:32:59.857672621Z 2026-11-14T08:32:59+00:00 INFO sent batch 4 (50 messages, 0 bounced) 2026-11-14T08:32:59.858727958Z 2026-11-14T08:32:59+00:00 DEBUG queue depth 3, retry budget ok 2026-11-14T08:33:04.860138393Z 2026-11-14T08:33:04+00:00 INFO sent batch 5 (50 messages, 0 bounced) 2026-11-14T08:33:04.861505822Z 2026-11-14T08:33:04+00:00 DEBUG queue depth 3, retry budget ok 2026-11-14T08:33:09.862602218Z 2026-11-14T08:33:09+00:00 INFO sent batch 6 (50 messages, 0 bounced) 2026-11-14T08:33:09.863523397Z 2026-11-14T08:33:09+00:00 DEBUG queue depth 3, retry budget ok 2026-11-14T08:33:14.864786895Z 2026-11-14T08:33:14+00:00 INFO sent batch 7 (50 messages, 0 bounced) 2026-11-14T08:33:14.866029746Z 2026-11-14T08:33:14+00:00 DEBUG queue depth 3, retry budget ok 2026-11-14T08:33:19.867178345Z 2026-11-14T08:33:19+00:00 INFO sent batch 8 (50 messages, 0 bounced) 2026-11-14T08:33:19.868085517Z 2026-11-14T08:33:19+00:00 DEBUG queue depth 3, retry budget ok 2026-11-14T08:33:24.869371450Z 2026-11-14T08:33:24+00:00 INFO sent batch 9 (50 messages, 0 bounced) 2026-11-14T08:33:24.870853522Z 2026-11-14T08:33:24+00:00 DEBUG queue depth 3, retry budget ok 2026-11-14T08:33:29.871973273Z 2026-11-14T08:33:29+00:00 INFO sent batch 10 (50 messages, 0 bounced) 2026-11-14T08:33:29.872724399Z 2026-11-14T08:33:29+00:00 DEBUG queue depth 3, retry budget ok 2026-11-14T08:33:34.873826236Z 2026-11-14T08:33:34+00:00 INFO sent batch 11 (50 messages, 0 bounced) 2026-11-14T08:33:34.874630230Z 2026-11-14T08:33:34+00:00 DEBUG queue depth 3, retry budget ok 2026-11-14T08:33:39.876064512Z 2026-11-14T08:33:39+00:00 INFO sent batch 12 (50 messages, 0 bounced) 2026-11-14T08:33:39.877365007Z 2026-11-14T08:33:39+00:00 DEBUG queue depth 3, retry budget ok 2026-11-14T08:33:44.878356429Z 2026-11-14T08:33:44+00:00 INFO sent batch 13 (50 messages, 0 bounced) 2026-11-14T08:33:44.879130382Z 2026-11-14T08:33:44+00:00 DEBUG queue depth 3, retry budget ok 2026-11-14T08:33:49.880836208Z 2026-11-14T08:33:49+00:00 INFO sent batch 14 (50 messages, 0 bounced) 2026-11-14T08:33:49.881966914Z 2026-11-14T08:33:49+00:00 DEBUG queue depth 3, retry budget ok 2026-11-14T08:33:54.883375135Z 2026-11-14T08:33:54+00:00 INFO sent batch 15 (50 messages, 0 bounced) 2026-11-14T08:33:54.884193626Z 2026-11-14T08:33:54+00:00 DEBUG queue depth 3, retry budget ok 2026-11-14T08:33:59.885412287Z 2026-11-14T08:33:59+00:00 INFO sent batch 16 (50 messages, 0 bounced) 2026-11-14T08:33:59.886372705Z 2026-11-14T08:33:59+00:00 DEBUG queue depth 3, retry budget ok",
+    "retrieved": [
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Fixes",
+        "text": "## Fixes\n\n- If the command is wrong (for example a demo container that ends in `exit 1`), correct `command`/`args` or the image entrypoint so the main process stays in the foreground.\n- If a config value is missing, add the env var or volume and roll the workload.\n- If a dependency is down, fix that service or make startup retry instead of exiting.\n- If a liveness probe is too aggressive, increase `initialDelaySeconds` / `failureThreshold` (see probe-failures).\n- After a fix, roll the deployment and confirm the restart count stops climbing:\n\n  ```bash\n  kubectl rollout status deploy/<name> -n <ns>\n  kubectl get pod <pod> -n <ns> --watch\n  ```",
+        "score": 0.7617499582373501,
+        "kind": "runbook"
+      },
+      {
+        "title": "Pending and unschedulable pods",
+        "source": "pending-unschedulable.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Read the `FailedScheduling` message first \u2014 it usually lists every reason a node was skipped:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get events -n <ns> --field-selector reason=FailedScheduling\n   ```\n\n2. Compare requests to allocatable resources:\n\n   ```bash\n   kubectl get pod <pod> -n <ns> -o jsonpath='{.spec.containers[*].resources.requests}'\n   kubectl get nodes -o custom-columns=NAME:.metadata.name,STATUS:.status.conditions[-1],CPU:.status.allocatable.cpu,MEM:.status.allocatable.memory\n   kubectl describe node <node>\n   ```\n\n3. Check taints, affinity, and selectors on the pod against labels and taints on the nodes.\n4. If the message mentions a PVC or volume, inspect the claim (see the PVC pending runbook).",
+        "score": 0.7324943804518973,
+        "kind": "runbook"
+      },
+      {
+        "title": "CPU throttling",
+        "source": "cpu-throttling.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Read the requests and limits:\n\n   ```bash\n   kubectl get pod <pod> -n <ns> -o jsonpath='{.spec.containers[*].resources}'\n   ```\n\n2. Compare usage with the limit:\n\n   ```bash\n   kubectl top pod <pod> -n <ns> --containers\n   ```\n\n3. Check throttling in Prometheus:\n\n   ```promql\n   sum by (container) (rate(container_cpu_cfs_throttled_periods_total{namespace=\"<ns>\", pod=\"<pod>\"}[5m]))\n     / sum by (container) (rate(container_cpu_cfs_periods_total{namespace=\"<ns>\", pod=\"<pod>\"}[5m]))\n   ```\n\n4. If a rollout changed the resources, compare revisions with `kubectl rollout history deploy/<name> -n <ns> --revision=<n>`.",
+        "score": 0.7301721095979764,
+        "kind": "runbook"
+      },
+      {
+        "title": "DNS issues inside the cluster",
+        "source": "dns-issues.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- Application logs show `unknown host`, `Name or service not known`, `no such host`, `i/o timeout` talking to a Service name, or repeated reconnects to a hostname that should exist.\n- `nslookup` / `getent hosts` / `dig` from a debug container fail for `kubernetes.default` or for the target Service.\n- CoreDNS pods in `kube-system` may be crash-looping, pending, or not ready. Nodes may show `NetworkUnavailable`.\n- Traffic to raw ClusterIPs or pod IPs still works, which is a strong hint the problem is name resolution, not the network path itself.",
+        "score": 0.7256078999511076,
+        "kind": "runbook"
+      },
+      {
+        "title": "CPU throttling",
+        "source": "cpu-throttling.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- The pod looks healthy: no restarts, no warning events, no errors in the logs.\n- CPU usage sits at (or just under) the container's CPU limit, for example `20m` used of a `20m` limit.\n- A large share of CFS periods are throttled: `container_cpu_cfs_throttled_periods_total / container_cpu_cfs_periods_total` above roughly 25%.\n- Logs show work taking longer than usual (slow batches, slow requests, timeouts to callers), not failing outright.\n- Liveness or readiness probes with tight `timeoutSeconds` may fail intermittently under load.",
+        "score": 0.7250773477145471,
+        "kind": "runbook"
+      }
+    ],
+    "knowledge_unavailable": false,
+    "anomaly": {
+      "namespace": "kc-ho-09",
+      "name": "mailer-7c44b58958-67w5q",
+      "score": 0.9819,
+      "is_anomaly": true,
+      "threshold": 0.013067,
+      "metric_anomaly": true,
+      "detectors": [
+        "isolation_forest"
+      ],
+      "lifecycle_signals": [],
+      "contributing_features": [
+        {
+          "name": "mem_last_mib",
+          "value": 0.34765625,
+          "zscore": -4.966403146225003,
+          "direction": "low"
+        },
+        {
+          "name": "mem_mean_mib",
+          "value": 0.6555989583333334,
+          "zscore": -4.950410229027507,
+          "direction": "low"
+        },
+        {
+          "name": "mem_slope_mib_per_min",
+          "value": -1.0647321428571428,
+          "zscore": -4.315699762665602,
+          "direction": "low"
+        },
+        {
+          "name": "mem_to_limit_ratio",
+          "value": 0.00543212890625,
+          "zscore": -2.71976567920909,
+          "direction": "low"
+        },
+        {
+          "name": "cpu_mean",
+          "value": 0.0002010298514701866,
+          "zscore": -2.64378005431604,
+          "direction": "low"
+        }
+      ],
+      "series": [
+        {
+          "ts": 1794645167.0,
+          "cpu": 0.0,
+          "memory_mib": 2.211,
+          "mem_to_limit_ratio": 0.0345,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794645182.0,
+          "cpu": 0.0001,
+          "memory_mib": 0.344,
+          "mem_to_limit_ratio": 0.0054,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794645197.0,
+          "cpu": 0.0002,
+          "memory_mib": 0.344,
+          "mem_to_limit_ratio": 0.0054,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794645212.0,
+          "cpu": 0.0003,
+          "memory_mib": 0.344,
+          "mem_to_limit_ratio": 0.0054,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794645227.0,
+          "cpu": 0.0003,
+          "memory_mib": 0.344,
+          "mem_to_limit_ratio": 0.0054,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794645242.0,
+          "cpu": 0.0003,
+          "memory_mib": 0.348,
+          "mem_to_limit_ratio": 0.0054,
+          "restarts": 0.0
+        }
+      ],
+      "warning": null
+    },
+    "anomaly_unavailable": false,
+    "usage": {
+      "containers": [
+        {
+          "name": "mailer",
+          "cpu_cores": 0.0001,
+          "cpu_limit_cores": 0.2,
+          "cpu_request_cores": 0.01,
+          "cpu_throttled_ratio": 0.0,
+          "memory_mib": 0.3,
+          "memory_limit_mib": 64.0
+        }
+      ],
+      "window": "5m"
+    }
+  },
+  "propose_input": {
+    "deployment": {
+      "namespace": "kc-ho-09",
+      "name": "mailer",
+      "replicas": 1,
+      "ready": 1,
+      "available": 1,
+      "updated": 1,
+      "generation": 1,
+      "observed_generation": 1,
+      "revision": 1,
+      "previous_revision": null,
+      "summary": {
+        "replicas": 1,
+        "revision": 1,
+        "template": {
+          "annotations": {},
+          "containers": [
+            {
+              "name": "mailer",
+              "image": "busybox:1.36",
+              "command": [
+                "sh",
+                "-c",
+                "echo \"$(date -Iseconds) INFO mailer started (batch=50)\"; n=0; while true; do n=$((n+1)); echo \"$(date -Iseconds) INFO sent batch $n (50 messages, 0 bounced)\"; echo \"$(date -Iseconds) DEBUG queue depth 3, retry budget ok\"; sleep 5; done"
+              ],
+              "args": null
+            }
+          ]
+        }
+      },
+      "previous_summary": null,
+      "template_diff": null,
+      "template_refs": {}
+    },
+    "pod_state": {
+      "namespace": "kc-ho-09",
+      "name": "mailer-7c44b58958-67w5q",
+      "controller_kind": "ReplicaSet",
+      "controller_name": "mailer-7c44b58958",
+      "deployment": "mailer",
+      "crashlooping": false,
+      "restart_count": 0,
+      "reason": null
+    },
+    "signals": []
+  }
+}
