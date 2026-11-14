@@ -128,7 +128,7 @@ kube-copilot/
 ├── ml/                   Features, synthetic + real-data training, chaos collector, eval reports
 ├── ml/data/real/         Labelled real kind + Chaos Mesh metrics (two runs) and a data card
 ├── ml/llm_eval/          LLM eval: incident scenarios, kind capture, scorers, runner, optional judge
-├── ml/data/llm_eval/     38 frozen incident fixtures, hand checks and a data card
+├── ml/data/llm_eval/     38 frozen incidents (v1 + v2), 12 held-out, hand checks, data card
 ├── knowledge/runbooks    Markdown runbooks ingested into Qdrant
 ├── demo/                 kind config, broken manifests, Prometheus + Grafana, Chaos Mesh experiments
 ├── deploy/helm/          Helm chart (backend, frontend, optional Qdrant)
@@ -390,7 +390,7 @@ Helm only grants write RBAC when `actions.enabled=true`, as one namespaced `Role
 
 `make eval` scores Diagnose and the safe-actions proposer on 38 incidents that
 were reproduced on the kind cluster and frozen as JSON fixtures
-([dataset card](ml/data/llm_eval/README.md), [results](ml/reports/llm_eval/README.md)).
+([dataset card](ml/data/llm_eval/README.md), [first results](ml/reports/llm_eval/README.md), [after the fixes](ml/reports/llm_eval/v2/README.md)).
 The incidents cover image pulls, crashes, bad config values, missing
 ConfigMaps/Secrets, OOM kills, probes, CPU throttling, scheduling, PVCs,
 Service/DNS problems, Chaos Mesh pod kills and healthy pods. 11 are hard
@@ -408,19 +408,32 @@ resource that wasn't in the context (0 of about 300 references), no proposal
 was blocked by the policy engine, and correct runbooks were in the top 5 for
 86% of the cases that have one.
 
-The eval also found real problems:
+The first run (PR #31) found real problems:
 
-- **The proposer can't see config diffs.** The proposer only sees image and
-  command for the current and previous revision, so 7 rollouts that broke env,
-  probes, resources or nodeSelector looked "identical", and the models
-  declined to roll back. A plain "roll back if there's a previous revision"
-  rule scores 86.8% here.
-- **Pod kills are missed:** 0/3. The models ignore the lifecycle signals in
-  the prompt.
-- **False-positive anomalies mislead Diagnose.** They led the models to
-  invent memory leaks on healthy pods.
-- **Long logs break the free tier.** A probe-restart loop produced a prompt
-  too large for Groq's free 8K tokens per minute.
+- **The proposer couldn't see config diffs.** It only saw image and command for
+  the current and previous revision, so 7 rollouts that broke env, probes,
+  resources or nodeSelector looked "identical", and the models declined to roll
+  back.
+- **Pod kills were missed (0/3)**, false-positive anomalies led the models to
+  invent memory leaks on healthy pods, **CPU throttling was missed (0/1)**, and a
+  probe-restart loop produced a prompt too large for Groq's free 8K tokens per
+  minute.
+
+**Fixes (PR #32):** the proposer now gets a field-level diff of the whole pod
+template between revisions. Diagnose gets a structured lifecycle section,
+container limits, Prometheus CPU throttling and memory vs limits, and a
+"weak evidence" caveat on the anomaly score. Logs are compacted to a budget,
+and there is a CPU throttling runbook. Results
+([details](ml/reports/llm_eval/v2/README.md)):
+
+- **Held-out set** (12 new incidents written and captured after the prompts
+  were frozen, `gpt-oss-120b`): root cause **12/12** hand-checked, remediation
+  **11/12**, 0 request errors. There is no "before" run on this set.
+- **Original 38, re-run (partial, regex only, the free-tier daily quota ran
+  out):** gpt-oss-20b Diagnose 27/38 to 33/38 by regex, with pod kills 0/3 to
+  3/3. gpt-oss-120b 15/21 to 19/21 on the 21 cases finished. The 413 is gone.
+  The prompts were changed after seeing failures on this set, so these numbers
+  are optimistic.
 
 ```bash
 make eval                                  # LLM_MODEL=... to pick a model; needs LLM_API_KEY or GROQ_API_KEY
@@ -428,6 +441,8 @@ make eval-ablations                        # + without RAG and without lifecycle
 make eval-dry-run                          # no API calls: fixtures, prompt sizes, model-free baselines
 make eval-judge RESULTS=ml/reports/llm_eval/openai_gpt-oss-120b.json   # optional LLM judge vs hand checks
 make eval-capture                          # re-create the incidents on kind (about 10 min)
+make eval-heldout                          # the 12 held-out incidents
+make eval-compare                          # before/after table from saved reports + hand checks
 ```
 
 CI runs only offline tests: fixture schema, labels, leak checks, scorers.

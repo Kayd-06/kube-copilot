@@ -1,0 +1,24 @@
+38 fixtures, model=openai/gpt-oss-120b, variants=['full'], tasks=['diagnose', 'propose']
+76 calls planned
+[1/76] diagnose/full cm_deleted_after_rollout: ok 2.542
+[2/76] diagnose/full cm_edited_after_rollout: ok 1.422
+[3/76] diagnose/full config_loglevel_first: ok 1.839
+[4/76] diagnose/full config_port_rollout: ok 1.248
+[5/76] diagnose/full cpu_throttle_first: ok 1.786
+[6/76] diagnose/full crash_bad_command_rollout: ok 1.161
+[7/76] diagnose/full crash_panic_rollout: ok 1.158
+[8/76] diagnose/full crash_traceback_first: WRONG 1.723
+[9/76] diagnose/full dns_missing_service: ok 1.725
+[10/76] diagnose/full healthy_after_rollout: ok 1.478
+[11/76] diagnose/full healthy_job_completed: ok 1.388
+[12/76] diagnose/full healthy_noisy_logs: WRONG 1.638
+[13/76] diagnose/full healthy_web: ok 1.158
+[14/76] diagnose/full img_private_rollout: ok 1.965
+[15/76] diagnose/full img_registry_first: ok 1.885
+[16/76] diagnose/full img_tag_rollout: ok 1.677
+[17/76] diagnose/full init_migration_first: ok 1.981
+[18/76] diagnose/full liveness_path_rollout: ok 1.843
+[19/76] diagnose/full liveness_slow_start_first: ok 2.713
+[20/76] diagnose/full missing_cm_envfrom_rollout: ok 1.326
+[21/76] diagnose/full missing_cm_volume_first: ok 1.313
+daily quota: waiting 660s for it to refill
