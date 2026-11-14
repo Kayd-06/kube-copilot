@@ -1,9 +1,59 @@
 # LLM eval dataset: frozen Kubernetes incidents
 
 38 incidents, each reproduced on the single-node kind cluster (`kube-copilot`,
-Kubernetes v1.32.2) and frozen as one JSON file in `cases/`. Each file holds
-exactly what the API sends to the LLM, so evals replay offline and give the
-same inputs every time.
+Kubernetes v1.32.2) and frozen as one JSON file. Each file holds exactly what
+the API sends to the LLM, so evals replay offline and give the same inputs
+every time. There are three directories:
+
+| Directory | What it is | Used for |
+|---|---|---|
+| `cases/` (v1, schema 1) | The 38 incidents as captured for PR #31, unchanged | The "before" results in `ml/reports/llm_eval/*.json` |
+| `cases_v2/` (schema 2) | The same 38 incidents. 16 were re-captured to get the new context fields, and the other 22 are byte-identical copies of v1 | The "after" results in `ml/reports/llm_eval/v2/` (default for `make eval`) |
+| `heldout/` (schema 2) | 12 new incidents written and captured after the prompt changes were frozen | `ml/reports/llm_eval/heldout/` (`make eval-heldout`) |
+
+### What changed in v2
+
+Schema 2 adds three things the fixes need:
+
+- `diagnose_input.usage`: per-container CPU use, the CFS-throttled share of
+  periods, and memory, with their limits (Prometheus, 5m window).
+- `diagnose_input.pod.containers[].resources`: requests and limits from the
+  pod spec.
+- `propose_input.deployment.template_diff` / `template_refs`: a field-level
+  diff of the full pod template between the previous and the current
+  ReplicaSet revision (env, envFrom, probes, resources, nodeSelector,
+  affinity, volumes, ConfigMap/Secret refs), plus the ConfigMaps, Secrets and
+  PVCs the current template references.
+
+The fields can't be derived from v1 files, so the cases that need them were
+re-run on the cluster with the **same scenario code and the same labels**
+(`cases.py` was not changed). These are the 15 cases with a previous revision
+and `cpu_throttle_first`. Re-capturing also refreshes everything else in those
+16 files: pod names, timestamps, logs, events, retrieval and the anomaly score
+(the Isolation Forest verdict came out the same as in v1 on all 16; the scores
+and feature values differ). So part of
+any v1 to v2 difference on those 16 cases comes from the new capture, not the
+new prompts. The other 22 cases are unchanged, which keeps that confound small.
+The new fields are absent there and the prompts simply leave those sections
+out.
+
+### Held-out set
+
+The prompt and context changes were made **after** reading the v1 failures,
+so the v2 numbers on the original 38 are optimistic. To check whether the
+fixes generalise, 12 new incidents ([`cases_heldout.py`](../../llm_eval/cases_heldout.py))
+were written and labelled from the injected fault, committed, and only then
+captured and scored. Nothing was tuned on them. They reuse the fault families
+with different workloads, values and mechanics: a quay.io image, an unknown
+CLI flag, a malformed `DATABASE_URL`, an HTTP readiness probe, a 512Gi memory
+request, a rollout that cuts a CPU limit to 15m, a 48Mi OOM, two pod kills on 3
+replicas, a healthy worker with a CPU limit, a missing Secret volume, a missing
+ConfigMap key, and a Service name that doesn't resolve. 7 expect
+`rollback_deployment` and 5 expect `no_action`.
+
+The "old code" baseline on the held-out set uses the same files
+reduced to schema 1, with retrieval redone against the v1 runbooks (no CPU
+throttling runbook), and is run from the PR #31 merge commit (`cc30707`).
 
 - `diagnose_input`: pod summary, events, logs (current and previous), the
   retrieval query and the top-5 runbook chunks it returned, and the anomaly
@@ -86,8 +136,9 @@ action, 26 are `no_action`, 11 `rollback_deployment` and 1 `restart_deployment`.
 
 ```bash
 make cluster-up metrics-up chaos-up && make metrics-forward   # Prometheus on :9090
-make eval-capture                       # all cases, about 10 minutes, 12 at a time
+make eval-capture                       # all cases into cases_v2/, about 10 minutes, 8 at a time
 make eval-capture ONLY=oom_first,healthy_web
+make eval-capture-heldout               # the 12 held-out cases into heldout/
 ```
 
 Every case runs in its own `kc-eval-NN` namespace (label

@@ -12,7 +12,8 @@ temperature and response format). Requests are paced under --tpm tokens per
 minute and 429s are retried after the server's suggested wait; a daily-quota
 429 stops the run and the partial report says so.
 
-Writes ml/reports/llm_eval/<model>.json (every call) and <model>.md.
+Writes ml/reports/llm_eval/v2/<model>.json (every call) and <model>.md by default.
+Held-out set: --fixtures ml/data/llm_eval/heldout --out-dir ml/reports/llm_eval/heldout.
 """
 
 from __future__ import annotations
@@ -40,7 +41,8 @@ from ml.llm_eval.scoring import (
 )
 from ml.llm_eval.taxonomy import CATEGORIES
 
-REPORT_DIR = Path(__file__).resolve().parents[1] / "reports" / "llm_eval"
+# v1 reports (PR #31) live in reports/llm_eval/ and are kept for comparison; new runs on cases_v2 go to v2/.
+REPORT_DIR = Path(__file__).resolve().parents[1] / "reports" / "llm_eval" / "v2"
 VARIANTS = ("full", "no_rag", "no_signals")
 # USD per 1M tokens (input, output), Groq list prices from console.groq.com/docs/models, checked 2026-11-13.
 PRICES = {"openai/gpt-oss-120b": (0.15, 0.60), "openai/gpt-oss-20b": (0.075, 0.30)}

@@ -1,0 +1,17 @@
+{
+  "_about": "Verdicts written by reading every full-context diagnosis on the 12 held-out incidents against the injected fault (ml/llm_eval/cases_heldout.py), with the same rubric as hand_checks.json. Not produced by the regex matcher or by any model.",
+  "openai/gpt-oss-120b": {
+    "ho_cm_key_first": {"correct": true, "note": "ConfigMap gateway-limits lacks key RATE_LIMIT -> correct; regex has no 'does not contain'."},
+    "ho_cpu_limit_rollout": {"correct": true},
+    "ho_crash_flag_rollout": {"correct": true},
+    "ho_dns_proxy_first": {"correct": true},
+    "ho_env_dburl_rollout": {"correct": true, "note": "Mis-configured DATABASE_URL -> bad config value; regex has no 'mis-configured'."},
+    "ho_healthy_mailer": {"correct": true},
+    "ho_img_quay_rollout": {"correct": true, "note": "Blames cluster DNS for failing to resolve quay.io; the evidence is a registry DNS failure (no registry egress on the box's kind node), same convention as the v1 image-pull cases."},
+    "ho_mem_request_rollout": {"correct": true},
+    "ho_oom_render_first": {"correct": true},
+    "ho_pod_kill_two": {"correct": true},
+    "ho_readiness_http_rollout": {"correct": true},
+    "ho_secret_volume_rollout": {"correct": true}
+  }
+}
