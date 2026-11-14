@@ -7,14 +7,28 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 
 ## [Unreleased]
 
-### Added
+### Fixed (from the LLM eval)
+
+- **Safe actions see the whole rollout.** `DeploymentState` carries `template_diff`, a field-level diff of the full pod template between the previous and current ReplicaSet revisions (env, envFrom, ConfigMap/Secret refs, probes, resources, nodeSelector/affinity, volumes; API-server defaults dropped), and `template_refs`. The proposer prompt rolls back when the failure matches a change and refuses when the only change is unrelated.
+- **Diagnose evidence.** Lifecycle signals have their own structured section with counts and an explicit disruption flag. Container requests/limits are in the prompt. `PrometheusClient.pod_usage` adds CPU use, the CFS-throttled share and memory vs limits (`DiagnoseResponse.usage`). The anomaly score is presented as weak, uncalibrated evidence that needs corroboration. A new `cpu-throttling.md` runbook, and the retrieval query mentions throttling when it is measured.
+- **Prompt size.** `app/logcompact.py` collapses repeated lines and keeps error lines (with traceback context), the head and the tail within a budget (3,000 chars per log for Diagnose, 1,500 for the proposer). The probe-loop case that hit HTTP 413 now fits.
+- **gpt-oss-20b "Tool choice is required".** The proposer retries once with `tool_choice=auto`.
+
+### Added (eval)
+
+- `ml/data/llm_eval/cases_v2/` (schema 2): v1 with 16 cases re-captured for the new fields, with the same scenarios and labels. `cases/` (v1) is kept unchanged.
+- `ml/data/llm_eval/heldout/`: 12 held-out incidents (`ml/llm_eval/cases_heldout.py`), labels committed before capture, captured after the prompts were frozen. `make eval-heldout`, `make eval-capture-heldout`, and `make eval-compare` (`ml/llm_eval/compare.py`).
+- The runner waits for Groq's daily quota with `--wait-daily HOURS`; reports default to `ml/reports/llm_eval/v2/`.
+- Results (`ml/reports/llm_eval/v2/README.md`): held-out, gpt-oss-120b, root cause 12/12 hand-checked and remediation 11/12. The re-run on the original 38 is partial (daily quota): gpt-oss-20b Diagnose 27/38 to 33/38 by regex (pod kills 0/3 to 3/3), and gpt-oss-120b 15/21 to 19/21 on the cases finished. Those prompts were tuned after seeing these failures.
+
+### Added (LLM eval harness, PR #31)
 
 - **LLM evaluation harness** (`ml/llm_eval`, `make eval`). 38 incidents reproduced on kind with hand labels written from the injected fault: category, acceptable safe-actions tool, matching runbooks and difficulty. 11 are hard. They are frozen as JSON fixtures (`ml/data/llm_eval/cases`) holding exactly what Diagnose and the proposer receive. The harness reports deterministic root-cause and remediation scoring, a JSON schema check, RAG hit@k/MRR, a kubectl hallucination check, p50/p95 latency, tokens and cost, model-free baselines, Wilson intervals, `--variants no_rag,no_signals` ablations, rate-limit pacing with `--resume`, and `--rescore`. An optional LLM judge (`make eval-judge`) has a fixed rubric and is compared against hand checks (`ml/data/llm_eval/hand_checks.json`). `make eval-capture` re-creates the incidents in throwaway `kc-eval-NN` namespaces.
 - First results (`ml/reports/llm_eval/README.md`). On `openai/gpt-oss-120b`: root cause 30/38 hand-checked (27/38 by regex), remediation 30/38, schema 97.4%, no hallucinated resources, Diagnose p50 1.8 s. On `openai/gpt-oss-20b`: 31/38 hand-checked (27/38 by regex), remediation 29/38. The regex matcher agreed with the hand check on 34/37 and 33/37 diagnoses, the judge (`qwen/qwen3.8-27b`) on 33/37 and 35/37.
 - Offline CI tests for the fixtures and scorers (`backend/tests/test_llm_eval.py`), and a manual `LLM eval` workflow that uses a `GROQ_API_KEY` secret.
 - `LLMExplainer.explain_detailed()` returns the raw text, parse status and token usage. `ProposalResult` carries token usage.
 
-### Known issues found by the eval
+### Known issues found by the eval (addressed above; kept for history)
 
 - The safe-actions proposer only sees image and command for the current and previous revision, so rollouts that break env, probes, resources or nodeSelector look identical and are not rolled back (7 of 11 rollout cases).
 - Diagnose ignores pod-kill lifecycle signals (0/3), is misled by false-positive metric anomalies on healthy pods, and has no log-size cap: one prompt exceeded Groq's free-tier 8K TPM.

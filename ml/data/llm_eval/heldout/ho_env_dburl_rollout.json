@@ -1,0 +1,263 @@
+{
+  "schema_version": 2,
+  "id": "ho_env_dburl_rollout",
+  "title": "Rollout sets a malformed DATABASE_URL",
+  "labels": {
+    "category": "bad_config_value",
+    "expected_actions": [
+      "rollback_deployment"
+    ],
+    "expected_runbooks": [
+      "crashloopbackoff.md"
+    ],
+    "difficulty": "easy",
+    "fault": "Deployment updated with DATABASE_URL missing the ':' after the scheme; the app validates it and exits 1.",
+    "notes": ""
+  },
+  "namespace": "kc-ho-03",
+  "workload": "accounts-api",
+  "pod_name": "accounts-api-967d8455d-zqrwn",
+  "captured_at": "2026-11-14T08:32:53+00:00",
+  "cluster": "kind kube-copilot (single node, Kubernetes v1.32.2)",
+  "diagnose_input": {
+    "pod": {
+      "name": "accounts-api-967d8455d-zqrwn",
+      "namespace": "kc-ho-03",
+      "phase": "Running",
+      "reason": "Error",
+      "message": null,
+      "restart_count": 4,
+      "ready": false,
+      "created_at": "2026-11-14T08:31:19Z",
+      "node": "kube-copilot-control-plane",
+      "qos_class": "Burstable",
+      "containers": [
+        {
+          "name": "accounts-api",
+          "ready": false,
+          "restart_count": 4,
+          "state": "terminated",
+          "reason": "Error",
+          "message": null,
+          "exit_code": 1,
+          "resources": {
+            "requests": {
+              "cpu": "10m",
+              "memory": "16Mi"
+            },
+            "limits": {
+              "memory": "64Mi"
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "type": "Normal",
+        "reason": "Scheduled",
+        "message": "Successfully assigned kc-ho-03/accounts-api-967d8455d-zqrwn to kube-copilot-control-plane",
+        "count": 1,
+        "first_timestamp": "2026-11-14T08:31:19Z",
+        "last_timestamp": "2026-11-14T08:31:19Z",
+        "source": "default-scheduler"
+      },
+      {
+        "type": "Normal",
+        "reason": "Pulled",
+        "message": "Container image \"busybox:1.36\" already present on machine",
+        "count": 5,
+        "first_timestamp": "2026-11-14T08:31:20Z",
+        "last_timestamp": "2026-11-14T08:32:41Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Created",
+        "message": "Created container: accounts-api",
+        "count": 5,
+        "first_timestamp": "2026-11-14T08:31:20Z",
+        "last_timestamp": "2026-11-14T08:32:41Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Started",
+        "message": "Started container accounts-api",
+        "count": 5,
+        "first_timestamp": "2026-11-14T08:31:20Z",
+        "last_timestamp": "2026-11-14T08:32:41Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Warning",
+        "reason": "BackOff",
+        "message": "Back-off restarting failed container accounts-api in pod accounts-api-967d8455d-zqrwn_kc-ho-03(5ab526a9-d4f8-4e1f-96cb-0f554d97c3f9)",
+        "count": 7,
+        "first_timestamp": "2026-11-14T08:31:21Z",
+        "last_timestamp": "2026-11-14T08:32:42Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      }
+    ],
+    "logs": {
+      "current": "2026-11-14T08:32:41.929412334Z 2026-11-14T08:32:41+00:00 INFO accounts-api starting\n2026-11-14T08:32:41.930223108Z 2026-11-14T08:32:41+00:00 FATAL invalid DATABASE_URL \"postgres//app@db:5432/accounts\": expected postgres://user@host:port/db\n",
+      "previous": "unable to retrieve container logs for containerd://8b2ce430a9c1536e26e229746df675ef959d666b5918db6e03cb451abfe507ac",
+      "container": "accounts-api"
+    },
+    "retrieval_query": "Running Error Error exit code 1 Scheduled Successfully assigned kc-ho-03/accounts-api-967d8455d-zqrwn to kube-copilot-control-plane Pulled Container image \"busybox:1.36\" already present on machine Created Created container: accounts-api Started Started container accounts-api BackOff Back-off restarting failed container accounts-api in pod accounts-api-967d8455d-zqrwn_kc-ho-03(5ab526a9-d4f8-4e1f-96cb-0f554d97c3f9) unable to retrieve container logs for containerd://8b2ce430a9c1536e26e229746df675ef959d666b5918db6e03cb451abfe507ac 2026-11-14T08:32:41.929412334Z 2026-11-14T08:32:41+00:00 INFO accounts-api starting 2026-11-14T08:32:41.930223108Z 2026-11-14T08:32:41+00:00 FATAL invalid DATABASE_URL \"postgres//app@db:5432/accounts\": expected postgres://user@host:port/db",
+    "retrieved": [
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Read the last termination reason and exit code:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get pod <pod> -n <ns> -o jsonpath='{range .status.containerStatuses[*]}{.name}{\" \"}{.state}{\" \"}{.lastState.terminated}{\"\\n\"}{end}'\n   ```\n\n2. Always fetch previous logs if `restartCount > 0`:\n\n   ```bash\n   kubectl logs <pod> -n <ns> --previous --tail=200\n   kubectl logs <pod> -n <ns> --tail=200\n   ```\n\n3. Confirm the command that actually ran (`command` / `args` in the pod spec) and whether the image entrypoint expects different arguments.\n4. If logs mention a missing file, env var, or connection refused, inspect the related ConfigMap, Secret, and Service.",
+        "score": 0.7680907340773854,
+        "kind": "runbook"
+      },
+      {
+        "title": "CreateContainerConfigError",
+        "source": "create-container-config-error.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- Pod is `Pending` or `Waiting` with reason `CreateContainerConfigError`.\n- Events include `Failed` with a message such as `Error: secret \"...\" not found`, `couldn't find key ... in ConfigMap ...`, or `configmap \"...\" not found`.\n- Restart count is usually zero. `kubectl logs` will fail or return an \"unavailable\" message.",
+        "score": 0.7591992457803569,
+        "kind": "runbook"
+      },
+      {
+        "title": "OOMKilled",
+        "source": "oomkilled.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Confirm the termination reason and the current limits:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get pod <pod> -n <ns> -o jsonpath='{.spec.containers[*].resources}'\n   ```\n\n2. Compare usage if metrics are available:\n\n   ```bash\n   kubectl top pod <pod> -n <ns> --containers\n   ```\n\n3. Read previous logs for allocation errors, heap dumps, or a sudden stop.\n4. Check whether the node itself is under memory pressure (`kubectl describe node <node>` and look for evictions or `MemoryPressure`).",
+        "score": 0.7590149857267248,
+        "kind": "runbook"
+      },
+      {
+        "title": "CreateContainerError",
+        "source": "create-container-error.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- Pod is `Waiting` with reason `CreateContainerError`.\n- Events include `Failed` from the kubelet with a runtime error (device mapper, `no space left on device`, seccomp / AppArmor / SELinux denial, invalid capability, or a missing device plugin).\n- The image has often already been pulled (`ImagePullBackOff` is not the current reason).\n- Application logs are typically unavailable because the container never started.",
+        "score": 0.7482346290345041,
+        "kind": "runbook"
+      },
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Fixes",
+        "text": "## Fixes\n\n- If the command is wrong (for example a demo container that ends in `exit 1`), correct `command`/`args` or the image entrypoint so the main process stays in the foreground.\n- If a config value is missing, add the env var or volume and roll the workload.\n- If a dependency is down, fix that service or make startup retry instead of exiting.\n- If a liveness probe is too aggressive, increase `initialDelaySeconds` / `failureThreshold` (see probe-failures).\n- After a fix, roll the deployment and confirm the restart count stops climbing:\n\n  ```bash\n  kubectl rollout status deploy/<name> -n <ns>\n  kubectl get pod <pod> -n <ns> --watch\n  ```",
+        "score": 0.7477520245840156,
+        "kind": "runbook"
+      }
+    ],
+    "knowledge_unavailable": false,
+    "anomaly": {
+      "namespace": "kc-ho-03",
+      "name": "accounts-api-967d8455d-zqrwn",
+      "score": 0.0,
+      "is_anomaly": true,
+      "threshold": 0.013067,
+      "metric_anomaly": false,
+      "detectors": [
+        "lifecycle"
+      ],
+      "lifecycle_signals": [
+        {
+          "kind": "container_restarted",
+          "at": "2026-11-14T08:32:00Z",
+          "workload": "accounts-api",
+          "pod": "accounts-api-967d8455d-zqrwn",
+          "detail": "+1 (Error)"
+        },
+        {
+          "kind": "event:BackOff",
+          "at": "2026-11-14T08:32:42Z",
+          "workload": "accounts-api",
+          "pod": "accounts-api-967d8455d-zqrwn",
+          "detail": "Back-off restarting failed container accounts-api in pod accounts-api-967d8455d-zqrwn_kc-ho-03(5ab526a9-d4f8-4e1f-96cb-0"
+        }
+      ],
+      "contributing_features": [],
+      "series": [],
+      "warning": "Insufficient metric history for kc-ho-03/accounts-api-967d8455d-zqrwn (0 sample(s); need at least 3)."
+    },
+    "anomaly_unavailable": false,
+    "usage": {
+      "containers": [
+        {
+          "name": "accounts-api",
+          "cpu_cores": null,
+          "cpu_limit_cores": null,
+          "cpu_request_cores": 0.01,
+          "cpu_throttled_ratio": null,
+          "memory_mib": null,
+          "memory_limit_mib": 64.0
+        }
+      ],
+      "window": "5m"
+    }
+  },
+  "propose_input": {
+    "deployment": {
+      "namespace": "kc-ho-03",
+      "name": "accounts-api",
+      "replicas": 1,
+      "ready": 1,
+      "available": 1,
+      "updated": 1,
+      "generation": 2,
+      "observed_generation": 2,
+      "revision": 2,
+      "previous_revision": 1,
+      "summary": {
+        "replicas": 1,
+        "revision": 2,
+        "template": {
+          "annotations": {},
+          "containers": [
+            {
+              "name": "accounts-api",
+              "image": "busybox:1.36",
+              "command": [
+                "sh",
+                "-c",
+                "echo \"$(date -Iseconds) INFO accounts-api starting\"; case \"$DATABASE_URL\" in postgres://*) ;; *) echo \"$(date -Iseconds) FATAL invalid DATABASE_URL \\\"$DATABASE_URL\\\": expected postgres://user@host:port/db\"; exit 1;; esac; echo \"$(date -Iseconds) INFO starting accounts-api v1.4.2\"; echo \"$(date -Iseconds) INFO listening on :8080\"; while true; do echo \"$(date -Iseconds) INFO handled request path=/api/v1/items status=200 latency_ms=$((RANDOM%40+5))\"; sleep 3; done"
+              ],
+              "args": null
+            }
+          ]
+        }
+      },
+      "previous_summary": {
+        "annotations": {},
+        "containers": [
+          {
+            "name": "accounts-api",
+            "image": "busybox:1.36",
+            "command": [
+              "sh",
+              "-c",
+              "echo \"$(date -Iseconds) INFO accounts-api starting\"; case \"$DATABASE_URL\" in postgres://*) ;; *) echo \"$(date -Iseconds) FATAL invalid DATABASE_URL \\\"$DATABASE_URL\\\": expected postgres://user@host:port/db\"; exit 1;; esac; echo \"$(date -Iseconds) INFO starting accounts-api v1.4.2\"; echo \"$(date -Iseconds) INFO listening on :8080\"; while true; do echo \"$(date -Iseconds) INFO handled request path=/api/v1/items status=200 latency_ms=$((RANDOM%40+5))\"; sleep 3; done"
+            ],
+            "args": null
+          }
+        ]
+      },
+      "template_diff": [
+        "~ spec.containers[accounts-api].env[DATABASE_URL].value: \"postgres://app@db:5432/accounts\" -> \"postgres//app@db:5432/accounts\""
+      ],
+      "template_refs": {}
+    },
+    "pod_state": {
+      "namespace": "kc-ho-03",
+      "name": "accounts-api-967d8455d-zqrwn",
+      "controller_kind": "ReplicaSet",
+      "controller_name": "accounts-api-967d8455d",
+      "deployment": "accounts-api",
+      "crashlooping": true,
+      "restart_count": 4,
+      "reason": "repeated restarts"
+    },
+    "signals": [
+      "container_restarted pod=accounts-api-967d8455d-zqrwn +1 (Error)",
+      "event:BackOff pod=accounts-api-967d8455d-zqrwn Back-off restarting failed container accounts-api in pod accounts-api-967d8455d-zqrwn_kc-ho-03(5ab526a9-d4f8-4e1f-96cb-0"
+    ]
+  }
+}

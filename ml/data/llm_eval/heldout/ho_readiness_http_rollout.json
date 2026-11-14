@@ -1,0 +1,297 @@
+{
+  "schema_version": 2,
+  "id": "ho_readiness_http_rollout",
+  "title": "Rollout adds an HTTP readiness probe on a path that 404s",
+  "labels": {
+    "category": "probe_failure",
+    "expected_actions": [
+      "rollback_deployment"
+    ],
+    "expected_runbooks": [
+      "probe-failures.md"
+    ],
+    "difficulty": "medium",
+    "fault": "Deployment updated with readinessProbe GET /ready:80; nginx returns 404, so the new pod never becomes Ready.",
+    "notes": ""
+  },
+  "namespace": "kc-ho-04",
+  "workload": "help-center",
+  "pod_name": "help-center-56f4f7454-h8ph2",
+  "captured_at": "2026-11-14T08:32:08+00:00",
+  "cluster": "kind kube-copilot (single node, Kubernetes v1.32.2)",
+  "diagnose_input": {
+    "pod": {
+      "name": "help-center-56f4f7454-h8ph2",
+      "namespace": "kc-ho-04",
+      "phase": "Running",
+      "reason": null,
+      "message": null,
+      "restart_count": 0,
+      "ready": false,
+      "created_at": "2026-11-14T08:31:19Z",
+      "node": "kube-copilot-control-plane",
+      "qos_class": "Burstable",
+      "containers": [
+        {
+          "name": "help-center",
+          "ready": false,
+          "restart_count": 0,
+          "state": "running",
+          "reason": null,
+          "message": null,
+          "exit_code": null,
+          "resources": {
+            "requests": {
+              "cpu": "10m",
+              "memory": "16Mi"
+            },
+            "limits": {
+              "memory": "64Mi"
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "type": "Normal",
+        "reason": "Scheduled",
+        "message": "Successfully assigned kc-ho-04/help-center-56f4f7454-h8ph2 to kube-copilot-control-plane",
+        "count": 1,
+        "first_timestamp": "2026-11-14T08:31:19Z",
+        "last_timestamp": "2026-11-14T08:31:19Z",
+        "source": "default-scheduler"
+      },
+      {
+        "type": "Normal",
+        "reason": "Pulled",
+        "message": "Container image \"nginx:1.27-alpine\" already present on machine",
+        "count": 1,
+        "first_timestamp": "2026-11-14T08:31:20Z",
+        "last_timestamp": "2026-11-14T08:31:20Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Created",
+        "message": "Created container: help-center",
+        "count": 1,
+        "first_timestamp": "2026-11-14T08:31:20Z",
+        "last_timestamp": "2026-11-14T08:31:20Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Started",
+        "message": "Started container help-center",
+        "count": 1,
+        "first_timestamp": "2026-11-14T08:31:20Z",
+        "last_timestamp": "2026-11-14T08:31:20Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Warning",
+        "reason": "Unhealthy",
+        "message": "Readiness probe failed: HTTP probe failed with statuscode: 404",
+        "count": 11,
+        "first_timestamp": "2026-11-14T08:31:25Z",
+        "last_timestamp": "2026-11-14T08:32:05Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      }
+    ],
+    "logs": {
+      "current": "2026-11-14T08:31:20.195741177Z /docker-entrypoint.sh: /docker-entrypoint.d/ is not empty, will attempt to perform configuration\n2026-11-14T08:31:20.195765898Z /docker-entrypoint.sh: Looking for shell scripts in /docker-entrypoint.d/\n2026-11-14T08:31:20.196381708Z /docker-entrypoint.sh: Launching /docker-entrypoint.d/10-listen-on-ipv6-by-default.sh\n2026-11-14T08:31:20.198877694Z 10-listen-on-ipv6-by-default.sh: info: Getting the checksum of /etc/nginx/conf.d/default.conf\n2026-11-14T08:31:20.206019276Z 10-listen-on-ipv6-by-default.sh: info: Enabled listen on IPv6 in /etc/nginx/conf.d/default.conf\n2026-11-14T08:31:20.206119385Z /docker-entrypoint.sh: Sourcing /docker-entrypoint.d/15-local-resolvers.envsh\n2026-11-14T08:31:20.206187075Z /docker-entrypoint.sh: Launching /docker-entrypoint.d/20-envsubst-on-templates.sh\n2026-11-14T08:31:20.207790034Z /docker-entrypoint.sh: Launching /docker-entrypoint.d/30-tune-worker-processes.sh\n2026-11-14T08:31:20.208654106Z /docker-entrypoint.sh: Configuration complete; ready for start up\n2026-11-14T08:31:20.212617006Z 2026/11/14 08:31:20 [notice] 1#1: using the \"epoll\" event method\n2026-11-14T08:31:20.212626239Z 2026/11/14 08:31:20 [notice] 1#1: nginx/1.27.5\n2026-11-14T08:31:20.212628152Z 2026/11/14 08:31:20 [notice] 1#1: built by gcc 14.2.0 (Alpine 14.2.0) \n2026-11-14T08:31:20.212629705Z 2026/11/14 08:31:20 [notice] 1#1: OS: Linux 6.12.113+\n2026-11-14T08:31:20.212631074Z 2026/11/14 08:31:20 [notice] 1#1: getrlimit(RLIMIT_NOFILE): 1048576:1048576\n2026-11-14T08:31:20.212683712Z 2026/11/14 08:31:20 [notice] 1#1: start worker processes\n2026-11-14T08:31:20.212860297Z 2026/11/14 08:31:20 [notice] 1#1: start worker process 33\n2026-11-14T08:31:20.212942722Z 2026/11/14 08:31:20 [notice] 1#1: start worker process 34\n2026-11-14T08:31:20.213398531Z 2026/11/14 08:31:20 [notice] 1#1: start worker process 35\n2026-11-14T08:31:20.213471792Z 2026/11/14 08:31:20 [notice] 1#1: start worker process 36\n2026-11-14T08:31:20.213552364Z 2026/11/14 08:31:20 [notice] 1#1: start worker process 37\n2026-11-14T08:31:20.213665050Z 2026/11/14 08:31:20 [notice] 1#1: start worker process 38\n2026-11-14T08:31:20.213798891Z 2026/11/14 08:31:20 [notice] 1#1: start worker process 39\n2026-11-14T08:31:20.213869175Z 2026/11/14 08:31:20 [notice] 1#1: start worker process 40\n2026-11-14T08:31:25.574820338Z 10.244.0.1 - - [14/Nov/2026:08:31:25 +0000] \"GET /ready HTTP/1.1\" 404 153 \"-\" \"kube-probe/1.32\" \"-\"\n2026-11-14T08:31:25.574816490Z 2026/11/14 08:31:25 [error] 33#33: *1 open() \"/usr/share/nginx/html/ready\" failed (2: No such file or directory), client: 10.244.0.1, server: localhost, request: \"GET /ready HTTP/1.1\", host: \"10.244.0.229:80\"\n2026-11-14T08:31:29.573728482Z 2026/11/14 08:31:29 [error] 34#34: *2 open() \"/usr/share/nginx/html/ready\" failed (2: No such file or directory), client: 10.244.0.1, server: localhost, request: \"GET /ready HTTP/1.1\", host: \"10.244.0.229:80\"\n2026-11-14T08:31:29.573734936Z 10.244.0.1 - - [14/Nov/2026:08:31:29 +0000] \"GET /ready HTTP/1.1\" 404 153 \"-\" \"kube-probe/1.32\" \"-\"\n2026-11-14T08:31:33.573943690Z 10.244.0.1 - - [14/Nov/2026:08:31:33 +0000] \"GET /ready HTTP/1.1\" 404 153 \"-\" \"kube-probe/1.32\" \"-\"\n2026-11-14T08:31:33.573956976Z 2026/11/14 08:31:33 [error] 35#35: *3 open() \"/usr/share/nginx/html/ready\" failed (2: No such file or directory), client: 10.244.0.1, server: localhost, request: \"GET /ready HTTP/1.1\", host: \"10.244.0.229:80\"\n2026-11-14T08:31:37.573357790Z 2026/11/14 08:31:37 [error] 36#36: *4 open() \"/usr/share/nginx/html/ready\" failed (2: No such file or directory), client: 10.244.0.1, server: localhost, request: \"GET /ready HTTP/1.1\", host: \"10.244.0.229:80\"\n2026-11-14T08:31:37.573381661Z 10.244.0.1 - - [14/Nov/2026:08:31:37 +0000] \"GET /ready HTTP/1.1\" 404 153 \"-\" \"kube-probe/1.32\" \"-\"\n2026-11-14T08:31:41.573587001Z 2026/11/14 08:31:41 [error] 37#37: *5 open() \"/usr/share/nginx/html/ready\" failed (2: No such file or directory), client: 10.244.0.1, server: localhost, request: \"GET /ready HTTP/1.1\", host: \"10.244.0.229:80\"\n2026-11-14T08:31:41.573598947Z 10.244.0.1 - - [14/Nov/2026:08:31:41 +0000] \"GET /ready HTTP/1.1\" 404 153 \"-\" \"kube-probe/1.32\" \"-\"\n2026-11-14T08:31:45.574435084Z 10.244.0.1 - - [14/Nov/2026:08:31:45 +0000] \"GET /ready HTTP/1.1\" 404 153 \"-\" \"kube-probe/1.32\" \"-\"\n2026-11-14T08:31:45.574451355Z 2026/11/14 08:31:45 [error] 39#39: *6 open() \"/usr/share/nginx/html/ready\" failed (2: No such file or directory), client: 10.244.0.1, server: localhost, request: \"GET /ready HTTP/1.1\", host: \"10.244.0.229:80\"\n2026-11-14T08:31:49.573802768Z 2026/11/14 08:31:49 [error] 38#38: *7 open() \"/usr/share/nginx/html/ready\" failed (2: No such file or directory), client: 10.244.0.1, server: localhost, request: \"GET /ready HTTP/1.1\", host: \"10.244.0.229:80\"\n2026-11-14T08:31:49.573822462Z 10.244.0.1 - - [14/Nov/2026:08:31:49 +0000] \"GET /ready HTTP/1.1\" 404 153 \"-\" \"kube-probe/1.32\" \"-\"\n2026-11-14T08:31:53.574153909Z 10.244.0.1 - - [14/Nov/2026:08:31:53 +0000] \"GET /ready HTTP/1.1\" 404 153 \"-\" \"kube-probe/1.32\" \"-\"\n2026-11-14T08:31:53.574191048Z 2026/11/14 08:31:53 [error] 40#40: *8 open() \"/usr/share/nginx/html/ready\" failed (2: No such file or directory), client: 10.244.0.1, server: localhost, request: \"GET /ready HTTP/1.1\", host: \"10.244.0.229:80\"\n2026-11-14T08:31:57.573538139Z 10.244.0.1 - - [14/Nov/2026:08:31:57 +0000] \"GET /ready HTTP/1.1\" 404 153 \"-\" \"kube-probe/1.32\" \"-\"\n2026-11-14T08:31:57.573554030Z 2026/11/14 08:31:57 [error] 33#33: *9 open() \"/usr/share/nginx/html/ready\" failed (2: No such file or directory), client: 10.244.0.1, server: localhost, request: \"GET /ready HTTP/1.1\", host: \"10.244.0.229:80\"\n2026-11-14T08:32:01.573538159Z 2026/11/14 08:32:01 [error] 33#33: *10 open() \"/usr/share/nginx/html/ready\" failed (2: No such file or directory), client: 10.244.0.1, server: localhost, request: \"GET /ready HTTP/1.1\", host: \"10.244.0.229:80\"\n2026-11-14T08:32:01.573544131Z 10.244.0.1 - - [14/Nov/2026:08:32:01 +0000] \"GET /ready HTTP/1.1\" 404 153 \"-\" \"kube-probe/1.32\" \"-\"\n2026-11-14T08:32:05.574226121Z 2026/11/14 08:32:05 [error] 33#33: *11 open() \"/usr/share/nginx/html/ready\" failed (2: No such file or directory), client: 10.244.0.1, server: localhost, request: \"GET /ready HTTP/1.1\", host: \"10.244.0.229:80\"\n2026-11-14T08:32:05.574265722Z 10.244.0.1 - - [14/Nov/2026:08:32:05 +0000] \"GET /ready HTTP/1.1\" 404 153 \"-\" \"kube-probe/1.32\" \"-\"\n",
+      "previous": null,
+      "container": "help-center"
+    },
+    "retrieval_query": "Running Scheduled Successfully assigned kc-ho-04/help-center-56f4f7454-h8ph2 to kube-copilot-control-plane Pulled Container image \"nginx:1.27-alpine\" already present on machine Created Created container: help-center Started Started container help-center Unhealthy Readiness probe failed: HTTP probe failed with statuscode: 404 2026-11-14T08:31:20.212860297Z 2026/11/14 08:31:20 [notice] 1#1: start worker process 33 2026-11-14T08:31:20.212942722Z 2026/11/14 08:31:20 [notice] 1#1: start worker process 34 2026-11-14T08:31:20.213398531Z 2026/11/14 08:31:20 [notice] 1#1: start worker process 35 2026-11-14T08:31:20.213471792Z 2026/11/14 08:31:20 [notice] 1#1: start worker process 36 2026-11-14T08:31:20.213552364Z 2026/11/14 08:31:20 [notice] 1#1: start worker process 37 2026-11-14T08:31:20.213665050Z 2026/11/14 08:31:20 [notice] 1#1: start worker process 38 2026-11-14T08:31:20.213798891Z 2026/11/14 08:31:20 [notice] 1#1: start worker process 39 2026-11-14T08:31:20.213869175Z 2026/11/14 08:31:20 [notice] 1#1: start worker process 40 2026-11-14T08:31:25.574820338Z 10.244.0.1 - - [14/Nov/2026:08:31:25 +0000] \"GET /ready HTTP/1.1\" 404 153 \"-\" \"kube-probe/1.32\" \"-\" 2026-11-14T08:31:25.574816490Z 2026/11/14 08:31:25 [error] 33#33: *1 open() \"/usr/share/nginx/html/ready\" failed (2: No such file or directory), client: 10.244.0.1, server: localhost, request: \"GET /ready HTTP/1.1\", host: \"10.244.0.229:80\" 2026-11-14T08:31:29.573728482Z 2026/11/14 08:31:29 [error] 34#34: *2 open() \"/usr/share/nginx/html/ready\" failed (2: No such file or directory), client: 10.244.0.1, server: localhost, request: \"GET /ready HTTP/1.1\", host: \"10.244.0.229:80\" 2026-11-14T08:31:29.573734936Z 10.244.0.1 - - [14/Nov/2026:08:31:29 +0000] \"GET /ready HTTP/1.1\" 404 153 \"-\" \"kube-probe/1.32\" \"-\" 2026-11-14T08:31:33.573943690Z 10.244.0.1 - - [14/Nov/2026:08:31:33 +0000] \"GET /ready HTTP/1.1\" 404 153 \"-\" \"kube-probe/1.32\" \"-\" 2026-11-14T08:31:33.573956976Z 2026/11/14 08:31:33 [error] 35#35: *3 open() \"/usr/share/nginx/html/ready\" failed (2: No such file or directory), client: 10.244.0.1, server: localhost, request: \"GET /ready HTTP/1.1\", host: \"10.244.0.229:80\" 2026-11-14T08:31:37.573357790Z 2026/11/14 08:31:37 [error] 36#36: *4 open() \"/usr/share/nginx/html/ready\" failed (2: No such file or directory), client: 10.244.0.1, server: localhost, request: \"GET /ready HTTP/1.1\", host: \"10.244.0.229:80\" 2026-11-14T08:31:37.573381661Z 10.244.0.1 - - [14/Nov/2026:08:31:37 +0000] \"GET /ready HTTP/1.1\" 404 153 \"-\" \"kube-probe/1.32\" \"-\" 2026-11-14T08:31:41.573587001Z 2026/11/14 08:31:41 [error] 37#37: *5 open() \"/usr/share/nginx/html/ready\" failed (2: No such file or directory), client: 10.244.0.1, server: localhost, request: \"GET /ready HTTP/1.1\", host: \"10.244.0.229:80\" 2026-11-14T08:31:41.573598947Z 10.244.0.1 - - [14/Nov/2026:08:31:41 +0000] \"GET /ready HTTP/1.1\" 404 153 \"-\" \"kube-probe/1.32\" \"-\" 2026-11-14T08:31:45.574435084Z 10.244.0.1 - - [14/Nov/2026:08:31:45 +0000] \"GET /ready HTTP/1.1\" 404 153 \"-\" \"kube-probe/1.32\" \"-\" 2026-11-14T08:31:45.574451355Z 2026/11/14 08:31:45 [error] 39#39: *6 open() \"/usr/share/nginx/html/ready\" failed (2: No such file or directory), client: 10.244.0.1, server: localhost, request: \"GET /ready HTTP/1.1\", host: \"10.244.0.229:80\" 2026-11-14T08:31:49.573802768Z 2026/11/14 08:31:49 [error] 38#38: *7 open() \"/usr/share/nginx/html/ready\" failed (2: No such file or directory), client: 10.244.0.1, server: localhost, request: \"GET /ready HTTP/1.1\", host: \"10.244.0.229:80\" 2026-11-14T08:31:49.573822462Z 10.244.0.1 - - [14/Nov/2026:08:31:49 +0000] \"GET /ready HTTP/1.1\" 404 153 \"-\" \"kube-probe/1.32\" \"-\" 2026-11-14T08:31:53.574153909Z 10.244.0.1 - - [14/Nov/2026:08:31:53 +0000] \"GET /ready HTTP/1.1\" 404 153 \"-\" \"kube-probe/1.32\" \"-\" 2026-11-14T08:31:53.574191048Z 2026/11/14 08:31:53 [error] 40#40: *8 open() \"/usr/share/nginx/html/ready\" failed (2: No such file or directory), client: 10.244.0.1, server: localhost, request: \"GET /ready HTTP/1.1\", host: \"10.244.0.2",
+    "retrieved": [
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Fixes",
+        "text": "## Fixes\n\n- If the command is wrong (for example a demo container that ends in `exit 1`), correct `command`/`args` or the image entrypoint so the main process stays in the foreground.\n- If a config value is missing, add the env var or volume and roll the workload.\n- If a dependency is down, fix that service or make startup retry instead of exiting.\n- If a liveness probe is too aggressive, increase `initialDelaySeconds` / `failureThreshold` (see probe-failures).\n- After a fix, roll the deployment and confirm the restart count stops climbing:\n\n  ```bash\n  kubectl rollout status deploy/<name> -n <ns>\n  kubectl get pod <pod> -n <ns> --watch\n  ```",
+        "score": 0.7803004071543841,
+        "kind": "runbook"
+      },
+      {
+        "title": "Liveness and readiness probe failures",
+        "source": "probe-failures.md",
+        "section": "Fixes",
+        "text": "## Fixes\n\n- Increase `initialDelaySeconds`, `periodSeconds`, `timeoutSeconds`, or `failureThreshold` so slow starts can finish.\n- Add or fix a `startupProbe` for apps that take a long time to boot, and keep liveness conservative.\n- Point HTTP probes at a cheap, local endpoint that does not depend on downstream systems.\n- Fix a wrong port or path rather than disabling the probe entirely.\n- After changing probes, roll the deployment and confirm `READY` stays `1/1` and events stop showing `Unhealthy`.",
+        "score": 0.7647378276632188,
+        "kind": "runbook"
+      },
+      {
+        "title": "Liveness and readiness probe failures",
+        "source": "probe-failures.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Inspect the probe definitions and recent probe events:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get pod <pod> -n <ns> -o jsonpath='{.spec.containers[*].livenessProbe}'\n   kubectl get pod <pod> -n <ns> -o jsonpath='{.spec.containers[*].readinessProbe}'\n   kubectl get endpoints <svc> -n <ns>\n   ```\n\n2. Exec into a running container (if it lives long enough) and call the same path or command the probe uses.\n3. Read current and previous logs around the time of each restart. If the process is killed mid-startup, the liveness probe is a prime suspect.\n4. Distinguish \"app is crashing on its own\" (see CrashLoopBackOff) from \"kubelet is killing a healthy-but-slow process\".",
+        "score": 0.7632547627979027,
+        "kind": "runbook"
+      },
+      {
+        "title": "DNS issues inside the cluster",
+        "source": "dns-issues.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- Application logs show `unknown host`, `Name or service not known`, `no such host`, `i/o timeout` talking to a Service name, or repeated reconnects to a hostname that should exist.\n- `nslookup` / `getent hosts` / `dig` from a debug container fail for `kubernetes.default` or for the target Service.\n- CoreDNS pods in `kube-system` may be crash-looping, pending, or not ready. Nodes may show `NetworkUnavailable`.\n- Traffic to raw ClusterIPs or pod IPs still works, which is a strong hint the problem is name resolution, not the network path itself.",
+        "score": 0.758660818987392,
+        "kind": "runbook"
+      },
+      {
+        "title": "Pending and unschedulable pods",
+        "source": "pending-unschedulable.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Read the `FailedScheduling` message first \u2014 it usually lists every reason a node was skipped:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get events -n <ns> --field-selector reason=FailedScheduling\n   ```\n\n2. Compare requests to allocatable resources:\n\n   ```bash\n   kubectl get pod <pod> -n <ns> -o jsonpath='{.spec.containers[*].resources.requests}'\n   kubectl get nodes -o custom-columns=NAME:.metadata.name,STATUS:.status.conditions[-1],CPU:.status.allocatable.cpu,MEM:.status.allocatable.memory\n   kubectl describe node <node>\n   ```\n\n3. Check taints, affinity, and selectors on the pod against labels and taints on the nodes.\n4. If the message mentions a PVC or volume, inspect the claim (see the PVC pending runbook).",
+        "score": 0.7525741740762519,
+        "kind": "runbook"
+      }
+    ],
+    "knowledge_unavailable": false,
+    "anomaly": {
+      "namespace": "kc-ho-04",
+      "name": "help-center-56f4f7454-h8ph2",
+      "score": 0.9686,
+      "is_anomaly": true,
+      "threshold": 0.013067,
+      "metric_anomaly": true,
+      "detectors": [
+        "isolation_forest"
+      ],
+      "lifecycle_signals": [],
+      "contributing_features": [
+        {
+          "name": "mem_mean_mib",
+          "value": 7.006510416666667,
+          "zscore": -4.509962932338204,
+          "direction": "low"
+        },
+        {
+          "name": "mem_last_mib",
+          "value": 7.1484375,
+          "zscore": -4.495308064441721,
+          "direction": "low"
+        },
+        {
+          "name": "cpu_mean",
+          "value": 1.8036541176313538e-05,
+          "zscore": -2.6499300873378178,
+          "direction": "low"
+        },
+        {
+          "name": "mem_slope_mib_per_min",
+          "value": 0.5703125,
+          "zscore": 2.286721548511056,
+          "direction": "high"
+        },
+        {
+          "name": "cpu_last",
+          "value": 2.9913281373260567e-05,
+          "zscore": -2.2571509649909145,
+          "direction": "low"
+        }
+      ],
+      "series": [
+        {
+          "ts": 1794645097.0,
+          "cpu": 0.0,
+          "memory_mib": 6.863,
+          "mem_to_limit_ratio": 0.1072,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794645112.0,
+          "cpu": 0.0,
+          "memory_mib": 7.008,
+          "mem_to_limit_ratio": 0.1095,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794645127.0,
+          "cpu": 0.0,
+          "memory_mib": 7.148,
+          "mem_to_limit_ratio": 0.1117,
+          "restarts": 0.0
+        }
+      ],
+      "warning": null
+    },
+    "anomaly_unavailable": false,
+    "usage": {
+      "containers": [
+        {
+          "name": "help-center",
+          "cpu_cores": 0.0,
+          "cpu_limit_cores": null,
+          "cpu_request_cores": 0.01,
+          "cpu_throttled_ratio": null,
+          "memory_mib": 7.1,
+          "memory_limit_mib": 64.0
+        }
+      ],
+      "window": "5m"
+    }
+  },
+  "propose_input": {
+    "deployment": {
+      "namespace": "kc-ho-04",
+      "name": "help-center",
+      "replicas": 1,
+      "ready": 1,
+      "available": 1,
+      "updated": 1,
+      "generation": 2,
+      "observed_generation": 2,
+      "revision": 2,
+      "previous_revision": 1,
+      "summary": {
+        "replicas": 1,
+        "revision": 2,
+        "template": {
+          "annotations": {},
+          "containers": [
+            {
+              "name": "help-center",
+              "image": "nginx:1.27-alpine",
+              "command": null,
+              "args": null
+            }
+          ]
+        }
+      },
+      "previous_summary": {
+        "annotations": {},
+        "containers": [
+          {
+            "name": "help-center",
+            "image": "nginx:1.27-alpine",
+            "command": null,
+            "args": null
+          }
+        ]
+      },
+      "template_diff": [
+        "+ spec.containers[help-center].readinessProbe.failureThreshold: 2",
+        "+ spec.containers[help-center].readinessProbe.httpGet.path: \"/ready\"",
+        "+ spec.containers[help-center].readinessProbe.httpGet.port: 80",
+        "+ spec.containers[help-center].readinessProbe.httpGet.scheme: \"HTTP\"",
+        "+ spec.containers[help-center].readinessProbe.initialDelaySeconds: 2",
+        "+ spec.containers[help-center].readinessProbe.periodSeconds: 4",
+        "+ spec.containers[help-center].readinessProbe.successThreshold: 1",
+        "+ spec.containers[help-center].readinessProbe.timeoutSeconds: 2"
+      ],
+      "template_refs": {}
+    },
+    "pod_state": {
+      "namespace": "kc-ho-04",
+      "name": "help-center-56f4f7454-h8ph2",
+      "controller_kind": "ReplicaSet",
+      "controller_name": "help-center-56f4f7454",
+      "deployment": "help-center",
+      "crashlooping": false,
+      "restart_count": 0,
+      "reason": null
+    },
+    "signals": []
+  }
+}

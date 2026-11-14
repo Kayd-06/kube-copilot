@@ -1,0 +1,243 @@
+{
+  "schema_version": 1,
+  "id": "img_registry_first",
+  "title": "First deploy from a registry host that does not resolve",
+  "labels": {
+    "category": "image_pull",
+    "expected_actions": [
+      "no_action"
+    ],
+    "expected_runbooks": [
+      "imagepullbackoff.md"
+    ],
+    "difficulty": "easy",
+    "fault": "Image registry.example.invalid/ledger/api:2.4.1 on revision 1; the registry host does not exist.",
+    "notes": ""
+  },
+  "namespace": "kc-eval-02",
+  "workload": "ledger",
+  "pod_name": "ledger-7996b86ff5-fjjtq",
+  "captured_at": "2026-11-13T17:47:06+00:00",
+  "cluster": "kind kube-copilot (single node, Kubernetes v1.32.2)",
+  "diagnose_input": {
+    "pod": {
+      "name": "ledger-7996b86ff5-fjjtq",
+      "namespace": "kc-eval-02",
+      "phase": "Pending",
+      "reason": "ErrImagePull",
+      "message": "failed to pull and unpack image \"registry.example.invalid/ledger/api:2.4.1\": failed to resolve reference \"registry.example.invalid/ledger/api:2.4.1\": failed to do request: Head \"https://registry.example.invalid/v2/ledger/api/manifests/2.4.1\": dial tcp: lookup registry.example.invalid on 172.18.0.1:53: server misbehaving",
+      "restart_count": 0,
+      "ready": false,
+      "created_at": "2026-11-13T17:45:42Z",
+      "node": "kube-copilot-control-plane",
+      "qos_class": "Burstable",
+      "containers": [
+        {
+          "name": "ledger",
+          "ready": false,
+          "restart_count": 0,
+          "state": "waiting",
+          "reason": "ErrImagePull",
+          "message": "failed to pull and unpack image \"registry.example.invalid/ledger/api:2.4.1\": failed to resolve reference \"registry.example.invalid/ledger/api:2.4.1\": failed to do request: Head \"https://registry.example.invalid/v2/ledger/api/manifests/2.4.1\": dial tcp: lookup registry.example.invalid on 172.18.0.1:53: server misbehaving",
+          "exit_code": null
+        }
+      ]
+    },
+    "events": [
+      {
+        "type": "Normal",
+        "reason": "Scheduled",
+        "message": "Successfully assigned kc-eval-02/ledger-7996b86ff5-fjjtq to kube-copilot-control-plane",
+        "count": 1,
+        "first_timestamp": "2026-11-13T17:45:42Z",
+        "last_timestamp": "2026-11-13T17:45:42Z",
+        "source": "default-scheduler"
+      },
+      {
+        "type": "Normal",
+        "reason": "Pulling",
+        "message": "Pulling image \"registry.example.invalid/ledger/api:2.4.1\"",
+        "count": 3,
+        "first_timestamp": "2026-11-13T17:45:42Z",
+        "last_timestamp": "2026-11-13T17:46:39Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Warning",
+        "reason": "Failed",
+        "message": "Failed to pull image \"registry.example.invalid/ledger/api:2.4.1\": failed to pull and unpack image \"registry.example.invalid/ledger/api:2.4.1\": failed to resolve reference \"registry.example.invalid/ledger/api:2.4.1\": failed to do request: Head \"https://registry.example.invalid/v2/ledger/api/manifests/2.4.1\": dial tcp: lookup registry.example.invalid on 172.18.0.1:53: server misbehaving",
+        "count": 3,
+        "first_timestamp": "2026-11-13T17:45:50Z",
+        "last_timestamp": "2026-11-13T17:46:47Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Warning",
+        "reason": "Failed",
+        "message": "Error: ErrImagePull",
+        "count": 3,
+        "first_timestamp": "2026-11-13T17:45:50Z",
+        "last_timestamp": "2026-11-13T17:46:47Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "BackOff",
+        "message": "Back-off pulling image \"registry.example.invalid/ledger/api:2.4.1\"",
+        "count": 3,
+        "first_timestamp": "2026-11-13T17:45:50Z",
+        "last_timestamp": "2026-11-13T17:47:01Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Warning",
+        "reason": "Failed",
+        "message": "Error: ImagePullBackOff",
+        "count": 3,
+        "first_timestamp": "2026-11-13T17:45:50Z",
+        "last_timestamp": "2026-11-13T17:47:01Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      }
+    ],
+    "logs": {
+      "current": "(logs unavailable: Bad Request)",
+      "previous": null,
+      "container": "ledger"
+    },
+    "retrieval_query": "Pending ErrImagePull failed to pull and unpack image \"registry.example.invalid/ledger/api:2.4.1\": failed to resolve reference \"registry.example.invalid/ledger/api:2.4.1\": failed to do request: Head \"https://registry.example.invalid/v2/ledger/api/manifests/2.4.1\": dial tcp: lookup registry.example.invalid on 172.18.0.1:53: server misbehaving ErrImagePull failed to pull and unpack image \"registry.example.invalid/ledger/api:2.4.1\": failed to resolve reference \"registry.example.invalid/ledger/api:2.4.1\": failed to do request: Head \"https://registry.example.invalid/v2/ledger/api/manifests/2.4.1\": dial tcp: lookup registry.example.invalid on 172.18.0.1:53: server misbehaving Scheduled Successfully assigned kc-eval-02/ledger-7996b86ff5-fjjtq to kube-copilot-control-plane Pulling Pulling image \"registry.example.invalid/ledger/api:2.4.1\" Failed Failed to pull image \"registry.example.invalid/ledger/api:2.4.1\": failed to pull and unpack image \"registry.example.invalid/ledger/api:2.4.1\": failed to resolve reference \"registry.example.invalid/ledger/api:2.4.1\": failed to do request: Head \"https://registry.example.invalid/v2/ledger/api/manifests/2.4.1\": dial tcp: lookup registry.example.invalid on 172.18.0.1:53: server misbehaving Failed Error: ErrImagePull BackOff Back-off pulling image \"registry.example.invalid/ledger/api:2.4.1\" Failed Error: ImagePullBackOff",
+    "retrieved": [
+      {
+        "title": "ImagePullBackOff and ErrImagePull",
+        "source": "imagepullbackoff.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Read the event message \u2014 it usually names the exact reference and the registry error:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get events -n <ns> --field-selector involvedObject.name=<pod>\n   ```\n\n2. Confirm the image the pod is actually asking for:\n\n   ```bash\n   kubectl get pod <pod> -n <ns> -o jsonpath='{range .spec.containers[*]}{.name}{\" \"}{.image}{\"\\n\"}{end}'\n   ```\n\n3. If it is a private image, check that a pull Secret exists in the same namespace and is referenced on the ServiceAccount or pod:\n\n   ```bash\n   kubectl get sa default -n <ns> -o yaml\n   kubectl get secret -n <ns>\n   ```\n\n4. From a node or a debug pod, try `crictl pull` / `docker pull` with the same reference to distinguish \"does not exist\" from \"auth\" and \"network\".",
+        "score": 0.7805029271180681,
+        "kind": "runbook"
+      },
+      {
+        "title": "ImagePullBackOff and ErrImagePull",
+        "source": "imagepullbackoff.md",
+        "section": "ImagePullBackOff and ErrImagePull",
+        "text": "# ImagePullBackOff and ErrImagePull\n\nThe kubelet could not pull the container image, so the pod never starts. `ErrImagePull` is the immediate failure; `ImagePullBackOff` is the retry/backoff state that follows.",
+        "score": 0.7723400958015365,
+        "kind": "runbook"
+      },
+      {
+        "title": "ImagePullBackOff and ErrImagePull",
+        "source": "imagepullbackoff.md",
+        "section": "Fixes",
+        "text": "## Fixes\n\n- Correct the image repository, tag, or digest in the Deployment / Pod spec and roll it out.\n- For private registries, create a `kubernetes.io/dockerconfigjson` Secret in the workload namespace and set `imagePullSecrets`.\n- If the registry is only reachable from certain nodes, fix node networking or pin the pod with a selector that matches those nodes.\n- Avoid depending on a floating `latest` tag in production; pin a tag or digest so pulls are reproducible.\n- If the name is syntactically invalid (`InvalidImageName`), fix the reference \u2014 retries will never succeed until it is a valid image name.",
+        "score": 0.7674457669503167,
+        "kind": "runbook"
+      },
+      {
+        "title": "ImagePullBackOff and ErrImagePull",
+        "source": "imagepullbackoff.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- Pod stays `Pending` or shows `STATUS` as `ImagePullBackOff` / `ErrImagePull`.\n- Events include `Failed` from `kubelet` with messages such as `Failed to pull image`, `not found`, `unauthorized`, `denied`, or `invalid image name`.\n- There are no application logs because the container has not started.",
+        "score": 0.7625320324841749,
+        "kind": "runbook"
+      },
+      {
+        "title": "ImagePullBackOff and ErrImagePull",
+        "source": "imagepullbackoff.md",
+        "section": "Common causes",
+        "text": "## Common causes\n\n- The image name or tag is wrong (typo, tag that was never pushed, or `latest` that does not exist).\n- The image is in a private registry and the pod has no `imagePullSecrets`, or the Secret is in the wrong namespace.\n- The registry is unreachable (DNS, network policy, or a corporate proxy).\n- `imagePullPolicy: Always` combined with an unstable or deleted tag.\n- An invalid reference such as a missing host, a bad digest, or uppercase characters where the registry does not allow them.",
+        "score": 0.7444817879192829,
+        "kind": "runbook"
+      }
+    ],
+    "knowledge_unavailable": false,
+    "anomaly": {
+      "namespace": "kc-eval-02",
+      "name": "ledger-7996b86ff5-fjjtq",
+      "score": 0.0,
+      "is_anomaly": true,
+      "threshold": 0.013067,
+      "metric_anomaly": false,
+      "detectors": [
+        "lifecycle"
+      ],
+      "lifecycle_signals": [
+        {
+          "kind": "event:Failed",
+          "at": "2026-11-13T17:46:47Z",
+          "workload": "ledger",
+          "pod": "ledger-7996b86ff5-fjjtq",
+          "detail": "Failed to pull image \"registry.example.invalid/ledger/api:2.4.1\": failed to pull and unpack image \"registry.example.inva"
+        },
+        {
+          "kind": "event:Failed",
+          "at": "2026-11-13T17:46:47Z",
+          "workload": "ledger",
+          "pod": "ledger-7996b86ff5-fjjtq",
+          "detail": "Error: ErrImagePull"
+        },
+        {
+          "kind": "event:BackOff",
+          "at": "2026-11-13T17:47:01Z",
+          "workload": "ledger",
+          "pod": "ledger-7996b86ff5-fjjtq",
+          "detail": "Back-off pulling image \"registry.example.invalid/ledger/api:2.4.1\""
+        },
+        {
+          "kind": "event:Failed",
+          "at": "2026-11-13T17:47:01Z",
+          "workload": "ledger",
+          "pod": "ledger-7996b86ff5-fjjtq",
+          "detail": "Error: ImagePullBackOff"
+        }
+      ],
+      "contributing_features": [],
+      "series": [],
+      "warning": "Insufficient metric history for kc-eval-02/ledger-7996b86ff5-fjjtq (0 sample(s); need at least 3)."
+    },
+    "anomaly_unavailable": false
+  },
+  "propose_input": {
+    "deployment": {
+      "namespace": "kc-eval-02",
+      "name": "ledger",
+      "replicas": 1,
+      "ready": 0,
+      "available": 0,
+      "updated": 1,
+      "generation": 1,
+      "observed_generation": 1,
+      "revision": 1,
+      "previous_revision": null,
+      "summary": {
+        "replicas": 1,
+        "revision": 1,
+        "template": {
+          "annotations": {},
+          "containers": [
+            {
+              "name": "ledger",
+              "image": "registry.example.invalid/ledger/api:2.4.1",
+              "command": null,
+              "args": null
+            }
+          ]
+        }
+      },
+      "previous_summary": null
+    },
+    "pod_state": {
+      "namespace": "kc-eval-02",
+      "name": "ledger-7996b86ff5-fjjtq",
+      "controller_kind": "ReplicaSet",
+      "controller_name": "ledger-7996b86ff5",
+      "deployment": "ledger",
+      "crashlooping": false,
+      "restart_count": 0,
+      "reason": null
+    },
+    "signals": [
+      "event:Failed pod=ledger-7996b86ff5-fjjtq Failed to pull image \"registry.example.invalid/ledger/api:2.4.1\": failed to pull and unpack image \"registry.example.inva",
+      "event:Failed pod=ledger-7996b86ff5-fjjtq Error: ErrImagePull",
+      "event:BackOff pod=ledger-7996b86ff5-fjjtq Back-off pulling image \"registry.example.invalid/ledger/api:2.4.1\"",
+      "event:Failed pod=ledger-7996b86ff5-fjjtq Error: ImagePullBackOff"
+    ]
+  }
+}

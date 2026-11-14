@@ -1,0 +1,338 @@
+{
+  "schema_version": 2,
+  "id": "ho_cpu_limit_rollout",
+  "title": "Rollout cuts the CPU limit of a CPU-bound worker to 15m",
+  "labels": {
+    "category": "cpu_throttling",
+    "expected_actions": [
+      "rollback_deployment"
+    ],
+    "expected_runbooks": [],
+    "difficulty": "hard",
+    "fault": "Deployment updated from a 250m to a 15m CPU limit; the CPU-bound encoder is throttled and slows down.",
+    "notes": "Nothing fails; only throttling metrics, the limit and slower segments show it."
+  },
+  "namespace": "kc-ho-06",
+  "workload": "encoder",
+  "pod_name": "encoder-595b8cc8b-7nwgn",
+  "captured_at": "2026-11-14T08:33:50+00:00",
+  "cluster": "kind kube-copilot (single node, Kubernetes v1.32.2)",
+  "diagnose_input": {
+    "pod": {
+      "name": "encoder-595b8cc8b-7nwgn",
+      "namespace": "kc-ho-06",
+      "phase": "Running",
+      "reason": null,
+      "message": null,
+      "restart_count": 0,
+      "ready": true,
+      "created_at": "2026-11-14T08:31:19Z",
+      "node": "kube-copilot-control-plane",
+      "qos_class": "Burstable",
+      "containers": [
+        {
+          "name": "encoder",
+          "ready": true,
+          "restart_count": 0,
+          "state": "running",
+          "reason": null,
+          "message": null,
+          "exit_code": null,
+          "resources": {
+            "requests": {
+              "cpu": "10m",
+              "memory": "16Mi"
+            },
+            "limits": {
+              "cpu": "15m",
+              "memory": "64Mi"
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "type": "Normal",
+        "reason": "Scheduled",
+        "message": "Successfully assigned kc-ho-06/encoder-595b8cc8b-7nwgn to kube-copilot-control-plane",
+        "count": 1,
+        "first_timestamp": "2026-11-14T08:31:19Z",
+        "last_timestamp": "2026-11-14T08:31:19Z",
+        "source": "default-scheduler"
+      },
+      {
+        "type": "Normal",
+        "reason": "Pulled",
+        "message": "Container image \"busybox:1.36\" already present on machine",
+        "count": 1,
+        "first_timestamp": "2026-11-14T08:31:21Z",
+        "last_timestamp": "2026-11-14T08:31:21Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Created",
+        "message": "Created container: encoder",
+        "count": 1,
+        "first_timestamp": "2026-11-14T08:31:21Z",
+        "last_timestamp": "2026-11-14T08:31:21Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Started",
+        "message": "Started container encoder",
+        "count": 1,
+        "first_timestamp": "2026-11-14T08:31:23Z",
+        "last_timestamp": "2026-11-14T08:31:23Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      }
+    ],
+    "logs": {
+      "current": "2026-11-14T08:31:23.577271364Z 2026-11-14T08:31:23+00:00 INFO encoder started\n2026-11-14T08:31:25.376433926Z 2026-11-14T08:31:25+00:00 INFO segment 1 encoded in 2s\n2026-11-14T08:31:26.976310568Z 2026-11-14T08:31:26+00:00 INFO segment 2 encoded in 1s\n2026-11-14T08:31:28.677148680Z 2026-11-14T08:31:28+00:00 INFO segment 3 encoded in 1s\n2026-11-14T08:31:30.376075289Z 2026-11-14T08:31:30+00:00 INFO segment 4 encoded in 2s\n2026-11-14T08:31:31.976020215Z 2026-11-14T08:31:31+00:00 INFO segment 5 encoded in 1s\n2026-11-14T08:31:33.676743476Z 2026-11-14T08:31:33+00:00 INFO segment 6 encoded in 1s\n2026-11-14T08:31:35.375952943Z 2026-11-14T08:31:35+00:00 INFO segment 7 encoded in 2s\n2026-11-14T08:31:36.976962306Z 2026-11-14T08:31:36+00:00 INFO segment 8 encoded in 1s\n2026-11-14T08:31:38.578132979Z 2026-11-14T08:31:38+00:00 INFO segment 9 encoded in 2s\n2026-11-14T08:31:40.276145300Z 2026-11-14T08:31:40+00:00 INFO segment 10 encoded in 2s\n2026-11-14T08:31:41.976893868Z 2026-11-14T08:31:41+00:00 INFO segment 11 encoded in 1s\n2026-11-14T08:31:43.677112422Z 2026-11-14T08:31:43+00:00 INFO segment 12 encoded in 1s\n2026-11-14T08:31:45.276626061Z 2026-11-14T08:31:44+00:00 INFO segment 13 encoded in 2s\n2026-11-14T08:31:46.876116360Z 2026-11-14T08:31:46+00:00 INFO segment 14 encoded in 1s\n2026-11-14T08:31:48.676279949Z 2026-11-14T08:31:48+00:00 INFO segment 15 encoded in 2s\n2026-11-14T08:31:50.276446779Z 2026-11-14T08:31:49+00:00 INFO segment 16 encoded in 2s\n2026-11-14T08:31:52.076761080Z 2026-11-14T08:31:51+00:00 INFO segment 17 encoded in 2s\n2026-11-14T08:31:53.777620669Z 2026-11-14T08:31:53+00:00 INFO segment 18 encoded in 1s\n2026-11-14T08:31:55.377750948Z 2026-11-14T08:31:55+00:00 INFO segment 19 encoded in 2s\n2026-11-14T08:31:57.076591086Z 2026-11-14T08:31:56+00:00 INFO segment 20 encoded in 2s\n2026-11-14T08:31:58.776390024Z 2026-11-14T08:31:58+00:00 INFO segment 21 encoded in 1s\n2026-11-14T08:32:00.178752114Z 2026-11-14T08:32:00+00:00 INFO segment 22 encoded in 2s\n2026-11-14T08:32:01.876242886Z 2026-11-14T08:32:01+00:00 INFO segment 23 encoded in 1s\n2026-11-14T08:32:03.576208720Z 2026-11-14T08:32:03+00:00 INFO segment 24 encoded in 2s\n2026-11-14T08:32:05.276271933Z 2026-11-14T08:32:04+00:00 INFO segment 25 encoded in 2s\n2026-11-14T08:32:06.978358265Z 2026-11-14T08:32:06+00:00 INFO segment 26 encoded in 1s\n2026-11-14T08:32:08.575999489Z 2026-11-14T08:32:08+00:00 INFO segment 27 encoded in 2s\n2026-11-14T08:32:10.277883253Z 2026-11-14T08:32:10+00:00 INFO segment 28 encoded in 2s\n2026-11-14T08:32:11.876095332Z 2026-11-14T08:32:11+00:00 INFO segment 29 encoded in 1s\n2026-11-14T08:32:13.475876141Z 2026-11-14T08:32:13+00:00 INFO segment 30 encoded in 2s\n2026-11-14T08:32:15.176329930Z 2026-11-14T08:32:14+00:00 INFO segment 31 encoded in 2s\n2026-11-14T08:32:16.876877715Z 2026-11-14T08:32:16+00:00 INFO segment 32 encoded in 1s\n2026-11-14T08:32:18.676836437Z 2026-11-14T08:32:18+00:00 INFO segment 33 encoded in 2s\n2026-11-14T08:32:20.276374105Z 2026-11-14T08:32:20+00:00 INFO segment 34 encoded in 2s\n2026-11-14T08:32:21.976784985Z 2026-11-14T08:32:21+00:00 INFO segment 35 encoded in 1s\n2026-11-14T08:32:23.576396945Z 2026-11-14T08:32:23+00:00 INFO segment 36 encoded in 2s\n2026-11-14T08:32:25.176334115Z 2026-11-14T08:32:24+00:00 INFO segment 37 encoded in 2s\n2026-11-14T08:32:26.777247159Z 2026-11-14T08:32:26+00:00 INFO segment 38 encoded in 1s\n2026-11-14T08:32:28.476107823Z 2026-11-14T08:32:28+00:00 INFO segment 39 encoded in 2s\n2026-11-14T08:32:30.077843619Z 2026-11-14T08:32:30+00:00 INFO segment 40 encoded in 2s\n2026-11-14T08:32:31.777276702Z 2026-11-14T08:32:31+00:00 INFO segment 41 encoded in 1s\n2026-11-14T08:32:33.477534039Z 2026-11-14T08:32:33+00:00 INFO segment 42 encoded in 2s\n2026-11-14T08:32:34.979121567Z 2026-11-14T08:32:34+00:00 INFO segment 43 encoded in 1s\n2026-11-14T08:32:36.676585133Z 2026-11-14T08:32:36+00:00 INFO segment 44 encoded in 2s\n2026-11-14T08:32:38.476483438Z 2026-11-14T08:32:38+00:00 INFO segment 45 encoded in 2s\n2026-11-14T08:32:40.176489477Z 2026-11-14T08:32:39+00:00 INFO segment 46 encoded in 2s\n2026-11-14T08:32:41.875777743Z 2026-11-14T08:32:41+00:00 INFO segment 47 encoded in 1s\n2026-11-14T08:32:43.475888730Z 2026-11-14T08:32:43+00:00 INFO segment 48 encoded in 2s\n2026-11-14T08:32:44.976203397Z 2026-11-14T08:32:44+00:00 INFO segment 49 encoded in 1s\n2026-11-14T08:32:46.576254496Z 2026-11-14T08:32:46+00:00 INFO segment 50 encoded in 1s\n2026-11-14T08:32:48.276591403Z 2026-11-14T08:32:48+00:00 INFO segment 51 encoded in 2s\n2026-11-14T08:32:49.876805835Z 2026-11-14T08:32:49+00:00 INFO segment 52 encoded in 1s\n2026-11-14T08:32:51.476136212Z 2026-11-14T08:32:51+00:00 INFO segment 53 encoded in 2s\n2026-11-14T08:32:53.214796535Z 2026-11-14T08:32:52+00:00 INFO segment 54 encoded in 2s\n2026-11-14T08:32:54.676164730Z 2026-11-14T08:32:54+00:00 INFO segment 55 encoded in 1s\n2026-11-14T08:32:56.376671661Z 2026-11-14T08:32:55+00:00 INFO segment 56 encoded in 2s\n2026-11-14T08:32:57.976076461Z 2026-11-14T08:32:57+00:00 INFO segment 57 encoded in 1s\n2026-11-14T08:32:59.576233317Z 2026-11-14T08:32:59+00:00 INFO segment 58 encoded in 1s\n2026-11-14T08:33:01.277085526Z 2026-11-14T08:33:01+00:00 INFO segment 59 encoded in 2s\n2026-11-14T08:33:02.779631964Z 2026-11-14T08:33:02+00:00 INFO segment 60 encoded in 1s\n2026-11-14T08:33:04.576245744Z 2026-11-14T08:33:04+00:00 INFO segment 61 encoded in 2s\n2026-11-14T08:33:06.178109878Z 2026-11-14T08:33:06+00:00 INFO segment 62 encoded in 2s\n2026-11-14T08:33:07.977081269Z 2026-11-14T08:33:07+00:00 INFO segment 63 encoded in 1s\n2026-11-14T08:33:09.576318751Z 2026-11-14T08:33:09+00:00 INFO segment 64 encoded in 2s\n2026-11-14T08:33:11.176970790Z 2026-11-14T08:33:10+00:00 INFO segment 65 encoded in 2s\n2026-11-14T08:33:12.776521148Z 2026-11-14T08:33:12+00:00 INFO segment 66 encoded in 1s\n2026-11-14T08:33:14.476663367Z 2026-11-14T08:33:14+00:00 INFO segment 67 encoded in 2s\n2026-11-14T08:33:16.176151109Z 2026-11-14T08:33:16+00:00 INFO segment 68 encoded in 2s\n2026-11-14T08:33:17.776460366Z 2026-11-14T08:33:17+00:00 INFO segment 69 encoded in 1s\n2026-11-14T08:33:19.576735767Z 2026-11-14T08:33:19+00:00 INFO segment 70 encoded in 2s\n2026-11-14T08:33:21.079284791Z 2026-11-14T08:33:21+00:00 INFO segment 71 encoded in 2s\n2026-11-14T08:33:22.776464089Z 2026-11-14T08:33:22+00:00 INFO segment 72 encoded in 1s\n2026-11-14T08:33:24.376097277Z 2026-11-14T08:33:24+00:00 INFO segment 73 encoded in 2s\n2026-11-14T08:33:26.076477752Z 2026-11-14T08:33:25+00:00 INFO segment 74 encoded in 2s\n2026-11-14T08:33:27.776168420Z 2026-11-14T08:33:27+00:00 INFO segment 75 encoded in 1s\n2026-11-14T08:33:29.477057407Z 2026-11-14T08:33:29+00:00 INFO segment 76 encoded in 2s\n2026-11-14T08:33:31.176737713Z 2026-11-14T08:33:30+00:00 INFO segment 77 encoded in 2s\n2026-11-14T08:33:32.976429529Z 2026-11-14T08:33:32+00:00 INFO segment 78 encoded in 1s\n2026-11-14T08:33:34.675964400Z 2026-11-14T08:33:34+00:00 INFO segment 79 encoded in 1s\n2026-11-14T08:33:36.178778535Z 2026-11-14T08:33:36+00:00 INFO segment 80 encoded in 2s\n2026-11-14T08:33:38.076160100Z 2026-11-14T08:33:37+00:00 INFO segment 81 encoded in 2s\n2026-11-14T08:33:39.675791927Z 2026-11-14T08:33:39+00:00 INFO segment 82 encoded in 1s\n2026-11-14T08:33:41.476457308Z 2026-11-14T08:33:41+00:00 INFO segment 83 encoded in 2s\n2026-11-14T08:33:42.976783548Z 2026-11-14T08:33:42+00:00 INFO segment 84 encoded in 1s\n2026-11-14T08:33:44.677087316Z 2026-11-14T08:33:44+00:00 INFO segment 85 encoded in 2s\n2026-11-14T08:33:46.276444771Z 2026-11-14T08:33:46+00:00 INFO segment 86 encoded in 2s\n2026-11-14T08:33:47.976581405Z 2026-11-14T08:33:47+00:00 INFO segment 87 encoded in 1s\n2026-11-14T08:33:49.575948600Z 2026-11-14T08:33:49+00:00 INFO segment 88 encoded in 2s\n",
+      "previous": null,
+      "container": "encoder"
+    },
+    "retrieval_query": "CPU throttling: container encoder throttled at its CPU limit, slow responses Running Scheduled Successfully assigned kc-ho-06/encoder-595b8cc8b-7nwgn to kube-copilot-control-plane Pulled Container image \"busybox:1.36\" already present on machine Created Created container: encoder Started Started container encoder 2026-11-14T08:33:01.277085526Z 2026-11-14T08:33:01+00:00 INFO segment 59 encoded in 2s 2026-11-14T08:33:02.779631964Z 2026-11-14T08:33:02+00:00 INFO segment 60 encoded in 1s 2026-11-14T08:33:04.576245744Z 2026-11-14T08:33:04+00:00 INFO segment 61 encoded in 2s 2026-11-14T08:33:06.178109878Z 2026-11-14T08:33:06+00:00 INFO segment 62 encoded in 2s 2026-11-14T08:33:07.977081269Z 2026-11-14T08:33:07+00:00 INFO segment 63 encoded in 1s 2026-11-14T08:33:09.576318751Z 2026-11-14T08:33:09+00:00 INFO segment 64 encoded in 2s 2026-11-14T08:33:11.176970790Z 2026-11-14T08:33:10+00:00 INFO segment 65 encoded in 2s 2026-11-14T08:33:12.776521148Z 2026-11-14T08:33:12+00:00 INFO segment 66 encoded in 1s 2026-11-14T08:33:14.476663367Z 2026-11-14T08:33:14+00:00 INFO segment 67 encoded in 2s 2026-11-14T08:33:16.176151109Z 2026-11-14T08:33:16+00:00 INFO segment 68 encoded in 2s 2026-11-14T08:33:17.776460366Z 2026-11-14T08:33:17+00:00 INFO segment 69 encoded in 1s 2026-11-14T08:33:19.576735767Z 2026-11-14T08:33:19+00:00 INFO segment 70 encoded in 2s 2026-11-14T08:33:21.079284791Z 2026-11-14T08:33:21+00:00 INFO segment 71 encoded in 2s 2026-11-14T08:33:22.776464089Z 2026-11-14T08:33:22+00:00 INFO segment 72 encoded in 1s 2026-11-14T08:33:24.376097277Z 2026-11-14T08:33:24+00:00 INFO segment 73 encoded in 2s 2026-11-14T08:33:26.076477752Z 2026-11-14T08:33:25+00:00 INFO segment 74 encoded in 2s 2026-11-14T08:33:27.776168420Z 2026-11-14T08:33:27+00:00 INFO segment 75 encoded in 1s 2026-11-14T08:33:29.477057407Z 2026-11-14T08:33:29+00:00 INFO segment 76 encoded in 2s 2026-11-14T08:33:31.176737713Z 2026-11-14T08:33:30+00:00 INFO segment 77 encoded in 2s 2026-11-14T08:33:32.976429529Z 2026-11-14T08:33:32+00:00 INFO segment 78 encoded in 1s 2026-11-14T08:33:34.675964400Z 2026-11-14T08:33:34+00:00 INFO segment 79 encoded in 1s 2026-11-14T08:33:36.178778535Z 2026-11-14T08:33:36+00:00 INFO segment 80 encoded in 2s 2026-11-14T08:33:38.076160100Z 2026-11-14T08:33:37+00:00 INFO segment 81 encoded in 2s 2026-11-14T08:33:39.675791927Z 2026-11-14T08:33:39+00:00 INFO segment 82 encoded in 1s 2026-11-14T08:33:41.476457308Z 2026-11-14T08:33:41+00:00 INFO segment 83 encoded in 2s 2026-11-14T08:33:42.976783548Z 2026-11-14T08:33:42+00:00 INFO segment 84 encoded in 1s 2026-11-14T08:33:44.677087316Z 2026-11-14T08:33:44+00:00 INFO segment 85 encoded in 2s 2026-11-14T08:33:46.276444771Z 2026-11-14T08:33:46+00:00 INFO segment 86 encoded in 2s 2026-11-14T08:33:47.976581405Z 2026-11-14T08:33:47+00:00 INFO segment 87 encoded in 1s 2026-11-14T08:33:49.575948600Z 2026-11-14T08:33:49+00:00 INFO segment 88 encoded in 2s",
+    "retrieved": [
+      {
+        "title": "CPU throttling",
+        "source": "cpu-throttling.md",
+        "section": "CPU throttling",
+        "text": "# CPU throttling\n\nThe container hits its CPU `limit` and the kernel's CFS quota pauses it for the rest of each 100 ms period. Nothing crashes and the pod stays `Running` and `Ready`, but work runs slowly: latency goes up, batches take longer, and probes with short timeouts may start to fail.",
+        "score": 0.7901885534179003,
+        "kind": "runbook"
+      },
+      {
+        "title": "CPU throttling",
+        "source": "cpu-throttling.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Read the requests and limits:\n\n   ```bash\n   kubectl get pod <pod> -n <ns> -o jsonpath='{.spec.containers[*].resources}'\n   ```\n\n2. Compare usage with the limit:\n\n   ```bash\n   kubectl top pod <pod> -n <ns> --containers\n   ```\n\n3. Check throttling in Prometheus:\n\n   ```promql\n   sum by (container) (rate(container_cpu_cfs_throttled_periods_total{namespace=\"<ns>\", pod=\"<pod>\"}[5m]))\n     / sum by (container) (rate(container_cpu_cfs_periods_total{namespace=\"<ns>\", pod=\"<pod>\"}[5m]))\n   ```\n\n4. If a rollout changed the resources, compare revisions with `kubectl rollout history deploy/<name> -n <ns> --revision=<n>`.",
+        "score": 0.7606813889403308,
+        "kind": "runbook"
+      },
+      {
+        "title": "Memory leak (rising working set)",
+        "source": "memory-leak.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- `container_memory_working_set_bytes` increases roughly linearly.\n- Memory-to-limit ratio climbs toward 1.0.\n- The anomaly detector flags `mem_slope_mib_per_min` and `mem_zscore`.\n- Eventually `Last State: OOMKilled` and a restart, sometimes a CrashLoop.",
+        "score": 0.7368945114855545,
+        "kind": "runbook"
+      },
+      {
+        "title": "CPU throttling",
+        "source": "cpu-throttling.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- The pod looks healthy: no restarts, no warning events, no errors in the logs.\n- CPU usage sits at (or just under) the container's CPU limit, for example `20m` used of a `20m` limit.\n- A large share of CFS periods are throttled: `container_cpu_cfs_throttled_periods_total / container_cpu_cfs_periods_total` above roughly 25%.\n- Logs show work taking longer than usual (slow batches, slow requests, timeouts to callers), not failing outright.\n- Liveness or readiness probes with tight `timeoutSeconds` may fail intermittently under load.",
+        "score": 0.7362937630365147,
+        "kind": "runbook"
+      },
+      {
+        "title": "CreateContainerError",
+        "source": "create-container-error.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- Pod is `Waiting` with reason `CreateContainerError`.\n- Events include `Failed` from the kubelet with a runtime error (device mapper, `no space left on device`, seccomp / AppArmor / SELinux denial, invalid capability, or a missing device plugin).\n- The image has often already been pulled (`ImagePullBackOff` is not the current reason).\n- Application logs are typically unavailable because the container never started.",
+        "score": 0.720115125425316,
+        "kind": "runbook"
+      }
+    ],
+    "knowledge_unavailable": false,
+    "anomaly": {
+      "namespace": "kc-ho-06",
+      "name": "encoder-595b8cc8b-7nwgn",
+      "score": 0.8234,
+      "is_anomaly": true,
+      "threshold": 0.013067,
+      "metric_anomaly": true,
+      "detectors": [
+        "isolation_forest"
+      ],
+      "lifecycle_signals": [],
+      "contributing_features": [
+        {
+          "name": "mem_mean_mib",
+          "value": 0.4,
+          "zscore": -4.968136483120815,
+          "direction": "low"
+        },
+        {
+          "name": "mem_last_mib",
+          "value": 0.375,
+          "zscore": -4.964509024701464,
+          "direction": "low"
+        },
+        {
+          "name": "mem_to_limit_ratio",
+          "value": 0.005859375,
+          "zscore": -2.7168562255525974,
+          "direction": "low"
+        },
+        {
+          "name": "cpu_mean",
+          "value": 0.00892207789033787,
+          "zscore": -2.350683364948477,
+          "direction": "low"
+        },
+        {
+          "name": "net_rx_mib_per_min",
+          "value": 9.500056148819259e-05,
+          "zscore": -2.2581633589411934,
+          "direction": "low"
+        }
+      ],
+      "series": [
+        {
+          "ts": 1794645095.0,
+          "cpu": 0.0,
+          "memory_mib": 0.359,
+          "mem_to_limit_ratio": 0.0056,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794645110.0,
+          "cpu": 0.0,
+          "memory_mib": 0.359,
+          "mem_to_limit_ratio": 0.0056,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794645125.0,
+          "cpu": 0.0055,
+          "memory_mib": 0.367,
+          "mem_to_limit_ratio": 0.0057,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794645140.0,
+          "cpu": 0.0074,
+          "memory_mib": 0.367,
+          "mem_to_limit_ratio": 0.0057,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794645155.0,
+          "cpu": 0.0092,
+          "memory_mib": 0.668,
+          "mem_to_limit_ratio": 0.0104,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794645170.0,
+          "cpu": 0.011,
+          "memory_mib": 0.359,
+          "mem_to_limit_ratio": 0.0056,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794645185.0,
+          "cpu": 0.0129,
+          "memory_mib": 0.359,
+          "mem_to_limit_ratio": 0.0056,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794645200.0,
+          "cpu": 0.0149,
+          "memory_mib": 0.426,
+          "mem_to_limit_ratio": 0.0067,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794645215.0,
+          "cpu": 0.0133,
+          "memory_mib": 0.359,
+          "mem_to_limit_ratio": 0.0056,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794645230.0,
+          "cpu": 0.015,
+          "memory_mib": 0.375,
+          "mem_to_limit_ratio": 0.0059,
+          "restarts": 0.0
+        }
+      ],
+      "warning": null
+    },
+    "anomaly_unavailable": false,
+    "usage": {
+      "containers": [
+        {
+          "name": "encoder",
+          "cpu_cores": 0.0074,
+          "cpu_limit_cores": 0.015,
+          "cpu_request_cores": 0.01,
+          "cpu_throttled_ratio": 1.0,
+          "memory_mib": 0.4,
+          "memory_limit_mib": 64.0
+        }
+      ],
+      "window": "5m"
+    }
+  },
+  "propose_input": {
+    "deployment": {
+      "namespace": "kc-ho-06",
+      "name": "encoder",
+      "replicas": 1,
+      "ready": 1,
+      "available": 1,
+      "updated": 1,
+      "generation": 2,
+      "observed_generation": 2,
+      "revision": 2,
+      "previous_revision": 1,
+      "summary": {
+        "replicas": 1,
+        "revision": 2,
+        "template": {
+          "annotations": {},
+          "containers": [
+            {
+              "name": "encoder",
+              "image": "busybox:1.36",
+              "command": [
+                "sh",
+                "-c",
+                "echo \"$(date -Iseconds) INFO encoder started\"; n=0; while true; do n=$((n+1)); s=$(date +%s); i=0; while [ $i -lt 20000 ]; do i=$((i+1)); done; echo \"$(date -Iseconds) INFO segment $n encoded in $(( $(date +%s) - s ))s\"; done"
+              ],
+              "args": null
+            }
+          ]
+        }
+      },
+      "previous_summary": {
+        "annotations": {},
+        "containers": [
+          {
+            "name": "encoder",
+            "image": "busybox:1.36",
+            "command": [
+              "sh",
+              "-c",
+              "echo \"$(date -Iseconds) INFO encoder started\"; n=0; while true; do n=$((n+1)); s=$(date +%s); i=0; while [ $i -lt 20000 ]; do i=$((i+1)); done; echo \"$(date -Iseconds) INFO segment $n encoded in $(( $(date +%s) - s ))s\"; done"
+            ],
+            "args": null
+          }
+        ]
+      },
+      "template_diff": [
+        "~ spec.containers[encoder].resources.limits.cpu: \"250m\" -> \"15m\"",
+        "~ spec.containers[encoder].resources.requests.cpu: \"50m\" -> \"10m\""
+      ],
+      "template_refs": {}
+    },
+    "pod_state": {
+      "namespace": "kc-ho-06",
+      "name": "encoder-595b8cc8b-7nwgn",
+      "controller_kind": "ReplicaSet",
+      "controller_name": "encoder-595b8cc8b",
+      "deployment": "encoder",
+      "crashlooping": false,
+      "restart_count": 0,
+      "reason": null
+    },
+    "signals": []
+  }
+}

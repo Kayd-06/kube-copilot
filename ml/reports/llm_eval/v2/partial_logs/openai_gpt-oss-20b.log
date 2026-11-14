@@ -1,0 +1,48 @@
+38 fixtures, model=openai/gpt-oss-20b, variants=['full'], tasks=['diagnose', 'propose']
+76 calls planned
+[1/76] diagnose/full cm_deleted_after_rollout: ok 0.726
+[2/76] diagnose/full cm_edited_after_rollout: ok 1.65
+[3/76] diagnose/full config_loglevel_first: ok 1.165
+[4/76] diagnose/full config_port_rollout: WRONG 1.031
+[5/76] diagnose/full cpu_throttle_first: ok 1.038
+[6/76] diagnose/full crash_bad_command_rollout: ok 1.39
+[7/76] diagnose/full crash_panic_rollout: ok 1.041
+[8/76] diagnose/full crash_traceback_first: WRONG 0.813
+[9/76] diagnose/full dns_missing_service: ok 1.341
+[10/76] diagnose/full healthy_after_rollout: ok 0.777
+[11/76] diagnose/full healthy_job_completed: WRONG 0.545
+[12/76] diagnose/full healthy_noisy_logs: ok 1.296
+[13/76] diagnose/full healthy_web: WRONG 1.022
+[14/76] diagnose/full img_private_rollout: ok 0.974
+[15/76] diagnose/full img_registry_first: ok 1.246
+[16/76] diagnose/full img_tag_rollout: ok 0.858
+[17/76] diagnose/full init_migration_first: ok 2.494
+[18/76] diagnose/full liveness_path_rollout: ok 1.504
+[19/76] diagnose/full liveness_slow_start_first: ok 1.293
+[20/76] diagnose/full missing_cm_envfrom_rollout: ok 0.866
+[21/76] diagnose/full missing_cm_volume_first: ok 0.995
+[22/76] diagnose/full missing_secret_first: ok 0.74
+[23/76] diagnose/full missing_secret_key_rollout: ok 1.225
+[24/76] diagnose/full oom_first: ok 1.353
+[25/76] diagnose/full oom_leak_first: ok 1.014
+[26/76] diagnose/full oom_limit_rollout: ok 1.205
+[27/76] diagnose/full pending_antiaffinity_first: ok 0.954
+[28/76] diagnose/full pending_cpu_first: ok 1.223
+[29/76] diagnose/full pending_nodeselector_rollout: ok 1.095
+[30/76] diagnose/full pod_kill_after_rollout: ok 1.089
+[31/76] diagnose/full pod_kill_repeated: ok 1.28
+[32/76] diagnose/full pod_kill_single: ok 1.608
+[33/76] diagnose/full pvc_missing_first: ok 0.884
+[34/76] diagnose/full pvc_storageclass_first: ok 0.602
+[35/76] diagnose/full readiness_exec_rollout: ok 1.028
+[36/76] diagnose/full readiness_port_first: ok 1.49
+[37/76] diagnose/full stale_dependency: WRONG 1.403
+[38/76] diagnose/full svc_port_mismatch: ok 1.6
+[39/76] propose/full cm_deleted_after_rollout: no_action (ok) 1.713
+[40/76] propose/full cm_edited_after_rollout: no_action (ok) 1.056
+[41/76] propose/full config_loglevel_first: no_action (ok) 4.924
+[42/76] propose/full config_port_rollout: rollback_deployment (ok) 0.655
+[43/76] propose/full cpu_throttle_first: no_action (ok) 0.589
+daily quota: waiting 204s for it to refill
+[44/76] propose/full crash_bad_command_rollout: rollback_deployment (ok) 0.764
+daily quota: waiting 861s for it to refill

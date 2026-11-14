@@ -14,8 +14,9 @@ from collections import defaultdict
 import httpx
 
 from app.config import Settings, get_settings
+from app.models import ContainerUsage, PodUsage
 from ml.features import MetricPoint
-from ml.promql import REQUIRED_CHANNELS, pod_queries
+from ml.promql import REQUIRED_CHANNELS, pod_queries, usage_queries
 
 logger = logging.getLogger(__name__)
 
@@ -193,3 +194,41 @@ class PrometheusClient:
                 out[pod_key] = points
         return out
 
+
+    def pod_usage(self, namespace: str, name: str) -> PodUsage:
+        """Per-container CPU use, CPU throttling, memory and their limits (instant, 5m windows)."""
+        values: dict[str, dict[str, float]] = defaultdict(dict)
+        for key, expr in usage_queries(namespace, name).items():
+            try:
+                results = self.query(expr)
+            except PrometheusUnavailableError:
+                if key == "cpu_cores":
+                    raise
+                continue
+            for series in results:
+                container = (series.get("metric") or {}).get("container")
+                try:
+                    value = float((series.get("value") or [0, "nan"])[1])
+                except (TypeError, ValueError):
+                    continue
+                if container and value == value:  # skip NaN (0/0 throttling ratio)
+                    values[container][key] = value
+        containers = []
+        for container, v in sorted(values.items()):
+            mib = 1024 * 1024
+            containers.append(
+                ContainerUsage(
+                    name=container,
+                    cpu_cores=_round(v.get("cpu_cores"), 4),
+                    cpu_limit_cores=_round(v.get("cpu_limit_cores"), 4),
+                    cpu_request_cores=_round(v.get("cpu_request_cores"), 4),
+                    cpu_throttled_ratio=_round(v.get("cpu_throttled_ratio"), 3),
+                    memory_mib=_round(v["memory_bytes"] / mib, 1) if "memory_bytes" in v else None,
+                    memory_limit_mib=_round(v["memory_limit_bytes"] / mib, 1) if "memory_limit_bytes" in v else None,
+                )
+            )
+        return PodUsage(containers=containers)
+
+
+def _round(value: float | None, digits: int) -> float | None:
+    return None if value is None else round(value, digits)

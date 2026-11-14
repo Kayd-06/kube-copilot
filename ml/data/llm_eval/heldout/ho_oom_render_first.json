@@ -1,0 +1,247 @@
+{
+  "schema_version": 2,
+  "id": "ho_oom_render_first",
+  "title": "Renderer allocates ~120MB under a 48Mi limit",
+  "labels": {
+    "category": "oom_killed",
+    "expected_actions": [
+      "no_action"
+    ],
+    "expected_runbooks": [
+      "oomkilled.md"
+    ],
+    "difficulty": "easy",
+    "fault": "Revision 1 builds a ~120MB string in memory with a 48Mi limit and is OOMKilled.",
+    "notes": ""
+  },
+  "namespace": "kc-ho-07",
+  "workload": "pdf-render",
+  "pod_name": "pdf-render-77d65fbb5d-8m5fv",
+  "captured_at": "2026-11-14T08:33:29+00:00",
+  "cluster": "kind kube-copilot (single node, Kubernetes v1.32.2)",
+  "diagnose_input": {
+    "pod": {
+      "name": "pdf-render-77d65fbb5d-8m5fv",
+      "namespace": "kc-ho-07",
+      "phase": "Running",
+      "reason": "OOMKilled",
+      "message": "back-off 40s restarting failed container=pdf-render pod=pdf-render-77d65fbb5d-8m5fv_kc-ho-07(8508b194-04d9-4a4c-81b6-25e412d0d0ae)",
+      "restart_count": 3,
+      "ready": false,
+      "created_at": "2026-11-14T08:32:07Z",
+      "node": "kube-copilot-control-plane",
+      "qos_class": "Burstable",
+      "containers": [
+        {
+          "name": "pdf-render",
+          "ready": false,
+          "restart_count": 3,
+          "state": "waiting",
+          "reason": "CrashLoopBackOff",
+          "message": "back-off 40s restarting failed container=pdf-render pod=pdf-render-77d65fbb5d-8m5fv_kc-ho-07(8508b194-04d9-4a4c-81b6-25e412d0d0ae)",
+          "exit_code": 137,
+          "resources": {
+            "requests": {
+              "cpu": "10m",
+              "memory": "24Mi"
+            },
+            "limits": {
+              "memory": "48Mi"
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "type": "Normal",
+        "reason": "Scheduled",
+        "message": "Successfully assigned kc-ho-07/pdf-render-77d65fbb5d-8m5fv to kube-copilot-control-plane",
+        "count": 1,
+        "first_timestamp": "2026-11-14T08:32:07Z",
+        "last_timestamp": "2026-11-14T08:32:07Z",
+        "source": "default-scheduler"
+      },
+      {
+        "type": "Normal",
+        "reason": "Pulled",
+        "message": "Container image \"busybox:1.36\" already present on machine",
+        "count": 4,
+        "first_timestamp": "2026-11-14T08:32:08Z",
+        "last_timestamp": "2026-11-14T08:32:53Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Created",
+        "message": "Created container: pdf-render",
+        "count": 4,
+        "first_timestamp": "2026-11-14T08:32:08Z",
+        "last_timestamp": "2026-11-14T08:32:53Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Started",
+        "message": "Started container pdf-render",
+        "count": 4,
+        "first_timestamp": "2026-11-14T08:32:08Z",
+        "last_timestamp": "2026-11-14T08:32:53Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Warning",
+        "reason": "BackOff",
+        "message": "Back-off restarting failed container pdf-render in pod pdf-render-77d65fbb5d-8m5fv_kc-ho-07(8508b194-04d9-4a4c-81b6-25e412d0d0ae)",
+        "count": 6,
+        "first_timestamp": "2026-11-14T08:32:13Z",
+        "last_timestamp": "2026-11-14T08:33:22Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      }
+    ],
+    "logs": {
+      "current": "2026-11-14T08:32:53.934696986Z 2026-11-14T08:32:53+00:00 INFO rendering monthly statements\n",
+      "previous": "2026-11-14T08:32:53.934696986Z 2026-11-14T08:32:53+00:00 INFO rendering monthly statements\n",
+      "container": "pdf-render"
+    },
+    "retrieval_query": "Running OOMKilled back-off 40s restarting failed container=pdf-render pod=pdf-render-77d65fbb5d-8m5fv_kc-ho-07(8508b194-04d9-4a4c-81b6-25e412d0d0ae) CrashLoopBackOff back-off 40s restarting failed container=pdf-render pod=pdf-render-77d65fbb5d-8m5fv_kc-ho-07(8508b194-04d9-4a4c-81b6-25e412d0d0ae) exit code 137 Scheduled Successfully assigned kc-ho-07/pdf-render-77d65fbb5d-8m5fv to kube-copilot-control-plane Pulled Container image \"busybox:1.36\" already present on machine Created Created container: pdf-render Started Started container pdf-render BackOff Back-off restarting failed container pdf-render in pod pdf-render-77d65fbb5d-8m5fv_kc-ho-07(8508b194-04d9-4a4c-81b6-25e412d0d0ae) 2026-11-14T08:32:53.934696986Z 2026-11-14T08:32:53+00:00 INFO rendering monthly statements 2026-11-14T08:32:53.934696986Z 2026-11-14T08:32:53+00:00 INFO rendering monthly statements",
+    "retrieved": [
+      {
+        "title": "OOMKilled",
+        "source": "oomkilled.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- Container `lastState.terminated.reason` is `OOMKilled`.\n- Restart count climbs; the pod may also show `CrashLoopBackOff` once the kubelet starts backing off.\n- Events may include `OOMKilling` from the kubelet. Logs often stop abruptly, sometimes in the middle of a request or a large allocation.\n- `kubectl describe pod` shows a memory `limit` that is close to, or below, what the process actually uses.",
+        "score": 0.7936780111926132,
+        "kind": "runbook"
+      },
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- `kubectl get pods` shows `STATUS` as `CrashLoopBackOff` or `Error` with a climbing restart count.\n- The pod phase may still be `Running` because a container is mid-backoff, not because the app is healthy.\n- Current logs are often empty or just a short \"waiting\" message. The useful signal is usually in the **previous** container logs (`kubectl logs --previous`).\n- Events include `BackOff`, `Failed`, or `Unhealthy` from the kubelet.",
+        "score": 0.7789317132042162,
+        "kind": "runbook"
+      },
+      {
+        "title": "OOMKilled",
+        "source": "oomkilled.md",
+        "section": "OOMKilled",
+        "text": "# OOMKilled\n\nThe container was killed because it exceeded its memory limit (or, less often, the node itself ran out of memory). Kubernetes reports the last terminated reason as `OOMKilled` with exit code `137`.",
+        "score": 0.7771406309583072,
+        "kind": "runbook"
+      },
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Read the last termination reason and exit code:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get pod <pod> -n <ns> -o jsonpath='{range .status.containerStatuses[*]}{.name}{\" \"}{.state}{\" \"}{.lastState.terminated}{\"\\n\"}{end}'\n   ```\n\n2. Always fetch previous logs if `restartCount > 0`:\n\n   ```bash\n   kubectl logs <pod> -n <ns> --previous --tail=200\n   kubectl logs <pod> -n <ns> --tail=200\n   ```\n\n3. Confirm the command that actually ran (`command` / `args` in the pod spec) and whether the image entrypoint expects different arguments.\n4. If logs mention a missing file, env var, or connection refused, inspect the related ConfigMap, Secret, and Service.",
+        "score": 0.7690764916249743,
+        "kind": "runbook"
+      },
+      {
+        "title": "CreateContainerError",
+        "source": "create-container-error.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- Pod is `Waiting` with reason `CreateContainerError`.\n- Events include `Failed` from the kubelet with a runtime error (device mapper, `no space left on device`, seccomp / AppArmor / SELinux denial, invalid capability, or a missing device plugin).\n- The image has often already been pulled (`ImagePullBackOff` is not the current reason).\n- Application logs are typically unavailable because the container never started.",
+        "score": 0.7600124602733658,
+        "kind": "runbook"
+      }
+    ],
+    "knowledge_unavailable": false,
+    "anomaly": {
+      "namespace": "kc-ho-07",
+      "name": "pdf-render-77d65fbb5d-8m5fv",
+      "score": 0.0,
+      "is_anomaly": true,
+      "threshold": 0.013067,
+      "metric_anomaly": false,
+      "detectors": [
+        "lifecycle"
+      ],
+      "lifecycle_signals": [
+        {
+          "kind": "container_restarted",
+          "at": "2026-11-14T08:32:56Z",
+          "workload": "pdf-render",
+          "pod": "pdf-render-77d65fbb5d-8m5fv",
+          "detail": "+1 (OOMKilled)"
+        },
+        {
+          "kind": "event:BackOff",
+          "at": "2026-11-14T08:33:22Z",
+          "workload": "pdf-render",
+          "pod": "pdf-render-77d65fbb5d-8m5fv",
+          "detail": "Back-off restarting failed container pdf-render in pod pdf-render-77d65fbb5d-8m5fv_kc-ho-07(8508b194-04d9-4a4c-81b6-25e4"
+        }
+      ],
+      "contributing_features": [],
+      "series": [],
+      "warning": "Insufficient metric history for kc-ho-07/pdf-render-77d65fbb5d-8m5fv (0 sample(s); need at least 3)."
+    },
+    "anomaly_unavailable": false,
+    "usage": {
+      "containers": [
+        {
+          "name": "pdf-render",
+          "cpu_cores": null,
+          "cpu_limit_cores": null,
+          "cpu_request_cores": 0.01,
+          "cpu_throttled_ratio": null,
+          "memory_mib": null,
+          "memory_limit_mib": 48.0
+        }
+      ],
+      "window": "5m"
+    }
+  },
+  "propose_input": {
+    "deployment": {
+      "namespace": "kc-ho-07",
+      "name": "pdf-render",
+      "replicas": 1,
+      "ready": 0,
+      "available": 0,
+      "updated": 1,
+      "generation": 1,
+      "observed_generation": 1,
+      "revision": 1,
+      "previous_revision": null,
+      "summary": {
+        "replicas": 1,
+        "revision": 1,
+        "template": {
+          "annotations": {},
+          "containers": [
+            {
+              "name": "pdf-render",
+              "image": "busybox:1.36",
+              "command": [
+                "sh",
+                "-c",
+                "echo \"$(date -Iseconds) INFO rendering monthly statements\"; sleep 2; buf=$(head -c 120m /dev/zero | tr '\\0' a); echo \"rendered ${#buf}\""
+              ],
+              "args": null
+            }
+          ]
+        }
+      },
+      "previous_summary": null,
+      "template_diff": null,
+      "template_refs": {}
+    },
+    "pod_state": {
+      "namespace": "kc-ho-07",
+      "name": "pdf-render-77d65fbb5d-8m5fv",
+      "controller_kind": "ReplicaSet",
+      "controller_name": "pdf-render-77d65fbb5d",
+      "deployment": "pdf-render",
+      "crashlooping": true,
+      "restart_count": 3,
+      "reason": "CrashLoopBackOff"
+    },
+    "signals": [
+      "container_restarted pod=pdf-render-77d65fbb5d-8m5fv +1 (OOMKilled)",
+      "event:BackOff pod=pdf-render-77d65fbb5d-8m5fv Back-off restarting failed container pdf-render in pod pdf-render-77d65fbb5d-8m5fv_kc-ho-07(8508b194-04d9-4a4c-81b6-25e4"
+    ]
+  }
+}

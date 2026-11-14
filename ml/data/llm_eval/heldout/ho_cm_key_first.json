@@ -1,0 +1,225 @@
+{
+  "schema_version": 2,
+  "id": "ho_cm_key_first",
+  "title": "Env var reads a key the ConfigMap does not have",
+  "labels": {
+    "category": "missing_config",
+    "expected_actions": [
+      "no_action"
+    ],
+    "expected_runbooks": [
+      "create-container-config-error.md"
+    ],
+    "difficulty": "easy",
+    "fault": "Revision 1 reads RATE_LIMIT from ConfigMap gateway-limits, which exists but has no RATE_LIMIT key.",
+    "notes": ""
+  },
+  "namespace": "kc-ho-11",
+  "workload": "edge",
+  "pod_name": "edge-6f59555749-tw2dz",
+  "captured_at": "2026-11-14T08:34:11+00:00",
+  "cluster": "kind kube-copilot (single node, Kubernetes v1.32.2)",
+  "diagnose_input": {
+    "pod": {
+      "name": "edge-6f59555749-tw2dz",
+      "namespace": "kc-ho-11",
+      "phase": "Pending",
+      "reason": "CreateContainerConfigError",
+      "message": "couldn't find key RATE_LIMIT in ConfigMap kc-ho-11/gateway-limits",
+      "restart_count": 0,
+      "ready": false,
+      "created_at": "2026-11-14T08:32:53Z",
+      "node": "kube-copilot-control-plane",
+      "qos_class": "Burstable",
+      "containers": [
+        {
+          "name": "edge",
+          "ready": false,
+          "restart_count": 0,
+          "state": "waiting",
+          "reason": "CreateContainerConfigError",
+          "message": "couldn't find key RATE_LIMIT in ConfigMap kc-ho-11/gateway-limits",
+          "exit_code": null,
+          "resources": {
+            "requests": {
+              "cpu": "10m",
+              "memory": "16Mi"
+            },
+            "limits": {
+              "memory": "64Mi"
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "type": "Normal",
+        "reason": "Scheduled",
+        "message": "Successfully assigned kc-ho-11/edge-6f59555749-tw2dz to kube-copilot-control-plane",
+        "count": 1,
+        "first_timestamp": "2026-11-14T08:32:53Z",
+        "last_timestamp": "2026-11-14T08:32:53Z",
+        "source": "default-scheduler"
+      },
+      {
+        "type": "Normal",
+        "reason": "Pulled",
+        "message": "Container image \"busybox:1.36\" already present on machine",
+        "count": 8,
+        "first_timestamp": "2026-11-14T08:32:53Z",
+        "last_timestamp": "2026-11-14T08:34:08Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Warning",
+        "reason": "Failed",
+        "message": "Error: couldn't find key RATE_LIMIT in ConfigMap kc-ho-11/gateway-limits",
+        "count": 8,
+        "first_timestamp": "2026-11-14T08:32:53Z",
+        "last_timestamp": "2026-11-14T08:34:08Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      }
+    ],
+    "logs": {
+      "current": "(logs unavailable: Bad Request)",
+      "previous": null,
+      "container": "edge"
+    },
+    "retrieval_query": "Pending CreateContainerConfigError couldn't find key RATE_LIMIT in ConfigMap kc-ho-11/gateway-limits CreateContainerConfigError couldn't find key RATE_LIMIT in ConfigMap kc-ho-11/gateway-limits Scheduled Successfully assigned kc-ho-11/edge-6f59555749-tw2dz to kube-copilot-control-plane Pulled Container image \"busybox:1.36\" already present on machine Failed Error: couldn't find key RATE_LIMIT in ConfigMap kc-ho-11/gateway-limits",
+    "retrieved": [
+      {
+        "title": "CreateContainerConfigError",
+        "source": "create-container-config-error.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- Pod is `Pending` or `Waiting` with reason `CreateContainerConfigError`.\n- Events include `Failed` with a message such as `Error: secret \"...\" not found`, `couldn't find key ... in ConfigMap ...`, or `configmap \"...\" not found`.\n- Restart count is usually zero. `kubectl logs` will fail or return an \"unavailable\" message.",
+        "score": 0.80996354940024,
+        "kind": "runbook"
+      },
+      {
+        "title": "CreateContainerConfigError",
+        "source": "create-container-config-error.md",
+        "section": "CreateContainerConfigError",
+        "text": "# CreateContainerConfigError\n\nThe kubelet refused to create the container because its configuration is invalid. This happens before the image even starts, so there are no application logs. The most common triggers are missing Secrets, ConfigMaps, or projected keys that the pod spec references.",
+        "score": 0.766745297314994,
+        "kind": "runbook"
+      },
+      {
+        "title": "CPU throttling",
+        "source": "cpu-throttling.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Read the requests and limits:\n\n   ```bash\n   kubectl get pod <pod> -n <ns> -o jsonpath='{.spec.containers[*].resources}'\n   ```\n\n2. Compare usage with the limit:\n\n   ```bash\n   kubectl top pod <pod> -n <ns> --containers\n   ```\n\n3. Check throttling in Prometheus:\n\n   ```promql\n   sum by (container) (rate(container_cpu_cfs_throttled_periods_total{namespace=\"<ns>\", pod=\"<pod>\"}[5m]))\n     / sum by (container) (rate(container_cpu_cfs_periods_total{namespace=\"<ns>\", pod=\"<pod>\"}[5m]))\n   ```\n\n4. If a rollout changed the resources, compare revisions with `kubectl rollout history deploy/<name> -n <ns> --revision=<n>`.",
+        "score": 0.7571021734338936,
+        "kind": "runbook"
+      },
+      {
+        "title": "CreateContainerError",
+        "source": "create-container-error.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- Pod is `Waiting` with reason `CreateContainerError`.\n- Events include `Failed` from the kubelet with a runtime error (device mapper, `no space left on device`, seccomp / AppArmor / SELinux denial, invalid capability, or a missing device plugin).\n- The image has often already been pulled (`ImagePullBackOff` is not the current reason).\n- Application logs are typically unavailable because the container never started.",
+        "score": 0.7501153705136379,
+        "kind": "runbook"
+      },
+      {
+        "title": "OOMKilled",
+        "source": "oomkilled.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Confirm the termination reason and the current limits:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get pod <pod> -n <ns> -o jsonpath='{.spec.containers[*].resources}'\n   ```\n\n2. Compare usage if metrics are available:\n\n   ```bash\n   kubectl top pod <pod> -n <ns> --containers\n   ```\n\n3. Read previous logs for allocation errors, heap dumps, or a sudden stop.\n4. Check whether the node itself is under memory pressure (`kubectl describe node <node>` and look for evictions or `MemoryPressure`).",
+        "score": 0.7404331352757889,
+        "kind": "runbook"
+      }
+    ],
+    "knowledge_unavailable": false,
+    "anomaly": {
+      "namespace": "kc-ho-11",
+      "name": "edge-6f59555749-tw2dz",
+      "score": 0.0,
+      "is_anomaly": true,
+      "threshold": 0.013067,
+      "metric_anomaly": false,
+      "detectors": [
+        "lifecycle"
+      ],
+      "lifecycle_signals": [
+        {
+          "kind": "event:Failed",
+          "at": "2026-11-14T08:34:08Z",
+          "workload": "edge",
+          "pod": "edge-6f59555749-tw2dz",
+          "detail": "Error: couldn't find key RATE_LIMIT in ConfigMap kc-ho-11/gateway-limits"
+        }
+      ],
+      "contributing_features": [],
+      "series": [],
+      "warning": "Insufficient metric history for kc-ho-11/edge-6f59555749-tw2dz (0 sample(s); need at least 3)."
+    },
+    "anomaly_unavailable": false,
+    "usage": {
+      "containers": [
+        {
+          "name": "edge",
+          "cpu_cores": null,
+          "cpu_limit_cores": null,
+          "cpu_request_cores": 0.01,
+          "cpu_throttled_ratio": null,
+          "memory_mib": null,
+          "memory_limit_mib": 64.0
+        }
+      ],
+      "window": "5m"
+    }
+  },
+  "propose_input": {
+    "deployment": {
+      "namespace": "kc-ho-11",
+      "name": "edge",
+      "replicas": 1,
+      "ready": 0,
+      "available": 0,
+      "updated": 1,
+      "generation": 1,
+      "observed_generation": 1,
+      "revision": 1,
+      "previous_revision": null,
+      "summary": {
+        "replicas": 1,
+        "revision": 1,
+        "template": {
+          "annotations": {},
+          "containers": [
+            {
+              "name": "edge",
+              "image": "busybox:1.36",
+              "command": [
+                "sh",
+                "-c",
+                "echo \"$(date -Iseconds) INFO starting edge v1.4.2\"; echo \"$(date -Iseconds) INFO listening on :8080\"; while true; do echo \"$(date -Iseconds) INFO handled request path=/api/v1/items status=200 latency_ms=$((RANDOM%40+5))\"; sleep 3; done"
+              ],
+              "args": null
+            }
+          ]
+        }
+      },
+      "previous_summary": null,
+      "template_diff": null,
+      "template_refs": {
+        "configmaps": [
+          "gateway-limits"
+        ]
+      }
+    },
+    "pod_state": {
+      "namespace": "kc-ho-11",
+      "name": "edge-6f59555749-tw2dz",
+      "controller_kind": "ReplicaSet",
+      "controller_name": "edge-6f59555749",
+      "deployment": "edge",
+      "crashlooping": false,
+      "restart_count": 0,
+      "reason": null
+    },
+    "signals": [
+      "event:Failed pod=edge-6f59555749-tw2dz Error: couldn't find key RATE_LIMIT in ConfigMap kc-ho-11/gateway-limits"
+    ]
+  }
+}

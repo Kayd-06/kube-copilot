@@ -1,0 +1,272 @@
+{
+  "schema_version": 1,
+  "id": "stale_dependency",
+  "title": "App stuck in degraded mode after its dependency recovered",
+  "labels": {
+    "category": "dependency_connectivity",
+    "expected_actions": [
+      "restart_deployment",
+      "delete_pod"
+    ],
+    "expected_runbooks": [
+      "probe-failures.md"
+    ],
+    "difficulty": "hard",
+    "fault": "web started while its upstream deps-api had 0 replicas and only checks it at startup; deps-api is back now, but web stays not-Ready until it is restarted.",
+    "notes": "A restart (new pod) fixes it. delete_pod is also a fix but policy only allows it for crashlooping pods."
+  },
+  "namespace": "kc-eval-29",
+  "workload": "web",
+  "pod_name": "web-699fd9c475-rgvjb",
+  "captured_at": "2026-11-13T17:52:15+00:00",
+  "cluster": "kind kube-copilot (single node, Kubernetes v1.32.2)",
+  "diagnose_input": {
+    "pod": {
+      "name": "web-699fd9c475-rgvjb",
+      "namespace": "kc-eval-29",
+      "phase": "Running",
+      "reason": null,
+      "message": null,
+      "restart_count": 0,
+      "ready": false,
+      "created_at": "2026-11-13T17:51:14Z",
+      "node": "kube-copilot-control-plane",
+      "qos_class": "Burstable",
+      "containers": [
+        {
+          "name": "web",
+          "ready": false,
+          "restart_count": 0,
+          "state": "running",
+          "reason": null,
+          "message": null,
+          "exit_code": null
+        }
+      ]
+    },
+    "events": [
+      {
+        "type": "Normal",
+        "reason": "Scheduled",
+        "message": "Successfully assigned kc-eval-29/web-699fd9c475-rgvjb to kube-copilot-control-plane",
+        "count": 1,
+        "first_timestamp": "2026-11-13T17:51:14Z",
+        "last_timestamp": "2026-11-13T17:51:14Z",
+        "source": "default-scheduler"
+      },
+      {
+        "type": "Normal",
+        "reason": "Pulled",
+        "message": "Container image \"busybox:1.36\" already present on machine",
+        "count": 1,
+        "first_timestamp": "2026-11-13T17:51:15Z",
+        "last_timestamp": "2026-11-13T17:51:15Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Created",
+        "message": "Created container: web",
+        "count": 1,
+        "first_timestamp": "2026-11-13T17:51:15Z",
+        "last_timestamp": "2026-11-13T17:51:15Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Started",
+        "message": "Started container web",
+        "count": 1,
+        "first_timestamp": "2026-11-13T17:51:15Z",
+        "last_timestamp": "2026-11-13T17:51:15Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Warning",
+        "reason": "Unhealthy",
+        "message": "Readiness probe failed: cat: can't open '/tmp/ready': No such file or directory\n",
+        "count": 12,
+        "first_timestamp": "2026-11-13T17:51:17Z",
+        "last_timestamp": "2026-11-13T17:52:12Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      }
+    ],
+    "logs": {
+      "current": "2026-11-13T17:51:15.229386555Z 2026-11-13T17:51:15+00:00 INFO web starting, checking upstream http://deps-api/\n2026-11-13T17:51:16.255677281Z wget: can't connect to remote host (10.96.170.116): Connection refused\n2026-11-13T17:51:16.257133816Z 2026-11-13T17:51:16+00:00 WARN upstream http://deps-api/ unreachable at startup; continuing in degraded mode\n",
+      "previous": null,
+      "container": "web"
+    },
+    "retrieval_query": "Running Scheduled Successfully assigned kc-eval-29/web-699fd9c475-rgvjb to kube-copilot-control-plane Pulled Container image \"busybox:1.36\" already present on machine Created Created container: web Started Started container web Unhealthy Readiness probe failed: cat: can't open '/tmp/ready': No such file or directory\n 2026-11-13T17:51:15.229386555Z 2026-11-13T17:51:15+00:00 INFO web starting, checking upstream http://deps-api/ 2026-11-13T17:51:16.255677281Z wget: can't connect to remote host (10.96.170.116): Connection refused 2026-11-13T17:51:16.257133816Z 2026-11-13T17:51:16+00:00 WARN upstream http://deps-api/ unreachable at startup; continuing in degraded mode",
+    "retrieved": [
+      {
+        "title": "CreateContainerError",
+        "source": "create-container-error.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- Pod is `Waiting` with reason `CreateContainerError`.\n- Events include `Failed` from the kubelet with a runtime error (device mapper, `no space left on device`, seccomp / AppArmor / SELinux denial, invalid capability, or a missing device plugin).\n- The image has often already been pulled (`ImagePullBackOff` is not the current reason).\n- Application logs are typically unavailable because the container never started.",
+        "score": 0.7751369859194941,
+        "kind": "runbook"
+      },
+      {
+        "title": "DNS issues inside the cluster",
+        "source": "dns-issues.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- Application logs show `unknown host`, `Name or service not known`, `no such host`, `i/o timeout` talking to a Service name, or repeated reconnects to a hostname that should exist.\n- `nslookup` / `getent hosts` / `dig` from a debug container fail for `kubernetes.default` or for the target Service.\n- CoreDNS pods in `kube-system` may be crash-looping, pending, or not ready. Nodes may show `NetworkUnavailable`.\n- Traffic to raw ClusterIPs or pod IPs still works, which is a strong hint the problem is name resolution, not the network path itself.",
+        "score": 0.7720435416720893,
+        "kind": "runbook"
+      },
+      {
+        "title": "CreateContainerError",
+        "source": "create-container-error.md",
+        "section": "Common causes",
+        "text": "## Common causes\n\n- The node disk is full, so the runtime cannot create the container's writable layer.\n- A security context asks for a capability, seccomp profile, AppArmor profile, or user that the node or policy will not allow.\n- A device plugin (GPU, FPGA) is required but not healthy, or the requested resource is gone.\n- An invalid `command` / working directory / symlink inside the image, or a corrupted image snapshot.\n- Runtime bugs or leftover half-created containers after a kubelet crash.",
+        "score": 0.7704510076170996,
+        "kind": "runbook"
+      },
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Fixes",
+        "text": "## Fixes\n\n- If the command is wrong (for example a demo container that ends in `exit 1`), correct `command`/`args` or the image entrypoint so the main process stays in the foreground.\n- If a config value is missing, add the env var or volume and roll the workload.\n- If a dependency is down, fix that service or make startup retry instead of exiting.\n- If a liveness probe is too aggressive, increase `initialDelaySeconds` / `failureThreshold` (see probe-failures).\n- After a fix, roll the deployment and confirm the restart count stops climbing:\n\n  ```bash\n  kubectl rollout status deploy/<name> -n <ns>\n  kubectl get pod <pod> -n <ns> --watch\n  ```",
+        "score": 0.7663255299806813,
+        "kind": "runbook"
+      },
+      {
+        "title": "CreateContainerConfigError",
+        "source": "create-container-config-error.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- Pod is `Pending` or `Waiting` with reason `CreateContainerConfigError`.\n- Events include `Failed` with a message such as `Error: secret \"...\" not found`, `couldn't find key ... in ConfigMap ...`, or `configmap \"...\" not found`.\n- Restart count is usually zero. `kubectl logs` will fail or return an \"unavailable\" message.",
+        "score": 0.7653199868436513,
+        "kind": "runbook"
+      }
+    ],
+    "knowledge_unavailable": false,
+    "anomaly": {
+      "namespace": "kc-eval-29",
+      "name": "web-699fd9c475-rgvjb",
+      "score": 0.9823,
+      "is_anomaly": true,
+      "threshold": 0.013067,
+      "metric_anomaly": true,
+      "detectors": [
+        "isolation_forest"
+      ],
+      "lifecycle_signals": [],
+      "contributing_features": [
+        {
+          "name": "mem_slope_mib_per_min",
+          "value": -1.446875,
+          "zscore": -5.858818572868256,
+          "direction": "low"
+        },
+        {
+          "name": "mem_last_mib",
+          "value": 0.3984375,
+          "zscore": -4.9628854919670005,
+          "direction": "low"
+        },
+        {
+          "name": "mem_mean_mib",
+          "value": 0.75625,
+          "zscore": -4.943429895653016,
+          "direction": "low"
+        },
+        {
+          "name": "mem_to_limit_ratio",
+          "value": 0.0062255859375,
+          "zscore": -2.7143624081327467,
+          "direction": "low"
+        },
+        {
+          "name": "cpu_mean",
+          "value": 0.0002762306196864363,
+          "zscore": -2.6412527094253977,
+          "direction": "low"
+        }
+      ],
+      "series": [
+        {
+          "ts": 1794592275.0,
+          "cpu": 0.0,
+          "memory_mib": 2.219,
+          "mem_to_limit_ratio": 0.0,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794592290.0,
+          "cpu": 0.0002,
+          "memory_mib": 0.375,
+          "mem_to_limit_ratio": 0.0059,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794592305.0,
+          "cpu": 0.0003,
+          "memory_mib": 0.391,
+          "mem_to_limit_ratio": 0.0061,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794592320.0,
+          "cpu": 0.0004,
+          "memory_mib": 0.398,
+          "mem_to_limit_ratio": 0.0062,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794592335.0,
+          "cpu": 0.0004,
+          "memory_mib": 0.398,
+          "mem_to_limit_ratio": 0.0062,
+          "restarts": 0.0
+        }
+      ],
+      "warning": null
+    },
+    "anomaly_unavailable": false
+  },
+  "propose_input": {
+    "deployment": {
+      "namespace": "kc-eval-29",
+      "name": "web",
+      "replicas": 1,
+      "ready": 0,
+      "available": 0,
+      "updated": 1,
+      "generation": 1,
+      "observed_generation": 1,
+      "revision": 1,
+      "previous_revision": null,
+      "summary": {
+        "replicas": 1,
+        "revision": 1,
+        "template": {
+          "annotations": {},
+          "containers": [
+            {
+              "name": "web",
+              "image": "busybox:1.36",
+              "command": [
+                "sh",
+                "-c",
+                "echo \"$(date -Iseconds) INFO web starting, checking upstream $UPSTREAM\"; if wget -q -T 2 -O /dev/null \"$UPSTREAM\"; then touch /tmp/ready; echo \"$(date -Iseconds) INFO upstream ok\"; else echo \"$(date -Iseconds) WARN upstream $UPSTREAM unreachable at startup; continuing in degraded mode\"; fi; while true; do sleep 5; done"
+              ],
+              "args": null
+            }
+          ]
+        }
+      },
+      "previous_summary": null
+    },
+    "pod_state": {
+      "namespace": "kc-eval-29",
+      "name": "web-699fd9c475-rgvjb",
+      "controller_kind": "ReplicaSet",
+      "controller_name": "web-699fd9c475",
+      "deployment": "web",
+      "crashlooping": false,
+      "restart_count": 0,
+      "reason": null
+    },
+    "signals": []
+  }
+}

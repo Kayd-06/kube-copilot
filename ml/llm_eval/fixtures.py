@@ -8,10 +8,16 @@ from pathlib import Path
 from typing import Any
 
 from app.actions.policy import DeploymentState, PodState
-from app.models import AnomalyScore, PodEvent, PodLogs, PodSummary
+from app.models import AnomalyScore, PodEvent, PodLogs, PodSummary, PodUsage
 from app.rag.retriever import RetrievedChunk
 
-FIXTURE_DIR = Path(__file__).resolve().parents[1] / "data" / "llm_eval" / "cases"
+DATA_DIR = Path(__file__).resolve().parents[1] / "data" / "llm_eval"
+# v1: the 38 incidents frozen for PR #31 (kept unchanged for before/after comparisons).
+FIXTURE_DIR_V1 = DATA_DIR / "cases"
+# v2: v1 with the cases that needed new context fields (template diff, CPU throttling) re-captured.
+FIXTURE_DIR = DATA_DIR / "cases_v2"
+# Held-out incidents captured after the prompt changes; never used to tune prompts.
+HELDOUT_DIR = DATA_DIR / "heldout"
 
 
 @dataclass
@@ -25,6 +31,7 @@ class Fixture:
     deployment: DeploymentState | None
     pod_state: PodState | None
     signals: list[str]
+    usage: PodUsage | None = None
 
     @property
     def id(self) -> str:
@@ -58,6 +65,7 @@ def load_fixture(path: Path) -> Fixture:
         deployment=DeploymentState(**dep) if dep else None,
         pod_state=PodState(**ps) if ps else None,
         signals=list(pi.get("signals") or []),
+        usage=PodUsage(**di["usage"]) if di.get("usage") else None,
     )
 
 

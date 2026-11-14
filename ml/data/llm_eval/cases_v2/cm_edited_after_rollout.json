@@ -1,0 +1,267 @@
+{
+  "schema_version": 2,
+  "id": "cm_edited_after_rollout",
+  "title": "Shared ConfigMap edited to a bad value after a healthy rollout",
+  "labels": {
+    "category": "bad_config_value",
+    "expected_actions": [
+      "no_action"
+    ],
+    "expected_runbooks": [
+      "crashloopbackoff.md"
+    ],
+    "difficulty": "hard",
+    "fault": "Both revisions read tax-config. After a healthy rollout LOG_LEVEL was edited to 'verbose'; the new replica from a scale-up exits 1. Rolling back would not help; the ConfigMap must be fixed.",
+    "notes": ""
+  },
+  "namespace": "kc-eval-33",
+  "workload": "tax",
+  "pod_name": "tax-6546d5658-txvsg",
+  "captured_at": "2026-11-14T08:26:50+00:00",
+  "cluster": "kind kube-copilot (single node, Kubernetes v1.32.2)",
+  "diagnose_input": {
+    "pod": {
+      "name": "tax-6546d5658-txvsg",
+      "namespace": "kc-eval-33",
+      "phase": "Running",
+      "reason": "Error",
+      "message": null,
+      "restart_count": 4,
+      "ready": false,
+      "created_at": "2026-11-14T08:25:16Z",
+      "node": "kube-copilot-control-plane",
+      "qos_class": "Burstable",
+      "containers": [
+        {
+          "name": "tax",
+          "ready": false,
+          "restart_count": 4,
+          "state": "terminated",
+          "reason": "Error",
+          "message": null,
+          "exit_code": 1,
+          "resources": {
+            "requests": {
+              "cpu": "10m",
+              "memory": "16Mi"
+            },
+            "limits": {
+              "memory": "64Mi"
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "type": "Normal",
+        "reason": "Scheduled",
+        "message": "Successfully assigned kc-eval-33/tax-6546d5658-txvsg to kube-copilot-control-plane",
+        "count": 1,
+        "first_timestamp": "2026-11-14T08:25:16Z",
+        "last_timestamp": "2026-11-14T08:25:16Z",
+        "source": "default-scheduler"
+      },
+      {
+        "type": "Normal",
+        "reason": "Pulled",
+        "message": "Container image \"busybox:1.36\" already present on machine",
+        "count": 5,
+        "first_timestamp": "2026-11-14T08:25:17Z",
+        "last_timestamp": "2026-11-14T08:26:45Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Created",
+        "message": "Created container: tax",
+        "count": 5,
+        "first_timestamp": "2026-11-14T08:25:17Z",
+        "last_timestamp": "2026-11-14T08:26:45Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Started",
+        "message": "Started container tax",
+        "count": 5,
+        "first_timestamp": "2026-11-14T08:25:17Z",
+        "last_timestamp": "2026-11-14T08:26:45Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Warning",
+        "reason": "BackOff",
+        "message": "Back-off restarting failed container tax in pod tax-6546d5658-txvsg_kc-eval-33(bddee7c5-2dfd-4aef-b5c7-1d1921b0f6b7)",
+        "count": 7,
+        "first_timestamp": "2026-11-14T08:25:18Z",
+        "last_timestamp": "2026-11-14T08:26:45Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      }
+    ],
+    "logs": {
+      "current": "2026-11-14T08:26:45.213186440Z FATAL unknown log level \"verbose\" (valid: debug, info, warn, error)\n",
+      "previous": "unable to retrieve container logs for containerd://6835d60fe2e813d9cbb7e181f8389922ee3aedfe836003c9e81b48124479e4c5",
+      "container": "tax"
+    },
+    "retrieval_query": "Running Error Error exit code 1 Scheduled Successfully assigned kc-eval-33/tax-6546d5658-txvsg to kube-copilot-control-plane Pulled Container image \"busybox:1.36\" already present on machine Created Created container: tax Started Started container tax BackOff Back-off restarting failed container tax in pod tax-6546d5658-txvsg_kc-eval-33(bddee7c5-2dfd-4aef-b5c7-1d1921b0f6b7) unable to retrieve container logs for containerd://6835d60fe2e813d9cbb7e181f8389922ee3aedfe836003c9e81b48124479e4c5 2026-11-14T08:26:45.213186440Z FATAL unknown log level \"verbose\" (valid: debug, info, warn, error)",
+    "retrieved": [
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Read the last termination reason and exit code:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get pod <pod> -n <ns> -o jsonpath='{range .status.containerStatuses[*]}{.name}{\" \"}{.state}{\" \"}{.lastState.terminated}{\"\\n\"}{end}'\n   ```\n\n2. Always fetch previous logs if `restartCount > 0`:\n\n   ```bash\n   kubectl logs <pod> -n <ns> --previous --tail=200\n   kubectl logs <pod> -n <ns> --tail=200\n   ```\n\n3. Confirm the command that actually ran (`command` / `args` in the pod spec) and whether the image entrypoint expects different arguments.\n4. If logs mention a missing file, env var, or connection refused, inspect the related ConfigMap, Secret, and Service.",
+        "score": 0.7912421267309392,
+        "kind": "runbook"
+      },
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- `kubectl get pods` shows `STATUS` as `CrashLoopBackOff` or `Error` with a climbing restart count.\n- The pod phase may still be `Running` because a container is mid-backoff, not because the app is healthy.\n- Current logs are often empty or just a short \"waiting\" message. The useful signal is usually in the **previous** container logs (`kubectl logs --previous`).\n- Events include `BackOff`, `Failed`, or `Unhealthy` from the kubelet.",
+        "score": 0.7860500545707185,
+        "kind": "runbook"
+      },
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Fixes",
+        "text": "## Fixes\n\n- If the command is wrong (for example a demo container that ends in `exit 1`), correct `command`/`args` or the image entrypoint so the main process stays in the foreground.\n- If a config value is missing, add the env var or volume and roll the workload.\n- If a dependency is down, fix that service or make startup retry instead of exiting.\n- If a liveness probe is too aggressive, increase `initialDelaySeconds` / `failureThreshold` (see probe-failures).\n- After a fix, roll the deployment and confirm the restart count stops climbing:\n\n  ```bash\n  kubectl rollout status deploy/<name> -n <ns>\n  kubectl get pod <pod> -n <ns> --watch\n  ```",
+        "score": 0.784294567659924,
+        "kind": "runbook"
+      },
+      {
+        "title": "OOMKilled",
+        "source": "oomkilled.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Confirm the termination reason and the current limits:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get pod <pod> -n <ns> -o jsonpath='{.spec.containers[*].resources}'\n   ```\n\n2. Compare usage if metrics are available:\n\n   ```bash\n   kubectl top pod <pod> -n <ns> --containers\n   ```\n\n3. Read previous logs for allocation errors, heap dumps, or a sudden stop.\n4. Check whether the node itself is under memory pressure (`kubectl describe node <node>` and look for evictions or `MemoryPressure`).",
+        "score": 0.7842169284761904,
+        "kind": "runbook"
+      },
+      {
+        "title": "CPU throttling",
+        "source": "cpu-throttling.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Read the requests and limits:\n\n   ```bash\n   kubectl get pod <pod> -n <ns> -o jsonpath='{.spec.containers[*].resources}'\n   ```\n\n2. Compare usage with the limit:\n\n   ```bash\n   kubectl top pod <pod> -n <ns> --containers\n   ```\n\n3. Check throttling in Prometheus:\n\n   ```promql\n   sum by (container) (rate(container_cpu_cfs_throttled_periods_total{namespace=\"<ns>\", pod=\"<pod>\"}[5m]))\n     / sum by (container) (rate(container_cpu_cfs_periods_total{namespace=\"<ns>\", pod=\"<pod>\"}[5m]))\n   ```\n\n4. If a rollout changed the resources, compare revisions with `kubectl rollout history deploy/<name> -n <ns> --revision=<n>`.",
+        "score": 0.7830108048404175,
+        "kind": "runbook"
+      }
+    ],
+    "knowledge_unavailable": false,
+    "anomaly": {
+      "namespace": "kc-eval-33",
+      "name": "tax-6546d5658-txvsg",
+      "score": 0.0,
+      "is_anomaly": true,
+      "threshold": 0.013067,
+      "metric_anomaly": false,
+      "detectors": [
+        "lifecycle"
+      ],
+      "lifecycle_signals": [
+        {
+          "kind": "container_restarted",
+          "at": "2026-11-14T08:25:59Z",
+          "workload": "tax",
+          "pod": "tax-6546d5658-txvsg",
+          "detail": "+1 (Error)"
+        },
+        {
+          "kind": "event:BackOff",
+          "at": "2026-11-14T08:26:45Z",
+          "workload": "tax",
+          "pod": "tax-6546d5658-txvsg",
+          "detail": "Back-off restarting failed container tax in pod tax-6546d5658-txvsg_kc-eval-33(bddee7c5-2dfd-4aef-b5c7-1d1921b0f6b7)"
+        }
+      ],
+      "contributing_features": [],
+      "series": [],
+      "warning": "Insufficient metric history for kc-eval-33/tax-6546d5658-txvsg (0 sample(s); need at least 3)."
+    },
+    "anomaly_unavailable": false,
+    "usage": {
+      "containers": [
+        {
+          "name": "tax",
+          "cpu_cores": null,
+          "cpu_limit_cores": null,
+          "cpu_request_cores": 0.01,
+          "cpu_throttled_ratio": null,
+          "memory_mib": null,
+          "memory_limit_mib": 64.0
+        }
+      ],
+      "window": "5m"
+    }
+  },
+  "propose_input": {
+    "deployment": {
+      "namespace": "kc-eval-33",
+      "name": "tax",
+      "replicas": 2,
+      "ready": 1,
+      "available": 1,
+      "updated": 2,
+      "generation": 3,
+      "observed_generation": 3,
+      "revision": 2,
+      "previous_revision": 1,
+      "summary": {
+        "replicas": 2,
+        "revision": 2,
+        "template": {
+          "annotations": {},
+          "containers": [
+            {
+              "name": "tax",
+              "image": "busybox:1.36",
+              "command": [
+                "sh",
+                "-c",
+                "case \"$LOG_LEVEL\" in debug|info|warn|error) ;; *) echo \"FATAL unknown log level \\\"$LOG_LEVEL\\\" (valid: debug, info, warn, error)\"; exit 1;; esac; echo \"$(date -Iseconds) INFO starting tax v1.4.2\"; echo \"$(date -Iseconds) INFO listening on :8080\"; while true; do echo \"$(date -Iseconds) INFO handled request path=/api/v1/items status=200 latency_ms=$((RANDOM%40+5))\"; sleep 3; done"
+              ],
+              "args": null
+            }
+          ]
+        }
+      },
+      "previous_summary": {
+        "annotations": {},
+        "containers": [
+          {
+            "name": "tax",
+            "image": "busybox:1.36",
+            "command": [
+              "sh",
+              "-c",
+              "case \"$LOG_LEVEL\" in debug|info|warn|error) ;; *) echo \"FATAL unknown log level \\\"$LOG_LEVEL\\\" (valid: debug, info, warn, error)\"; exit 1;; esac; echo \"$(date -Iseconds) INFO starting tax v1.4.2\"; echo \"$(date -Iseconds) INFO listening on :8080\"; while true; do echo \"$(date -Iseconds) INFO handled request path=/api/v1/items status=200 latency_ms=$((RANDOM%40+5))\"; sleep 3; done"
+            ],
+            "args": null
+          }
+        ]
+      },
+      "template_diff": [
+        "+ spec.containers[tax].env[APP_VERSION].value: \"1.5.0\""
+      ],
+      "template_refs": {
+        "configmaps": [
+          "tax-config"
+        ]
+      }
+    },
+    "pod_state": {
+      "namespace": "kc-eval-33",
+      "name": "tax-6546d5658-txvsg",
+      "controller_kind": "ReplicaSet",
+      "controller_name": "tax-6546d5658",
+      "deployment": "tax",
+      "crashlooping": true,
+      "restart_count": 4,
+      "reason": "repeated restarts"
+    },
+    "signals": [
+      "container_restarted pod=tax-6546d5658-txvsg +1 (Error)",
+      "event:BackOff pod=tax-6546d5658-txvsg Back-off restarting failed container tax in pod tax-6546d5658-txvsg_kc-eval-33(bddee7c5-2dfd-4aef-b5c7-1d1921b0f6b7)"
+    ]
+  }
+}

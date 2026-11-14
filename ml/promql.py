@@ -50,6 +50,24 @@ def pod_queries(namespace: str | None = None, name: str | None = None) -> dict[s
     }
 
 
+def usage_queries(namespace: str, name: str) -> dict[str, str]:
+    """Instant per-container usage vs limits for the Diagnose evidence (5m windows)."""
+    sel = pod_selector(namespace, name)
+    plain = namespace_pod_only(namespace, name)
+    by = "sum by (container)"
+    return {
+        "cpu_cores": f"{by} (rate(container_cpu_usage_seconds_total{{{sel}}}[5m]))",
+        "cpu_throttled_ratio": (
+            f"{by} (rate(container_cpu_cfs_throttled_periods_total{{{sel}}}[5m])) / "
+            f"{by} (rate(container_cpu_cfs_periods_total{{{sel}}}[5m]))"
+        ),
+        "memory_bytes": f"{by} (container_memory_working_set_bytes{{{sel}}})",
+        "cpu_limit_cores": f'{by} (kube_pod_container_resource_limits{{{plain}resource="cpu"}})',
+        "cpu_request_cores": f'{by} (kube_pod_container_resource_requests{{{plain}resource="cpu"}})',
+        "memory_limit_bytes": f'{by} (kube_pod_container_resource_limits{{{plain}resource="memory"}})',
+    }
+
+
 # cpu and memory are required; the rest degrade to zeros when missing.
 REQUIRED_CHANNELS = ("cpu", "memory")
 

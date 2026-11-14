@@ -1,0 +1,329 @@
+{
+  "schema_version": 2,
+  "id": "cpu_throttle_first",
+  "title": "CPU-bound worker under a 20m CPU limit",
+  "labels": {
+    "category": "cpu_throttling",
+    "expected_actions": [
+      "no_action",
+      "scale_deployment"
+    ],
+    "expected_runbooks": [],
+    "difficulty": "hard",
+    "fault": "CPU-bound worker with limits.cpu=20m; it is throttled and each batch takes many seconds.",
+    "notes": "Nothing fails; only metrics and slow batch times show it. No runbook covers throttling."
+  },
+  "namespace": "kc-eval-21",
+  "workload": "thumbnailer",
+  "pod_name": "thumbnailer-777cb64948-vrj8v",
+  "captured_at": "2026-11-14T08:27:41+00:00",
+  "cluster": "kind kube-copilot (single node, Kubernetes v1.32.2)",
+  "diagnose_input": {
+    "pod": {
+      "name": "thumbnailer-777cb64948-vrj8v",
+      "namespace": "kc-eval-21",
+      "phase": "Running",
+      "reason": null,
+      "message": null,
+      "restart_count": 0,
+      "ready": true,
+      "created_at": "2026-11-14T08:24:54Z",
+      "node": "kube-copilot-control-plane",
+      "qos_class": "Burstable",
+      "containers": [
+        {
+          "name": "thumbnailer",
+          "ready": true,
+          "restart_count": 0,
+          "state": "running",
+          "reason": null,
+          "message": null,
+          "exit_code": null,
+          "resources": {
+            "requests": {
+              "cpu": "10m",
+              "memory": "16Mi"
+            },
+            "limits": {
+              "cpu": "20m",
+              "memory": "64Mi"
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "type": "Normal",
+        "reason": "Scheduled",
+        "message": "Successfully assigned kc-eval-21/thumbnailer-777cb64948-vrj8v to kube-copilot-control-plane",
+        "count": 1,
+        "first_timestamp": "2026-11-14T08:24:54Z",
+        "last_timestamp": "2026-11-14T08:24:54Z",
+        "source": "default-scheduler"
+      },
+      {
+        "type": "Normal",
+        "reason": "Pulled",
+        "message": "Container image \"busybox:1.36\" already present on machine",
+        "count": 1,
+        "first_timestamp": "2026-11-14T08:24:56Z",
+        "last_timestamp": "2026-11-14T08:24:56Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Created",
+        "message": "Created container: thumbnailer",
+        "count": 1,
+        "first_timestamp": "2026-11-14T08:24:56Z",
+        "last_timestamp": "2026-11-14T08:24:56Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Started",
+        "message": "Started container thumbnailer",
+        "count": 1,
+        "first_timestamp": "2026-11-14T08:24:58Z",
+        "last_timestamp": "2026-11-14T08:24:58Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      }
+    ],
+    "logs": {
+      "current": "2026-11-14T08:24:58.070955033Z 2026-11-14T08:24:58+00:00 INFO thumbnailer started\n2026-11-14T08:24:59.771342303Z 2026-11-14T08:24:59+00:00 INFO batch 1: 30000 items in 1s\n2026-11-14T08:25:01.572200196Z 2026-11-14T08:25:01+00:00 INFO batch 2: 30000 items in 2s\n2026-11-14T08:25:03.573724604Z 2026-11-14T08:25:03+00:00 INFO batch 3: 30000 items in 2s\n2026-11-14T08:25:05.371210886Z 2026-11-14T08:25:05+00:00 INFO batch 4: 30000 items in 2s\n2026-11-14T08:25:07.072521991Z 2026-11-14T08:25:07+00:00 INFO batch 5: 30000 items in 2s\n2026-11-14T08:25:08.872418128Z 2026-11-14T08:25:08+00:00 INFO batch 6: 30000 items in 1s\n2026-11-14T08:25:10.671662895Z 2026-11-14T08:25:10+00:00 INFO batch 7: 30000 items in 2s\n2026-11-14T08:25:12.570937988Z 2026-11-14T08:25:12+00:00 INFO batch 8: 30000 items in 2s\n2026-11-14T08:25:14.271494208Z 2026-11-14T08:25:14+00:00 INFO batch 9: 30000 items in 2s\n2026-11-14T08:25:16.071258487Z 2026-11-14T08:25:16+00:00 INFO batch 10: 30000 items in 1s\n2026-11-14T08:25:17.870629292Z 2026-11-14T08:25:17+00:00 INFO batch 11: 30000 items in 1s\n2026-11-14T08:25:19.543323884Z 2026-11-14T08:25:19+00:00 INFO batch 12: 30000 items in 2s\n2026-11-14T08:25:21.342370340Z 2026-11-14T08:25:21+00:00 INFO batch 13: 30000 items in 2s\n2026-11-14T08:25:22.971716023Z 2026-11-14T08:25:22+00:00 INFO batch 14: 30000 items in 1s\n2026-11-14T08:25:24.743737500Z 2026-11-14T08:25:24+00:00 INFO batch 15: 30000 items in 2s\n2026-11-14T08:25:26.444392627Z 2026-11-14T08:25:26+00:00 INFO batch 16: 30000 items in 2s\n2026-11-14T08:25:28.242294659Z 2026-11-14T08:25:28+00:00 INFO batch 17: 30000 items in 2s\n2026-11-14T08:25:29.942658568Z 2026-11-14T08:25:29+00:00 INFO batch 18: 30000 items in 1s\n2026-11-14T08:25:31.643642228Z 2026-11-14T08:25:31+00:00 INFO batch 19: 30000 items in 2s\n2026-11-14T08:25:33.442331707Z 2026-11-14T08:25:33+00:00 INFO batch 20: 30000 items in 2s\n2026-11-14T08:25:35.144787215Z 2026-11-14T08:25:35+00:00 INFO batch 21: 30000 items in 2s\n2026-11-14T08:25:37.142189944Z 2026-11-14T08:25:37+00:00 INFO batch 22: 30000 items in 2s\n2026-11-14T08:25:38.870682067Z 2026-11-14T08:25:38+00:00 INFO batch 23: 30000 items in 1s\n2026-11-14T08:25:40.544206368Z 2026-11-14T08:25:40+00:00 INFO batch 24: 30000 items in 2s\n2026-11-14T08:25:42.342292041Z 2026-11-14T08:25:42+00:00 INFO batch 25: 30000 items in 2s\n2026-11-14T08:25:44.042154685Z 2026-11-14T08:25:43+00:00 INFO batch 26: 30000 items in 1s\n2026-11-14T08:25:45.744636336Z 2026-11-14T08:25:45+00:00 INFO batch 27: 30000 items in 1s\n2026-11-14T08:25:47.542249315Z 2026-11-14T08:25:47+00:00 INFO batch 28: 30000 items in 2s\n2026-11-14T08:25:49.270679747Z 2026-11-14T08:25:49+00:00 INFO batch 29: 30000 items in 2s\n2026-11-14T08:25:50.943977957Z 2026-11-14T08:25:50+00:00 INFO batch 30: 30000 items in 1s\n2026-11-14T08:25:52.842099612Z 2026-11-14T08:25:52+00:00 INFO batch 31: 30000 items in 2s\n2026-11-14T08:25:54.544094109Z 2026-11-14T08:25:54+00:00 INFO batch 32: 30000 items in 2s\n2026-11-14T08:25:56.343156985Z 2026-11-14T08:25:56+00:00 INFO batch 33: 30000 items in 2s\n2026-11-14T08:25:58.043163803Z 2026-11-14T08:25:58+00:00 INFO batch 34: 30000 items in 1s\n2026-11-14T08:25:59.743317859Z 2026-11-14T08:25:59+00:00 INFO batch 35: 30000 items in 1s\n2026-11-14T08:26:01.542265091Z 2026-11-14T08:26:01+00:00 INFO batch 36: 30000 items in 2s\n2026-11-14T08:26:03.343336482Z 2026-11-14T08:26:03+00:00 INFO batch 37: 30000 items in 2s\n2026-11-14T08:26:04.944559795Z 2026-11-14T08:26:04+00:00 INFO batch 38: 30000 items in 1s\n2026-11-14T08:26:06.742121321Z 2026-11-14T08:26:06+00:00 INFO batch 39: 30000 items in 1s\n2026-11-14T08:26:08.443045569Z 2026-11-14T08:26:08+00:00 INFO batch 40: 30000 items in 2s\n2026-11-14T08:26:10.142901711Z 2026-11-14T08:26:10+00:00 INFO batch 41: 30000 items in 2s\n2026-11-14T08:26:11.842501526Z 2026-11-14T08:26:11+00:00 INFO batch 42: 30000 items in 1s\n2026-11-14T08:26:13.544225630Z 2026-11-14T08:26:13+00:00 INFO batch 43: 30000 items in 2s\n2026-11-14T08:26:15.343244443Z 2026-11-14T08:26:15+00:00 INFO batch 44: 30000 items in 2s\n2026-11-14T08:26:17.042542383Z 2026-11-14T08:26:17+00:00 INFO batch 45: 30000 items in 1s\n2026-11-14T08:26:18.743241882Z 2026-11-14T08:26:18+00:00 INFO batch 46: 30000 items in 1s\n2026-11-14T08:26:20.442898871Z 2026-11-14T08:26:20+00:00 INFO batch 47: 30000 items in 2s\n2026-11-14T08:26:22.142682640Z 2026-11-14T08:26:22+00:00 INFO batch 48: 30000 items in 2s\n2026-11-14T08:26:23.842967327Z 2026-11-14T08:26:23+00:00 INFO batch 49: 30000 items in 1s\n2026-11-14T08:26:25.644735589Z 2026-11-14T08:26:25+00:00 INFO batch 50: 30000 items in 2s\n2026-11-14T08:26:27.344191004Z 2026-11-14T08:26:27+00:00 INFO batch 51: 30000 items in 2s\n2026-11-14T08:26:29.243517745Z 2026-11-14T08:26:29+00:00 INFO batch 52: 30000 items in 2s\n2026-11-14T08:26:31.042047929Z 2026-11-14T08:26:30+00:00 INFO batch 53: 30000 items in 1s\n2026-11-14T08:26:32.743351746Z 2026-11-14T08:26:32+00:00 INFO batch 54: 30000 items in 1s\n2026-11-14T08:26:34.442264882Z 2026-11-14T08:26:34+00:00 INFO batch 55: 30000 items in 2s\n2026-11-14T08:26:36.043300099Z 2026-11-14T08:26:36+00:00 INFO batch 56: 30000 items in 2s\n2026-11-14T08:26:37.742405384Z 2026-11-14T08:26:37+00:00 INFO batch 57: 30000 items in 1s\n2026-11-14T08:26:39.442265582Z 2026-11-14T08:26:39+00:00 INFO batch 58: 30000 items in 2s\n2026-11-14T08:26:41.044571213Z 2026-11-14T08:26:41+00:00 INFO batch 59: 30000 items in 2s\n2026-11-14T08:26:42.744316346Z 2026-11-14T08:26:42+00:00 INFO batch 60: 30000 items in 1s\n2026-11-14T08:26:44.544619349Z 2026-11-14T08:26:44+00:00 INFO batch 61: 30000 items in 2s\n2026-11-14T08:26:46.243535864Z 2026-11-14T08:26:46+00:00 INFO batch 62: 30000 items in 2s\n2026-11-14T08:26:48.142291501Z 2026-11-14T08:26:48+00:00 INFO batch 63: 30000 items in 2s\n2026-11-14T08:26:49.745385447Z 2026-11-14T08:26:49+00:00 INFO batch 64: 30000 items in 1s\n2026-11-14T08:26:51.642953191Z 2026-11-14T08:26:51+00:00 INFO batch 65: 30000 items in 2s\n2026-11-14T08:26:53.443371393Z 2026-11-14T08:26:53+00:00 INFO batch 66: 30000 items in 2s\n2026-11-14T08:26:55.241814022Z 2026-11-14T08:26:55+00:00 INFO batch 67: 30000 items in 2s\n2026-11-14T08:26:56.941963908Z 2026-11-14T08:26:56+00:00 INFO batch 68: 30000 items in 1s\n2026-11-14T08:26:58.741918487Z 2026-11-14T08:26:58+00:00 INFO batch 69: 30000 items in 2s\n2026-11-14T08:27:00.343202659Z 2026-11-14T08:27:00+00:00 INFO batch 70: 30000 items in 2s\n2026-11-14T08:27:02.141981720Z 2026-11-14T08:27:02+00:00 INFO batch 71: 30000 items in 1s\n2026-11-14T08:27:03.842087585Z 2026-11-14T08:27:03+00:00 INFO batch 72: 30000 items in 1s\n2026-11-14T08:27:05.443459930Z 2026-11-14T08:27:05+00:00 INFO batch 73: 30000 items in 2s\n",
+      "previous": null,
+      "container": "thumbnailer"
+    },
+    "retrieval_query": "CPU throttling: container thumbnailer throttled at its CPU limit, slow responses Running Scheduled Successfully assigned kc-eval-21/thumbnailer-777cb64948-vrj8v to kube-copilot-control-plane Pulled Container image \"busybox:1.36\" already present on machine Created Created container: thumbnailer Started Started container thumbnailer 2026-11-14T08:26:15.343244443Z 2026-11-14T08:26:15+00:00 INFO batch 44: 30000 items in 2s 2026-11-14T08:26:17.042542383Z 2026-11-14T08:26:17+00:00 INFO batch 45: 30000 items in 1s 2026-11-14T08:26:18.743241882Z 2026-11-14T08:26:18+00:00 INFO batch 46: 30000 items in 1s 2026-11-14T08:26:20.442898871Z 2026-11-14T08:26:20+00:00 INFO batch 47: 30000 items in 2s 2026-11-14T08:26:22.142682640Z 2026-11-14T08:26:22+00:00 INFO batch 48: 30000 items in 2s 2026-11-14T08:26:23.842967327Z 2026-11-14T08:26:23+00:00 INFO batch 49: 30000 items in 1s 2026-11-14T08:26:25.644735589Z 2026-11-14T08:26:25+00:00 INFO batch 50: 30000 items in 2s 2026-11-14T08:26:27.344191004Z 2026-11-14T08:26:27+00:00 INFO batch 51: 30000 items in 2s 2026-11-14T08:26:29.243517745Z 2026-11-14T08:26:29+00:00 INFO batch 52: 30000 items in 2s 2026-11-14T08:26:31.042047929Z 2026-11-14T08:26:30+00:00 INFO batch 53: 30000 items in 1s 2026-11-14T08:26:32.743351746Z 2026-11-14T08:26:32+00:00 INFO batch 54: 30000 items in 1s 2026-11-14T08:26:34.442264882Z 2026-11-14T08:26:34+00:00 INFO batch 55: 30000 items in 2s 2026-11-14T08:26:36.043300099Z 2026-11-14T08:26:36+00:00 INFO batch 56: 30000 items in 2s 2026-11-14T08:26:37.742405384Z 2026-11-14T08:26:37+00:00 INFO batch 57: 30000 items in 1s 2026-11-14T08:26:39.442265582Z 2026-11-14T08:26:39+00:00 INFO batch 58: 30000 items in 2s 2026-11-14T08:26:41.044571213Z 2026-11-14T08:26:41+00:00 INFO batch 59: 30000 items in 2s 2026-11-14T08:26:42.744316346Z 2026-11-14T08:26:42+00:00 INFO batch 60: 30000 items in 1s 2026-11-14T08:26:44.544619349Z 2026-11-14T08:26:44+00:00 INFO batch 61: 30000 items in 2s 2026-11-14T08:26:46.243535864Z 2026-11-14T08:26:46+00:00 INFO batch 62: 30000 items in 2s 2026-11-14T08:26:48.142291501Z 2026-11-14T08:26:48+00:00 INFO batch 63: 30000 items in 2s 2026-11-14T08:26:49.745385447Z 2026-11-14T08:26:49+00:00 INFO batch 64: 30000 items in 1s 2026-11-14T08:26:51.642953191Z 2026-11-14T08:26:51+00:00 INFO batch 65: 30000 items in 2s 2026-11-14T08:26:53.443371393Z 2026-11-14T08:26:53+00:00 INFO batch 66: 30000 items in 2s 2026-11-14T08:26:55.241814022Z 2026-11-14T08:26:55+00:00 INFO batch 67: 30000 items in 2s 2026-11-14T08:26:56.941963908Z 2026-11-14T08:26:56+00:00 INFO batch 68: 30000 items in 1s 2026-11-14T08:26:58.741918487Z 2026-11-14T08:26:58+00:00 INFO batch 69: 30000 items in 2s 2026-11-14T08:27:00.343202659Z 2026-11-14T08:27:00+00:00 INFO batch 70: 30000 items in 2s 2026-11-14T08:27:02.141981720Z 2026-11-14T08:27:02+00:00 INFO batch 71: 30000 items in 1s 2026-11-14T08:27:03.842087585Z 2026-11-14T08:27:03+00:00 INFO batch 72: 30000 items in 1s 2026-11-14T08:27:05.443459930Z 2026-11-14T08:27:05+00:00 INFO batch 73: 30000 items in 2s",
+    "retrieved": [
+      {
+        "title": "CPU throttling",
+        "source": "cpu-throttling.md",
+        "section": "CPU throttling",
+        "text": "# CPU throttling\n\nThe container hits its CPU `limit` and the kernel's CFS quota pauses it for the rest of each 100 ms period. Nothing crashes and the pod stays `Running` and `Ready`, but work runs slowly: latency goes up, batches take longer, and probes with short timeouts may start to fail.",
+        "score": 0.8284188535695821,
+        "kind": "runbook"
+      },
+      {
+        "title": "CPU throttling",
+        "source": "cpu-throttling.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Read the requests and limits:\n\n   ```bash\n   kubectl get pod <pod> -n <ns> -o jsonpath='{.spec.containers[*].resources}'\n   ```\n\n2. Compare usage with the limit:\n\n   ```bash\n   kubectl top pod <pod> -n <ns> --containers\n   ```\n\n3. Check throttling in Prometheus:\n\n   ```promql\n   sum by (container) (rate(container_cpu_cfs_throttled_periods_total{namespace=\"<ns>\", pod=\"<pod>\"}[5m]))\n     / sum by (container) (rate(container_cpu_cfs_periods_total{namespace=\"<ns>\", pod=\"<pod>\"}[5m]))\n   ```\n\n4. If a rollout changed the resources, compare revisions with `kubectl rollout history deploy/<name> -n <ns> --revision=<n>`.",
+        "score": 0.8031627656686282,
+        "kind": "runbook"
+      },
+      {
+        "title": "CPU throttling",
+        "source": "cpu-throttling.md",
+        "section": "Fixes",
+        "text": "## Fixes\n\n- Raise the CPU `limit` (or remove it and rely on `requests` for scheduling) to a value measured from real usage plus headroom.\n- If a recent rollout lowered the limit, roll back to the previous revision, then fix the manifest.\n- Scale out (more replicas) when the work can be spread across pods; this does not make a single slow request faster.\n- Size runtime thread pools to the cgroup quota (`GOMAXPROCS`, `-XX:ActiveProcessorCount`, worker counts).\n- Raise probe `timeoutSeconds` if probes fail only because the container is throttled.",
+        "score": 0.7692609251909673,
+        "kind": "runbook"
+      },
+      {
+        "title": "CPU throttling",
+        "source": "cpu-throttling.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- The pod looks healthy: no restarts, no warning events, no errors in the logs.\n- CPU usage sits at (or just under) the container's CPU limit, for example `20m` used of a `20m` limit.\n- A large share of CFS periods are throttled: `container_cpu_cfs_throttled_periods_total / container_cpu_cfs_periods_total` above roughly 25%.\n- Logs show work taking longer than usual (slow batches, slow requests, timeouts to callers), not failing outright.\n- Liveness or readiness probes with tight `timeoutSeconds` may fail intermittently under load.",
+        "score": 0.7546078844701993,
+        "kind": "runbook"
+      },
+      {
+        "title": "CPU throttling",
+        "source": "cpu-throttling.md",
+        "section": "Common causes",
+        "text": "## Common causes\n\n- The CPU `limit` is too low for the workload (tiny demo limits such as `10m` to `50m` on a CPU-bound process).\n- A rollout lowered `resources.limits.cpu`, or added a limit where there was none.\n- Traffic or batch size grew while the limit stayed the same.\n- Multi-threaded runtimes (JVM, Go, Node worker pools) that size their thread pools from the node's cores, not the cgroup quota, burn the quota in a few milliseconds.",
+        "score": 0.7457080185120177,
+        "kind": "runbook"
+      }
+    ],
+    "knowledge_unavailable": false,
+    "anomaly": {
+      "namespace": "kc-eval-21",
+      "name": "thumbnailer-777cb64948-vrj8v",
+      "score": 0.8016,
+      "is_anomaly": true,
+      "threshold": 0.013067,
+      "metric_anomaly": true,
+      "detectors": [
+        "isolation_forest"
+      ],
+      "lifecycle_signals": [],
+      "contributing_features": [
+        {
+          "name": "mem_mean_mib",
+          "value": 0.3604403409090909,
+          "zscore": -4.9708800176542205,
+          "direction": "low"
+        },
+        {
+          "name": "mem_last_mib",
+          "value": 0.359375,
+          "zscore": -4.965591379857772,
+          "direction": "low"
+        },
+        {
+          "name": "mem_to_limit_ratio",
+          "value": 0.005615234375,
+          "zscore": -2.7185187704991645,
+          "direction": "low"
+        },
+        {
+          "name": "net_rx_mib_per_min",
+          "value": 3.644276738340112e-05,
+          "zscore": -2.258306533948231,
+          "direction": "low"
+        },
+        {
+          "name": "cpu_mean",
+          "value": 0.012425755526920679,
+          "zscore": -2.2329318847001325,
+          "direction": "low"
+        }
+      ],
+      "series": [
+        {
+          "ts": 1794644711.0,
+          "cpu": 0.0025,
+          "memory_mib": 0.359,
+          "mem_to_limit_ratio": 0.0056,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794644726.0,
+          "cpu": 0.0034,
+          "memory_mib": 0.359,
+          "mem_to_limit_ratio": 0.0056,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794644741.0,
+          "cpu": 0.0076,
+          "memory_mib": 0.367,
+          "mem_to_limit_ratio": 0.0057,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794644756.0,
+          "cpu": 0.01,
+          "memory_mib": 0.359,
+          "mem_to_limit_ratio": 0.0056,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794644771.0,
+          "cpu": 0.0125,
+          "memory_mib": 0.359,
+          "mem_to_limit_ratio": 0.0056,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794644786.0,
+          "cpu": 0.015,
+          "memory_mib": 0.359,
+          "mem_to_limit_ratio": 0.0056,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794644801.0,
+          "cpu": 0.0175,
+          "memory_mib": 0.363,
+          "mem_to_limit_ratio": 0.0057,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794644816.0,
+          "cpu": 0.02,
+          "memory_mib": 0.359,
+          "mem_to_limit_ratio": 0.0056,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794644831.0,
+          "cpu": 0.018,
+          "memory_mib": 0.359,
+          "mem_to_limit_ratio": 0.0056,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794644846.0,
+          "cpu": 0.0161,
+          "memory_mib": 0.359,
+          "mem_to_limit_ratio": 0.0056,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794644861.0,
+          "cpu": 0.014,
+          "memory_mib": 0.359,
+          "mem_to_limit_ratio": 0.0056,
+          "restarts": 0.0
+        }
+      ],
+      "warning": null
+    },
+    "anomaly_unavailable": false,
+    "usage": {
+      "containers": [
+        {
+          "name": "thumbnailer",
+          "cpu_cores": 0.0085,
+          "cpu_limit_cores": 0.02,
+          "cpu_request_cores": 0.01,
+          "cpu_throttled_ratio": 0.992,
+          "memory_mib": 0.4,
+          "memory_limit_mib": 64.0
+        }
+      ],
+      "window": "5m"
+    }
+  },
+  "propose_input": {
+    "deployment": {
+      "namespace": "kc-eval-21",
+      "name": "thumbnailer",
+      "replicas": 1,
+      "ready": 1,
+      "available": 1,
+      "updated": 1,
+      "generation": 1,
+      "observed_generation": 1,
+      "revision": 1,
+      "previous_revision": null,
+      "summary": {
+        "replicas": 1,
+        "revision": 1,
+        "template": {
+          "annotations": {},
+          "containers": [
+            {
+              "name": "thumbnailer",
+              "image": "busybox:1.36",
+              "command": [
+                "sh",
+                "-c",
+                "echo \"$(date -Iseconds) INFO thumbnailer started\"; b=0; while true; do b=$((b+1)); s=$(date +%s); i=0; while [ $i -lt 30000 ]; do i=$((i+1)); done; e=$(date +%s); echo \"$(date -Iseconds) INFO batch $b: 30000 items in $((e-s))s\"; done"
+              ],
+              "args": null
+            }
+          ]
+        }
+      },
+      "previous_summary": null,
+      "template_diff": null,
+      "template_refs": {}
+    },
+    "pod_state": {
+      "namespace": "kc-eval-21",
+      "name": "thumbnailer-777cb64948-vrj8v",
+      "controller_kind": "ReplicaSet",
+      "controller_name": "thumbnailer-777cb64948",
+      "deployment": "thumbnailer",
+      "crashlooping": false,
+      "restart_count": 0,
+      "reason": null
+    },
+    "signals": []
+  }
+}

@@ -6,7 +6,7 @@ import logging
 from dataclasses import dataclass, field
 
 from app.config import Settings, get_settings
-from app.models import PodEvent, PodLogs, PodSummary
+from app.models import PodEvent, PodLogs, PodSummary, PodUsage
 from app.rag.store import (
     KIND_INCIDENT,
     KIND_RUNBOOK,
@@ -45,9 +45,17 @@ class RetrieveResult:
     warning: str | None = None
 
 
-def build_retrieval_query(pod: PodSummary, events: list[PodEvent], logs: PodLogs) -> str:
-    """Compact lexical query from status, events, and a short log tail."""
+THROTTLING_QUERY_RATIO = 0.25
+
+
+def build_retrieval_query(
+    pod: PodSummary, events: list[PodEvent], logs: PodLogs, usage: PodUsage | None = None
+) -> str:
+    """Compact lexical query from status, events, resource usage and a short log tail."""
     parts: list[str] = []
+    for c in (usage.containers if usage is not None else []):
+        if (c.cpu_throttled_ratio or 0) >= THROTTLING_QUERY_RATIO:
+            parts.append(f"CPU throttling: container {c.name} throttled at its CPU limit, slow responses")
     if pod.phase:
         parts.append(pod.phase)
     if pod.reason:
@@ -111,8 +119,9 @@ class Retriever:
         events: list[PodEvent],
         logs: PodLogs,
         top_k: int | None = None,
+        usage: PodUsage | None = None,
     ) -> RetrieveResult:
-        query = build_retrieval_query(pod, events, logs)
+        query = build_retrieval_query(pod, events, logs, usage)
         return self.search(query, top_k=top_k)
 
     def search(self, query: str, top_k: int | None = None) -> RetrieveResult:

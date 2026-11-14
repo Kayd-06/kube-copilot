@@ -188,10 +188,30 @@ def diagnose_reason(pod: V1Pod) -> tuple[bool, str | None, str | None]:
     return False, pod_reason, pod_message
 
 
+def _spec_resources(pod: V1Pod) -> dict[str, dict[str, dict[str, str]]]:
+    """Container name -> {"requests": {...}, "limits": {...}} from the pod spec (empty parts dropped)."""
+    out: dict[str, dict[str, dict[str, str]]] = {}
+    for c in (pod.spec.containers or []) if pod.spec else []:
+        res = c.resources
+        if res is None:
+            continue
+        entry = {
+            key: {k: str(v) for k, v in (getattr(res, key) or {}).items()}
+            for key in ("requests", "limits")
+            if getattr(res, key)
+        }
+        if entry:
+            out[c.name] = entry
+    return out
+
+
 def to_pod_summary(pod: V1Pod) -> PodSummary:
     metadata = pod.metadata
     status = pod.status
     containers = [summarize_container(cs) for cs in (status.container_statuses or [])] if status else []
+    spec_resources = _spec_resources(pod)
+    for c in containers:
+        c.resources = spec_resources.get(c.name)
     unhealthy, reason, message = diagnose_reason(pod)
     restart_count = sum(c.restart_count for c in containers)
     ready = all(c.ready for c in containers) if containers else False

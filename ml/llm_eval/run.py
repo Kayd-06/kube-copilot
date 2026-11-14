@@ -12,7 +12,8 @@ temperature and response format). Requests are paced under --tpm tokens per
 minute and 429s are retried after the server's suggested wait; a daily-quota
 429 stops the run and the partial report says so.
 
-Writes ml/reports/llm_eval/<model>.json (every call) and <model>.md.
+Writes ml/reports/llm_eval/v2/<model>.json (every call) and <model>.md by default.
+Held-out set: --fixtures ml/data/llm_eval/heldout --out-dir ml/reports/llm_eval/heldout.
 """
 
 from __future__ import annotations
@@ -40,7 +41,8 @@ from ml.llm_eval.scoring import (
 )
 from ml.llm_eval.taxonomy import CATEGORIES
 
-REPORT_DIR = Path(__file__).resolve().parents[1] / "reports" / "llm_eval"
+# v1 reports (PR #31) live in reports/llm_eval/ and are kept for comparison; new runs on cases_v2 go to v2/.
+REPORT_DIR = Path(__file__).resolve().parents[1] / "reports" / "llm_eval" / "v2"
 VARIANTS = ("full", "no_rag", "no_signals")
 # USD per 1M tokens (input, output), Groq list prices from console.groq.com/docs/models, checked 2026-11-13.
 PRICES = {"openai/gpt-oss-120b": (0.15, 0.60), "openai/gpt-oss-20b": (0.075, 0.30)}
@@ -52,10 +54,16 @@ class QuotaExhausted(Exception):
 
 # ------------------------------------------------------------------ pacing
 class Pacer:
-    """Keep the rolling 60s token count under the per-minute limit; retry 429s."""
+    """Keep the rolling 60s token count under the per-minute limit; retry 429s.
 
-    def __init__(self, tpm: int) -> None:
+    A daily-quota 429 (TPD) stops the run unless `wait_daily_s` allows waiting
+    for the bucket to refill (Groq's message says how long to wait).
+    """
+
+    def __init__(self, tpm: int, wait_daily_s: float = 0.0) -> None:
         self.tpm = tpm
+        self.wait_daily_s = wait_daily_s
+        self.daily_waited_s = 0.0
         self.window: deque[tuple[float, int]] = deque()
         self.waited_s = 0.0
         self.retries = 0
@@ -87,7 +95,15 @@ class Pacer:
             except Exception as exc:  # noqa: BLE001
                 text = str(exc)
                 if "per day" in text.lower() or "(TPD)" in text or "(RPD)" in text:
-                    raise QuotaExhausted(text[:300]) from exc
+                    m = re.search(r"try again in (?:(\d+)h)?(?:(\d+)m)?([\d.]+)s", text)
+                    wait = (int(m.group(1) or 0) * 3600 + int(m.group(2) or 0) * 60 + float(m.group(3))) if m else None
+                    if wait is None or self.daily_waited_s + wait > self.wait_daily_s:
+                        raise QuotaExhausted(text[:300]) from exc
+                    print(f"daily quota: waiting {wait:.0f}s for it to refill", file=sys.stderr, flush=True)
+                    self.daily_waited_s += wait + 5
+                    self.waited_s += wait + 5
+                    time.sleep(wait + 5)
+                    continue
                 if "429" in text or "rate_limit" in text.lower() or "rate limit" in text.lower():
                     m = re.search(r"try again in (?:(\d+)m)?([\d.]+)s", text)
                     wait = (int(m.group(1) or 0) * 60 + float(m.group(2))) if m else 20.0
@@ -107,7 +123,7 @@ def diagnose_inputs(fx: Fixture, variant: str):
     anomaly = fx.anomaly
     if variant == "no_signals" and anomaly is not None:
         anomaly = anomaly.model_copy(update={"lifecycle_signals": []})
-    return fx.pod, fx.events, fx.logs, retrieved, anomaly
+    return fx.pod, fx.events, fx.logs, retrieved, anomaly, fx.usage
 
 
 def propose_signals(fx: Fixture, variant: str) -> list[str]:
@@ -128,12 +144,12 @@ def runs_variant(fx: Fixture, task: str, variant: str) -> bool:
 def run_diagnose(fx: Fixture, variant: str, explainer, pacer: Pacer) -> dict[str, Any]:
     from app.llm_explainer import SYSTEM_PROMPT, build_user_prompt
 
-    pod, events, logs, retrieved, anomaly = diagnose_inputs(fx, variant)
-    prompt = build_user_prompt(pod, events, logs, retrieved, anomaly)
+    pod, events, logs, retrieved, anomaly, usage = diagnose_inputs(fx, variant)
+    prompt = build_user_prompt(pod, events, logs, retrieved, anomaly, usage)
     estimate = (len(SYSTEM_PROMPT) + len(prompt)) // 4 + 900
     rec: dict[str, Any] = {"case": fx.id, "task": "diagnose", "variant": variant}
     try:
-        run, latency = pacer.call(lambda: explainer.explain_detailed(pod, events, logs, retrieved, anomaly), estimate)
+        run, latency = pacer.call(lambda: explainer.explain_detailed(pod, events, logs, retrieved, anomaly, usage), estimate)
     except QuotaExhausted:
         raise
     except Exception as exc:  # noqa: BLE001 — record and move on
@@ -190,6 +206,7 @@ def run_propose(fx: Fixture, variant: str, proposer, pacer: Pacer) -> dict[str, 
                                       fx.namespace, deployment_name, fx.pod.name),
         policy_violations=violations,
         policy_blocked=sum(1 for v in violations if v),
+        retried_without_required_tool=result.retried_without_required_tool,
     )
     return rec
 
@@ -353,7 +370,7 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"# LLM eval: `{m}`",
         "",
         f"Run {report['started_at']} → {report['finished_at']} (UTC) on {report['dataset']['cases']} frozen incidents "
-        f"from `ml/data/llm_eval/cases/`. Status: **{report['status']}**.",
+        f"from `{report.get('fixtures_dir', 'ml/data/llm_eval/cases')}/`. Status: **{report['status']}**.",
         "",
     ]
     if report.get("stopped_reason"):
@@ -500,6 +517,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--out-dir", type=Path, default=REPORT_DIR)
     parser.add_argument("--tpm", type=int, default=int(os.environ.get("EVAL_TPM", "7000")),
                         help="Tokens per minute to stay under (Groq free tier: 8000). 0 = no pacing")
+    parser.add_argument("--wait-daily", type=float, default=0.0,
+                        help="Hours to wait in total for a daily-quota (TPD) 429 to refill before stopping")
     parser.add_argument("--dry-run", action="store_true", help="No API calls: load fixtures, build prompts, baselines")
     parser.add_argument("--rescore", action="store_true",
                         help="No API calls: re-apply the current matchers to the saved diagnoses in the existing report")
@@ -538,6 +557,7 @@ def main(argv: list[str] | None = None) -> int:
 
         sizes = [len(build_user_prompt(*diagnose_inputs(f, "full"))) for f in fixtures]
         sizes_p = [len(build_context(f.pod, f.events, f.logs, f.deployment, f.signals)) for f in fixtures]
+        print(f"diagnose prompt chars max {max(sizes)}, propose context chars max {max(sizes_p)}")
         print(json.dumps({"dataset": dataset_summary(fixtures), "baselines": base,
                           "diagnose_prompt_chars_mean": round(statistics.mean(sizes)),
                           "propose_context_chars_mean": round(statistics.mean(sizes_p))}, indent=2))
@@ -555,7 +575,7 @@ def main(argv: list[str] | None = None) -> int:
                     max_retries=0)
     explainer = LLMExplainer(settings=settings, client=client)
     proposer = ActionProposer(settings=settings, client=client)
-    pacer = Pacer(args.tpm)
+    pacer = Pacer(args.tpm, wait_daily_s=args.wait_daily * 3600)
     started = datetime.now(timezone.utc)
     records: list[dict] = []
     stem = args.out_dir / slug(model)
@@ -601,7 +621,10 @@ def main(argv: list[str] | None = None) -> int:
         "tasks": tasks,
         "dataset": dataset_summary(fixtures),
         "baselines": base,
-        "pacing": {"tpm": args.tpm, "waited_s": round(pacer.waited_s), "retries": pacer.retries},
+        "pacing": {"tpm": args.tpm, "waited_s": round(pacer.waited_s), "retries": pacer.retries,
+                   "daily_quota_waited_s": round(pacer.daily_waited_s)},
+        "fixtures_dir": str(args.fixtures.resolve().relative_to(Path(__file__).resolve().parents[2]))
+        if args.fixtures.resolve().is_relative_to(Path(__file__).resolve().parents[2]) else str(args.fixtures),
         "runs": previous_runs,
         "summary": summarize(records, fixtures_by_id, model),
         "labels": {f.id: f.labels for f in fixtures},

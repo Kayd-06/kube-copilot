@@ -1,0 +1,302 @@
+{
+  "schema_version": 1,
+  "id": "oom_leak_first",
+  "title": "Worker leaks ~1MB per batch until OOMKilled",
+  "labels": {
+    "category": "oom_killed",
+    "expected_actions": [
+      "no_action"
+    ],
+    "expected_runbooks": [
+      "oomkilled.md",
+      "memory-leak.md"
+    ],
+    "difficulty": "hard",
+    "fault": "Revision 1 appends 1MB per batch to an in-memory buffer that is never freed; 64Mi limit.",
+    "notes": "Logs only say 'processed batch N'; the OOM is in status/events."
+  },
+  "namespace": "kc-eval-16",
+  "workload": "ingest",
+  "pod_name": "ingest-757b775ff4-bw5h9",
+  "captured_at": "2026-11-13T17:49:15+00:00",
+  "cluster": "kind kube-copilot (single node, Kubernetes v1.32.2)",
+  "diagnose_input": {
+    "pod": {
+      "name": "ingest-757b775ff4-bw5h9",
+      "namespace": "kc-eval-16",
+      "phase": "Running",
+      "reason": "OOMKilled",
+      "message": null,
+      "restart_count": 1,
+      "ready": true,
+      "created_at": "2026-11-13T17:47:07Z",
+      "node": "kube-copilot-control-plane",
+      "qos_class": "Burstable",
+      "containers": [
+        {
+          "name": "ingest",
+          "ready": true,
+          "restart_count": 1,
+          "state": "running",
+          "reason": "OOMKilled",
+          "message": null,
+          "exit_code": 137
+        }
+      ]
+    },
+    "events": [
+      {
+        "type": "Normal",
+        "reason": "Scheduled",
+        "message": "Successfully assigned kc-eval-16/ingest-757b775ff4-bw5h9 to kube-copilot-control-plane",
+        "count": 1,
+        "first_timestamp": "2026-11-13T17:47:07Z",
+        "last_timestamp": "2026-11-13T17:47:07Z",
+        "source": "default-scheduler"
+      },
+      {
+        "type": "Normal",
+        "reason": "Pulled",
+        "message": "Container image \"busybox:1.36\" already present on machine",
+        "count": 2,
+        "first_timestamp": "2026-11-13T17:47:08Z",
+        "last_timestamp": "2026-11-13T17:48:12Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Created",
+        "message": "Created container: ingest",
+        "count": 2,
+        "first_timestamp": "2026-11-13T17:47:08Z",
+        "last_timestamp": "2026-11-13T17:48:12Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Started",
+        "message": "Started container ingest",
+        "count": 2,
+        "first_timestamp": "2026-11-13T17:47:08Z",
+        "last_timestamp": "2026-11-13T17:48:12Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      }
+    ],
+    "logs": {
+      "current": "2026-11-13T17:48:12.544707717Z 2026-11-13T17:48:12+00:00 INFO ingest worker started\n2026-11-13T17:48:12.553030958Z 2026-11-13T17:48:12+00:00 INFO processed batch 1\n2026-11-13T17:48:14.563914421Z 2026-11-13T17:48:14+00:00 INFO processed batch 2\n2026-11-13T17:48:16.577781270Z 2026-11-13T17:48:16+00:00 INFO processed batch 3\n2026-11-13T17:48:18.593716783Z 2026-11-13T17:48:18+00:00 INFO processed batch 4\n2026-11-13T17:48:20.610732222Z 2026-11-13T17:48:20+00:00 INFO processed batch 5\n2026-11-13T17:48:22.632250981Z 2026-11-13T17:48:22+00:00 INFO processed batch 6\n2026-11-13T17:48:24.656976202Z 2026-11-13T17:48:24+00:00 INFO processed batch 7\n2026-11-13T17:48:26.681737905Z 2026-11-13T17:48:26+00:00 INFO processed batch 8\n2026-11-13T17:48:28.732355420Z 2026-11-13T17:48:28+00:00 INFO processed batch 9\n2026-11-13T17:48:30.760366713Z 2026-11-13T17:48:30+00:00 INFO processed batch 10\n2026-11-13T17:48:32.794802730Z 2026-11-13T17:48:32+00:00 INFO processed batch 11\n2026-11-13T17:48:34.833506729Z 2026-11-13T17:48:34+00:00 INFO processed batch 12\n2026-11-13T17:48:36.863482430Z 2026-11-13T17:48:36+00:00 INFO processed batch 13\n2026-11-13T17:48:38.896582457Z 2026-11-13T17:48:38+00:00 INFO processed batch 14\n2026-11-13T17:48:40.940316365Z 2026-11-13T17:48:40+00:00 INFO processed batch 15\n2026-11-13T17:48:42.978317524Z 2026-11-13T17:48:42+00:00 INFO processed batch 16\n2026-11-13T17:48:45.015333555Z 2026-11-13T17:48:45+00:00 INFO processed batch 17\n2026-11-13T17:48:47.058600134Z 2026-11-13T17:48:47+00:00 INFO processed batch 18\n2026-11-13T17:48:49.103931999Z 2026-11-13T17:48:49+00:00 INFO processed batch 19\n2026-11-13T17:48:51.176479546Z 2026-11-13T17:48:51+00:00 INFO processed batch 20\n2026-11-13T17:48:53.226087858Z 2026-11-13T17:48:53+00:00 INFO processed batch 21\n2026-11-13T17:48:55.286613665Z 2026-11-13T17:48:55+00:00 INFO processed batch 22\n2026-11-13T17:48:57.343492096Z 2026-11-13T17:48:57+00:00 INFO processed batch 23\n2026-11-13T17:48:59.397153531Z 2026-11-13T17:48:59+00:00 INFO processed batch 24\n2026-11-13T17:49:01.456933758Z 2026-11-13T17:49:01+00:00 INFO processed batch 25\n2026-11-13T17:49:03.516618443Z 2026-11-13T17:49:03+00:00 INFO processed batch 26\n2026-11-13T17:49:05.580764426Z 2026-11-13T17:49:05+00:00 INFO processed batch 27\n2026-11-13T17:49:07.647164377Z 2026-11-13T17:49:07+00:00 INFO processed batch 28\n2026-11-13T17:49:09.712069421Z 2026-11-13T17:49:09+00:00 INFO processed batch 29\n2026-11-13T17:49:11.777832163Z 2026-11-13T17:49:11+00:00 INFO processed batch 30\n2026-11-13T17:49:13.860669635Z 2026-11-13T17:49:13+00:00 INFO processed batch 31\n",
+      "previous": "2026-11-13T17:47:08.153192836Z 2026-11-13T17:47:08+00:00 INFO ingest worker started\n2026-11-13T17:47:08.160683347Z 2026-11-13T17:47:08+00:00 INFO processed batch 1\n2026-11-13T17:47:10.171391338Z 2026-11-13T17:47:10+00:00 INFO processed batch 2\n2026-11-13T17:47:12.185300262Z 2026-11-13T17:47:12+00:00 INFO processed batch 3\n2026-11-13T17:47:14.198927490Z 2026-11-13T17:47:14+00:00 INFO processed batch 4\n2026-11-13T17:47:16.214456758Z 2026-11-13T17:47:16+00:00 INFO processed batch 5\n2026-11-13T17:47:18.234598852Z 2026-11-13T17:47:18+00:00 INFO processed batch 6\n2026-11-13T17:47:20.261601131Z 2026-11-13T17:47:20+00:00 INFO processed batch 7\n2026-11-13T17:47:22.289398368Z 2026-11-13T17:47:22+00:00 INFO processed batch 8\n2026-11-13T17:47:24.314092968Z 2026-11-13T17:47:24+00:00 INFO processed batch 9\n2026-11-13T17:47:26.341778287Z 2026-11-13T17:47:26+00:00 INFO processed batch 10\n2026-11-13T17:47:28.368636540Z 2026-11-13T17:47:28+00:00 INFO processed batch 11\n2026-11-13T17:47:30.399857918Z 2026-11-13T17:47:30+00:00 INFO processed batch 12\n2026-11-13T17:47:32.431848001Z 2026-11-13T17:47:32+00:00 INFO processed batch 13\n2026-11-13T17:47:34.470807023Z 2026-11-13T17:47:34+00:00 INFO processed batch 14\n2026-11-13T17:47:36.509230984Z 2026-11-13T17:47:36+00:00 INFO processed batch 15\n2026-11-13T17:47:38.550368735Z 2026-11-13T17:47:38+00:00 INFO processed batch 16\n2026-11-13T17:47:40.595707835Z 2026-11-13T17:47:40+00:00 INFO processed batch 17\n2026-11-13T17:47:42.644804148Z 2026-11-13T17:47:42+00:00 INFO processed batch 18\n2026-11-13T17:47:44.688626591Z 2026-11-13T17:47:44+00:00 INFO processed batch 19\n2026-11-13T17:47:46.735046560Z 2026-11-13T17:47:46+00:00 INFO processed batch 20\n2026-11-13T17:47:48.783729723Z 2026-11-13T17:47:48+00:00 INFO processed batch 21\n2026-11-13T17:47:50.837653076Z 2026-11-13T17:47:50+00:00 INFO processed batch 22\n2026-11-13T17:47:52.891028727Z 2026-11-13T17:47:52+00:00 INFO processed batch 23\n2026-11-13T17:47:54.948244020Z 2026-11-13T17:47:54+00:00 INFO processed batch 24\n2026-11-13T17:47:57.004191874Z 2026-11-13T17:47:57+00:00 INFO processed batch 25\n2026-11-13T17:47:59.061512186Z 2026-11-13T17:47:59+00:00 INFO processed batch 26\n2026-11-13T17:48:01.124689379Z 2026-11-13T17:48:01+00:00 INFO processed batch 27\n2026-11-13T17:48:03.189809715Z 2026-11-13T17:48:03+00:00 INFO processed batch 28\n2026-11-13T17:48:05.254945989Z 2026-11-13T17:48:05+00:00 INFO processed batch 29\n2026-11-13T17:48:07.325185747Z 2026-11-13T17:48:07+00:00 INFO processed batch 30\n2026-11-13T17:48:09.392506790Z 2026-11-13T17:48:09+00:00 INFO processed batch 31\n",
+      "container": "ingest"
+    },
+    "retrieval_query": "Running OOMKilled OOMKilled exit code 137 Scheduled Successfully assigned kc-eval-16/ingest-757b775ff4-bw5h9 to kube-copilot-control-plane Pulled Container image \"busybox:1.36\" already present on machine Created Created container: ingest Started Started container ingest 2026-11-13T17:48:14.563914421Z 2026-11-13T17:48:14+00:00 INFO processed batch 2 2026-11-13T17:48:16.577781270Z 2026-11-13T17:48:16+00:00 INFO processed batch 3 2026-11-13T17:48:18.593716783Z 2026-11-13T17:48:18+00:00 INFO processed batch 4 2026-11-13T17:48:20.610732222Z 2026-11-13T17:48:20+00:00 INFO processed batch 5 2026-11-13T17:48:22.632250981Z 2026-11-13T17:48:22+00:00 INFO processed batch 6 2026-11-13T17:48:24.656976202Z 2026-11-13T17:48:24+00:00 INFO processed batch 7 2026-11-13T17:48:26.681737905Z 2026-11-13T17:48:26+00:00 INFO processed batch 8 2026-11-13T17:48:28.732355420Z 2026-11-13T17:48:28+00:00 INFO processed batch 9 2026-11-13T17:48:30.760366713Z 2026-11-13T17:48:30+00:00 INFO processed batch 10 2026-11-13T17:48:32.794802730Z 2026-11-13T17:48:32+00:00 INFO processed batch 11 2026-11-13T17:48:34.833506729Z 2026-11-13T17:48:34+00:00 INFO processed batch 12 2026-11-13T17:48:36.863482430Z 2026-11-13T17:48:36+00:00 INFO processed batch 13 2026-11-13T17:48:38.896582457Z 2026-11-13T17:48:38+00:00 INFO processed batch 14 2026-11-13T17:48:40.940316365Z 2026-11-13T17:48:40+00:00 INFO processed batch 15 2026-11-13T17:48:42.978317524Z 2026-11-13T17:48:42+00:00 INFO processed batch 16 2026-11-13T17:48:45.015333555Z 2026-11-13T17:48:45+00:00 INFO processed batch 17 2026-11-13T17:48:47.058600134Z 2026-11-13T17:48:47+00:00 INFO processed batch 18 2026-11-13T17:48:49.103931999Z 2026-11-13T17:48:49+00:00 INFO processed batch 19 2026-11-13T17:48:51.176479546Z 2026-11-13T17:48:51+00:00 INFO processed batch 20 2026-11-13T17:48:53.226087858Z 2026-11-13T17:48:53+00:00 INFO processed batch 21 2026-11-13T17:48:55.286613665Z 2026-11-13T17:48:55+00:00 INFO processed batch 22 2026-11-13T17:48:57.343492096Z 2026-11-13T17:48:57+00:00 INFO processed batch 23 2026-11-13T17:48:59.397153531Z 2026-11-13T17:48:59+00:00 INFO processed batch 24 2026-11-13T17:49:01.456933758Z 2026-11-13T17:49:01+00:00 INFO processed batch 25 2026-11-13T17:49:03.516618443Z 2026-11-13T17:49:03+00:00 INFO processed batch 26 2026-11-13T17:49:05.580764426Z 2026-11-13T17:49:05+00:00 INFO processed batch 27 2026-11-13T17:49:07.647164377Z 2026-11-13T17:49:07+00:00 INFO processed batch 28 2026-11-13T17:49:09.712069421Z 2026-11-13T17:49:09+00:00 INFO processed batch 29 2026-11-13T17:49:11.777832163Z 2026-11-13T17:49:11+00:00 INFO processed batch 30 2026-11-13T17:49:13.860669635Z 2026-11-13T17:49:13+00:00 INFO processed batch 31",
+    "retrieved": [
+      {
+        "title": "OOMKilled",
+        "source": "oomkilled.md",
+        "section": "OOMKilled",
+        "text": "# OOMKilled\n\nThe container was killed because it exceeded its memory limit (or, less often, the node itself ran out of memory). Kubernetes reports the last terminated reason as `OOMKilled` with exit code `137`.",
+        "score": 0.777678656966867,
+        "kind": "runbook"
+      },
+      {
+        "title": "OOMKilled",
+        "source": "oomkilled.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- Container `lastState.terminated.reason` is `OOMKilled`.\n- Restart count climbs; the pod may also show `CrashLoopBackOff` once the kubelet starts backing off.\n- Events may include `OOMKilling` from the kubelet. Logs often stop abruptly, sometimes in the middle of a request or a large allocation.\n- `kubectl describe pod` shows a memory `limit` that is close to, or below, what the process actually uses.",
+        "score": 0.7627901261444132,
+        "kind": "runbook"
+      },
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Common causes",
+        "text": "## Common causes\n\n- The container command or entrypoint exits immediately (`exit 1`, a missing binary, or a typo in `args`).\n- The process crashes on startup because a required env var, ConfigMap key, or Secret is missing or malformed.\n- The application cannot reach a dependency (database, API, cache) and treats that as fatal.\n- A failed liveness probe kills a slow-starting process, which then crash-loops (see the probe-failures runbook).\n- The process is being OOM-killed; that often surfaces as `OOMKilled` rather than a generic crash, but both can appear together. Check the last terminated state.",
+        "score": 0.7352751290027397,
+        "kind": "runbook"
+      },
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Read the last termination reason and exit code:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get pod <pod> -n <ns> -o jsonpath='{range .status.containerStatuses[*]}{.name}{\" \"}{.state}{\" \"}{.lastState.terminated}{\"\\n\"}{end}'\n   ```\n\n2. Always fetch previous logs if `restartCount > 0`:\n\n   ```bash\n   kubectl logs <pod> -n <ns> --previous --tail=200\n   kubectl logs <pod> -n <ns> --tail=200\n   ```\n\n3. Confirm the command that actually ran (`command` / `args` in the pod spec) and whether the image entrypoint expects different arguments.\n4. If logs mention a missing file, env var, or connection refused, inspect the related ConfigMap, Secret, and Service.",
+        "score": 0.7194686565329296,
+        "kind": "runbook"
+      },
+      {
+        "title": "OOMKilled",
+        "source": "oomkilled.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Confirm the termination reason and the current limits:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get pod <pod> -n <ns> -o jsonpath='{.spec.containers[*].resources}'\n   ```\n\n2. Compare usage if metrics are available:\n\n   ```bash\n   kubectl top pod <pod> -n <ns> --containers\n   ```\n\n3. Read previous logs for allocation errors, heap dumps, or a sudden stop.\n4. Check whether the node itself is under memory pressure (`kubectl describe node <node>` and look for evictions or `MemoryPressure`).",
+        "score": 0.7072180034184401,
+        "kind": "runbook"
+      }
+    ],
+    "knowledge_unavailable": false,
+    "anomaly": {
+      "namespace": "kc-eval-16",
+      "name": "ingest-757b775ff4-bw5h9",
+      "score": 0.9994,
+      "is_anomaly": true,
+      "threshold": 0.013067,
+      "metric_anomaly": true,
+      "detectors": [
+        "isolation_forest",
+        "lifecycle"
+      ],
+      "lifecycle_signals": [
+        {
+          "kind": "container_restarted",
+          "at": "2026-11-13T17:48:11Z",
+          "workload": "ingest",
+          "pod": "ingest-757b775ff4-bw5h9",
+          "detail": "+1 (OOMKilled)"
+        }
+      ],
+      "contributing_features": [
+        {
+          "name": "mem_slope_mib_per_min",
+          "value": 23.456510416666667,
+          "zscore": 94.70274304182091,
+          "direction": "high"
+        },
+        {
+          "name": "restart_rate_per_min",
+          "value": 0.5,
+          "zscore": 8.134860568219873,
+          "direction": "high"
+        },
+        {
+          "name": "restart_delta",
+          "value": 1.0,
+          "zscore": 5.869799439039182,
+          "direction": "high"
+        },
+        {
+          "name": "restart_last",
+          "value": 1.0,
+          "zscore": 3.643348682039172,
+          "direction": "high"
+        },
+        {
+          "name": "mem_mean_mib",
+          "value": 27.265625,
+          "zscore": -3.104956373816653,
+          "direction": "low"
+        }
+      ],
+      "series": [
+        {
+          "ts": 1794592035.0,
+          "cpu": 0.0,
+          "memory_mib": 2.25,
+          "mem_to_limit_ratio": 0.0352,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794592050.0,
+          "cpu": 0.0028,
+          "memory_mib": 7.48,
+          "mem_to_limit_ratio": 0.1169,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794592065.0,
+          "cpu": 0.0057,
+          "memory_mib": 18.5,
+          "mem_to_limit_ratio": 0.2891,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794592080.0,
+          "cpu": 0.0093,
+          "memory_mib": 24.512,
+          "mem_to_limit_ratio": 0.383,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794592095.0,
+          "cpu": 0.0096,
+          "memory_mib": 26.75,
+          "mem_to_limit_ratio": 0.418,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1794592110.0,
+          "cpu": 0.0119,
+          "memory_mib": 33.961,
+          "mem_to_limit_ratio": 0.5306,
+          "restarts": 1.0
+        },
+        {
+          "ts": 1794592125.0,
+          "cpu": 0.0137,
+          "memory_mib": 33.961,
+          "mem_to_limit_ratio": 0.5306,
+          "restarts": 1.0
+        },
+        {
+          "ts": 1794592140.0,
+          "cpu": 0.0182,
+          "memory_mib": 48.988,
+          "mem_to_limit_ratio": 0.7654,
+          "restarts": 1.0
+        },
+        {
+          "ts": 1794592155.0,
+          "cpu": 0.0203,
+          "memory_mib": 48.988,
+          "mem_to_limit_ratio": 0.7654,
+          "restarts": 1.0
+        }
+      ],
+      "warning": null
+    },
+    "anomaly_unavailable": false
+  },
+  "propose_input": {
+    "deployment": {
+      "namespace": "kc-eval-16",
+      "name": "ingest",
+      "replicas": 1,
+      "ready": 1,
+      "available": 1,
+      "updated": 1,
+      "generation": 1,
+      "observed_generation": 1,
+      "revision": 1,
+      "previous_revision": null,
+      "summary": {
+        "replicas": 1,
+        "revision": 1,
+        "template": {
+          "annotations": {},
+          "containers": [
+            {
+              "name": "ingest",
+              "image": "busybox:1.36",
+              "command": [
+                "sh",
+                "-c",
+                "echo \"$(date -Iseconds) INFO ingest worker started\"; x=\"\"; i=0; while true; do i=$((i+1)); x=\"$x$(head -c 1m /dev/zero | tr '\\0' a)\"; echo \"$(date -Iseconds) INFO processed batch $i\"; sleep 2; done"
+              ],
+              "args": null
+            }
+          ]
+        }
+      },
+      "previous_summary": null
+    },
+    "pod_state": {
+      "namespace": "kc-eval-16",
+      "name": "ingest-757b775ff4-bw5h9",
+      "controller_kind": "ReplicaSet",
+      "controller_name": "ingest-757b775ff4",
+      "deployment": "ingest",
+      "crashlooping": false,
+      "restart_count": 1,
+      "reason": null
+    },
+    "signals": [
+      "container_restarted pod=ingest-757b775ff4-bw5h9 +1 (OOMKilled)"
+    ]
+  }
+}

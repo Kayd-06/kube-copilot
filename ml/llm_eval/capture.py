@@ -4,6 +4,7 @@ Usage (cluster from `make cluster-up metrics-up chaos-up`, Prometheus on :9090):
 
     PYTHONPATH=.:backend python -m ml.llm_eval.capture                # every case
     PYTHONPATH=.:backend python -m ml.llm_eval.capture --only oom_first,healthy_web --keep
+    PYTHONPATH=.:backend python -m ml.llm_eval.capture --set heldout      # the held-out cases
 
 Each case gets its own namespace `kc-eval-NN` (label kube-copilot.io/eval=true),
 which is deleted afterwards unless --keep. The context is collected with the
@@ -32,8 +33,10 @@ os.environ.setdefault("QDRANT_URL", ":memory:")
 
 from ml.llm_eval.cases import CASES, Case  # noqa: E402
 
-FIXTURE_DIR = Path(__file__).resolve().parents[1] / "data" / "llm_eval" / "cases"
-SCHEMA_VERSION = 1
+DATA_DIR = Path(__file__).resolve().parents[1] / "data" / "llm_eval"
+# Schema 2 adds diagnose_input.usage, containers[].resources and the
+# Deployment's template_diff / template_refs.
+SCHEMA_VERSION = 2
 EVAL_LABEL = "kube-copilot.io/eval"
 log = logging.getLogger("capture")
 _print_lock = threading.Lock()
@@ -131,7 +134,7 @@ def capture_context(ns: str, pod_name: str, workload: str) -> dict:
     from app.actions.service import ActionService
     from app.deps import get_anomaly_scorer, get_k8s_client, get_lifecycle_detector, get_prometheus_client, get_settings
     from app.k8s_client import to_pod_summary
-    from app.main import _score_pod
+    from app.main import _pod_usage, _score_pod
 
     from ml.llm_eval.knowledge import retrieve
 
@@ -140,7 +143,8 @@ def capture_context(ns: str, pod_name: str, workload: str) -> dict:
     pod = to_pod_summary(raw)
     events = k8s.get_pod_events(ns, pod_name)
     logs = k8s.get_pod_logs(ns, pod_name, pod=raw)
-    retrieved = retrieve(pod, events, logs)
+    usage = _pod_usage(get_prometheus_client(), ns, pod_name)
+    retrieved = retrieve(pod, events, logs, usage)
     anomaly, anomaly_unavailable = _score_pod(
         get_anomaly_scorer(), get_prometheus_client(), ns, pod_name, get_lifecycle_detector()
     )
@@ -160,6 +164,7 @@ def capture_context(ns: str, pod_name: str, workload: str) -> dict:
             "knowledge_unavailable": retrieved.knowledge_unavailable,
             "anomaly": anomaly.model_dump(mode="json") if anomaly is not None else None,
             "anomaly_unavailable": anomaly_unavailable,
+            "usage": usage.model_dump(mode="json") if usage is not None else None,
         },
         "propose_input": {
             "deployment": dataclasses.asdict(deployment) if deployment is not None else None,
@@ -169,8 +174,8 @@ def capture_context(ns: str, pod_name: str, workload: str) -> dict:
     }
 
 
-def run_case(index: int, case: Case, keep: bool, out_dir: Path) -> dict:
-    ns = f"kc-eval-{index:02d}"
+def run_case(index: int, case: Case, keep: bool, out_dir: Path, prefix: str = "kc-eval") -> dict:
+    ns = f"{prefix}-{index:02d}"
     started = time.time()
     result = {"id": case.id, "namespace": ns, "ok": False}
     try:
@@ -217,12 +222,22 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--only", default="", help="Comma-separated case ids (default: all)")
     parser.add_argument("--parallel", type=int, default=8)
     parser.add_argument("--keep", action="store_true", help="Keep the kc-eval-* namespaces")
-    parser.add_argument("--out", type=Path, default=FIXTURE_DIR)
+    parser.add_argument("--set", choices=("main", "heldout"), default="main",
+                        help="main: cases.py (38 incidents); heldout: cases_heldout.py")
+    parser.add_argument("--out", type=Path, default=None,
+                        help="Default: ml/data/llm_eval/cases_v2 (main) or ml/data/llm_eval/heldout")
     parser.add_argument("--relabel", action="store_true",
                         help="Only rewrite the labels of existing fixtures from cases.py (no cluster access)")
     args = parser.parse_args(argv)
+    if args.set == "heldout":
+        from ml.llm_eval.cases_heldout import HELDOUT_CASES as cases
+        prefix = "kc-ho"
+    else:
+        cases, prefix = CASES, "kc-eval"
+    if args.out is None:
+        args.out = DATA_DIR / ("heldout" if args.set == "heldout" else "cases_v2")
     if args.relabel:
-        by_id = {c.id: c for c in CASES}
+        by_id = {c.id: c for c in cases}
         for path in sorted(args.out.glob("*.json")):
             data = json.loads(path.read_text())
             if data["id"] in by_id and data["labels"] != by_id[data["id"]].labels():
@@ -233,7 +248,7 @@ def main(argv: list[str] | None = None) -> int:
     logging.basicConfig(level=logging.WARNING)
 
     wanted = {s for s in args.only.split(",") if s}
-    indexed = [(i + 1, c) for i, c in enumerate(CASES) if not wanted or c.id in wanted]
+    indexed = [(i + 1, c) for i, c in enumerate(cases) if not wanted or c.id in wanted]
     if wanted - {c.id for _, c in indexed}:
         print(f"unknown case ids: {sorted(wanted - {c.id for _, c in indexed})}", file=sys.stderr)
         return 2
@@ -241,7 +256,7 @@ def main(argv: list[str] | None = None) -> int:
 
     get_retriever()  # build the index once, before the threads start
     with ThreadPoolExecutor(max_workers=args.parallel) as pool:
-        results = list(pool.map(lambda ic: run_case(ic[0], ic[1], args.keep, args.out), indexed))
+        results = list(pool.map(lambda ic: run_case(ic[0], ic[1], args.keep, args.out, prefix), indexed))
     failed = [r for r in results if not r["ok"]]
     print(f"\ncaptured {len(results) - len(failed)}/{len(results)} cases into {args.out}")
     for r in failed:

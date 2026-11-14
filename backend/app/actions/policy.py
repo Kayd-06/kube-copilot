@@ -83,6 +83,10 @@ class DeploymentState:
     previous_revision: int | None = None
     summary: dict[str, Any] = field(default_factory=dict)
     previous_summary: dict[str, Any] | None = None
+    # Field-level pod-template diff previous -> current revision (None: no previous revision / not captured).
+    template_diff: list[str] | None = None
+    # ConfigMaps/Secrets/PVCs the current template references.
+    template_refs: dict[str, list[str]] | None = None
 
 
 @dataclass(frozen=True)

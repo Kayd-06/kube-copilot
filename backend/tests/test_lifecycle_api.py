@@ -107,8 +107,9 @@ def test_prompt_lists_lifecycle_signals(sample_pod, sample_events, sample_logs):
     result = ScoreResult("chaos-lab", POD, 0.2, False, 0.5, -0.1, points=_points())
     anomaly = to_anomaly_score(result, [_kill_signal()])
     prompt = build_user_prompt(sample_pod, sample_events, sample_logs, [], anomaly)
-    assert "flagged_as_anomaly: false" in prompt
-    assert "Lifecycle detector" in prompt
+    assert "flagged: false" in prompt
+    assert "Workload lifecycle signals" in prompt
+    assert "disruption signals present: Killing" in prompt
     assert "event:Killing pod=victim-kill-6cbc746867-fxnbp Stopping container web" in prompt
 
 

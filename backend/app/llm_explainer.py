@@ -11,20 +11,60 @@ from dataclasses import dataclass
 from openai import APIError, OpenAI, OpenAIError
 
 from app.config import Settings, get_settings
-from app.models import AnomalyScore, Diagnosis, PodEvent, PodLogs, PodSummary
+from app.logcompact import compact_logs
+from app.models import AnomalyScore, Diagnosis, PodEvent, PodLogs, PodSummary, PodUsage
 from app.rag.retriever import RetrievedChunk
 
 logger = logging.getLogger(__name__)
 
+# Per-log character budget (~1K tokens each). Keeps a diagnose under Groq's
+# 8K tokens-per-minute free tier even with chatty logs.
+LOG_BUDGET_CHARS = 3000
+THROTTLED_HIGH = 0.25
+# Lifecycle signal kinds (ml/lifecycle.py, "event:" prefix dropped) that mean a pod was stopped or replaced
+# from outside, as opposed to crash signals like BackOff / container_restarted.
+DISRUPTIVE_SIGNALS = frozenset({
+    "Killing", "pod_replaced", "pod_vanished", "Evicted", "Preempting", "TaintManagerEviction",
+    "replicas_unavailable", "SuccessfulDelete", "SuccessfulCreate", "NodeNotReady",
+})
+# Precision of the metrics-only Isolation Forest on the held-out chaos run (ml/reports/lifecycle_metrics.md).
+ANOMALY_CAVEAT = (
+    "weak evidence: this model is not calibrated and also flags healthy pods (only about half of its "
+    "alerts were real on a held-out chaos run). Do not use it as a root cause unless other evidence agrees."
+)
+
 SYSTEM_PROMPT = """You are a senior Kubernetes SRE helping diagnose a failing pod.
 
-You will receive the pod's status, recent cluster events, and container logs.
-You may also receive retrieved runbooks, past incidents, and an anomaly score
-computed from recent Prometheus metrics (CPU, memory, restarts, network).
-Use those when they clearly match the evidence; do not invent facts that are
-not supported by the evidence or the retrieved knowledge. A flagged anomaly
-can be an early warning (for example a memory leak that has not yet been
-OOMKilled) — mention it when it is relevant.
+You will receive the pod's status (including each container's resource requests
+and limits), recent cluster events, container logs, and possibly: resource usage
+from Prometheus (CPU use, CPU throttling, memory vs limits), lifecycle signals
+for the pod's workload (from Kubernetes events and ReplicaSet state), retrieved
+runbooks and past incidents, and an anomaly score from a metrics model.
+
+How to weigh the evidence:
+1. Pod status, container states and exit codes, events and logs are the primary
+   evidence. Do not invent facts that are not supported by the evidence or the
+   retrieved knowledge.
+2. Workload lifecycle signals are factual. If they show pods of this workload
+   being killed, deleted, evicted or replaced (with no rollout or scale-up
+   explaining it) while the pod you are looking at is itself healthy, the root
+   cause is a pod disruption: something external killed or removed a pod (chaos
+   testing, a node drain, eviction or a manual delete) and the ReplicaSet
+   replaced it. Say so explicitly and name the replaced pod.
+3. Resource usage: compare usage with the requests and limits. A container
+   throttled in a large share of its CFS periods (roughly 25% or more) is
+   CPU-throttled: its CPU limit is too low for its load, even when nothing
+   crashes, the logs look normal and the averaged CPU use looks below the limit
+   (throttling happens in 100 ms bursts).
+4. The anomaly score is weak, uncalibrated evidence: the model also flags many
+   healthy pods. Never name a root cause from the anomaly score alone; it needs
+   corroboration from status, events, logs, lifecycle signals or resource usage.
+   If the pod is Running/Ready (or Succeeded), has no restarts, no warning events,
+   no errors in its logs and no disruption or throttling, conclude that it is
+   healthy and the anomaly flag is most likely a false positive.
+5. Log warnings on a Ready pod with no restarts are usually routine (retries
+   that succeed, cache stats). Only treat them as the root cause when they show
+   real failures that match the pod's state.
 
 Respond with a single JSON object (no markdown fences) with exactly these keys:
 - "summary": two or three sentences describing what is happening to the pod.
@@ -119,12 +159,62 @@ def fallback_diagnosis(raw_text: str, pod: PodSummary) -> Diagnosis:
     )
 
 
+def _usage_lines(usage: PodUsage | None) -> list[str]:
+    if usage is None or not usage.containers:
+        return []
+    out = [f"Resource usage (Prometheus, last {usage.window}):"]
+    for c in usage.containers:
+        bits = []
+        if c.cpu_cores is not None:
+            cpu = f"cpu {c.cpu_cores:.3f} cores"
+            if c.cpu_limit_cores:
+                cpu += f" of a {c.cpu_limit_cores:.3f}-core limit ({100 * c.cpu_cores / c.cpu_limit_cores:.0f}% of limit)"
+            elif c.cpu_request_cores:
+                cpu += f" (request {c.cpu_request_cores:.3f}, no CPU limit)"
+            else:
+                cpu += " (no CPU limit)"
+            bits.append(cpu)
+        if c.cpu_throttled_ratio is not None:
+            flag = " HIGH" if c.cpu_throttled_ratio >= THROTTLED_HIGH else ""
+            bits.append(f"CPU-throttled in {100 * c.cpu_throttled_ratio:.0f}% of CFS periods{flag}")
+        if c.memory_mib is not None:
+            mem = f"memory {c.memory_mib:.1f} MiB"
+            if c.memory_limit_mib:
+                mem += f" of {c.memory_limit_mib:.0f} MiB limit"
+            bits.append(mem)
+        out.append(f"- {c.name}: " + "; ".join(bits))
+    return out
+
+
+def _lifecycle_lines(anomaly: AnomalyScore | None) -> list[str]:
+    signals = anomaly.lifecycle_signals if anomaly is not None else []
+    if not signals:
+        return []
+    counts: dict[str, int] = {}
+    for sig in signals:
+        key = sig.kind.removeprefix("event:")
+        counts[key] = counts.get(key, 0) + 1
+    hit = sorted(k for k in counts if k in DISRUPTIVE_SIGNALS)
+    out = [
+        f"Workload lifecycle signals for {signals[0].workload} (Kubernetes events and ReplicaSet state; "
+        "factual, most recent last):",
+        "- counts: " + ", ".join(f"{k} x{n}" for k, n in sorted(counts.items(), key=lambda kv: -kv[1])),
+    ]
+    if hit:
+        out.append(f"- disruption signals present: {', '.join(hit)} (pods of this workload were stopped/replaced)")
+    for sig in signals:
+        pod = f" pod={sig.pod}" if sig.pod else ""
+        out.append(f"- {sig.at.isoformat()} {sig.kind}{pod} {sig.detail}".rstrip())
+    return out
+
+
 def build_user_prompt(
     pod: PodSummary,
     events: list[PodEvent],
     logs: PodLogs,
     retrieved: list[RetrievedChunk] | None = None,
     anomaly: AnomalyScore | None = None,
+    usage: PodUsage | None = None,
 ) -> str:
     containers = []
     for c in pod.containers:
@@ -137,6 +227,8 @@ def build_user_prompt(
             "message": c.message,
             "exit_code": c.exit_code,
         }
+        if c.resources:
+            entry["resources"] = c.resources
         containers.append(entry)
 
     event_lines = []
@@ -146,8 +238,10 @@ def build_user_prompt(
             f"- [{ev.type}] {ev.reason} x{ev.count} @ {ts}: {ev.message}"
         )
 
-    current_logs = logs.current or "(no current logs)"
-    previous_logs = logs.previous if logs.previous is not None else "(not fetched — no restarts)"
+    current_logs = compact_logs(logs.current, LOG_BUDGET_CHARS) or "(no current logs)"
+    previous_logs = (
+        compact_logs(logs.previous, LOG_BUDGET_CHARS) if logs.previous is not None else "(not fetched — no restarts)"
+    )
 
     parts = [
         f"Pod: {pod.namespace}/{pod.name}",
@@ -161,6 +255,14 @@ def build_user_prompt(
         "Containers:",
         json.dumps(containers, indent=2),
         "",
+    ]
+    usage_part = _usage_lines(usage)
+    if usage_part:
+        parts += usage_part + [""]
+    lifecycle_part = _lifecycle_lines(anomaly)
+    if lifecycle_part:
+        parts += lifecycle_part + [""]
+    parts += [
         "Recent events (oldest first):",
         "\n".join(event_lines) if event_lines else "(no events found)",
         "",
@@ -184,30 +286,19 @@ def build_user_prompt(
             parts.append(chunk.text)
             parts.append("")
     if anomaly is not None:
-        parts.append("Anomaly detector (Isolation Forest on recent Prometheus metrics):")
-        parts.append(
-            f"- score: {anomaly.score:.3f} (0.5 is the decision boundary; higher is more anomalous)"
-        )
+        parts.append(f"Anomaly detector (Isolation Forest on recent Prometheus metrics) — {ANOMALY_CAVEAT}")
         metric_flag = anomaly.is_anomaly if anomaly.metric_anomaly is None else anomaly.metric_anomaly
-        parts.append(f"- flagged_as_anomaly: {str(metric_flag).lower()}")
+        parts.append(
+            f"- score: {anomaly.score:.3f} (0.5 is the decision boundary); flagged: {str(metric_flag).lower()}"
+        )
         if anomaly.contributing_features:
-            parts.append("- contributing features (z-score vs the healthy training distribution):")
-            for feat in anomaly.contributing_features:
-                parts.append(
-                    f"  - {feat.name}: {feat.value:.3f} ({feat.direction}, z={feat.zscore:.2f})"
-                )
+            feats = ", ".join(
+                f"{f.name}={f.value:.3f} ({f.direction}, z={f.zscore:.1f})" for f in anomaly.contributing_features
+            )
+            parts.append(f"- top features vs the healthy training data: {feats}")
         if anomaly.warning:
             parts.append(f"- warning: {anomaly.warning}")
         parts.append("")
-        if anomaly.lifecycle_signals:
-            parts.append(
-                "Lifecycle detector (Kubernetes events, pod replacements, replica counts, restarts "
-                f"for workload {anomaly.lifecycle_signals[0].workload}, recent first):"
-            )
-            for sig in reversed(anomaly.lifecycle_signals):
-                pod = f" pod={sig.pod}" if sig.pod else ""
-                parts.append(f"- {sig.at.isoformat()} {sig.kind}{pod} {sig.detail}".rstrip())
-            parts.append("")
     return "\n".join(parts)
 
 
@@ -259,8 +350,9 @@ class LLMExplainer:
         logs: PodLogs,
         retrieved: list[RetrievedChunk] | None = None,
         anomaly: AnomalyScore | None = None,
+        usage: PodUsage | None = None,
     ) -> Diagnosis:
-        return self.explain_detailed(pod, events, logs, retrieved, anomaly).diagnosis
+        return self.explain_detailed(pod, events, logs, retrieved, anomaly, usage).diagnosis
 
     def explain_detailed(
         self,
@@ -269,11 +361,12 @@ class LLMExplainer:
         logs: PodLogs,
         retrieved: list[RetrievedChunk] | None = None,
         anomaly: AnomalyScore | None = None,
+        usage: PodUsage | None = None,
     ) -> DiagnosisRun:
         """Like explain(), but also returns the raw text, parse status and token usage (used by evals)."""
         messages = [
             {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": build_user_prompt(pod, events, logs, retrieved, anomaly)},
+            {"role": "user", "content": build_user_prompt(pod, events, logs, retrieved, anomaly, usage)},
         ]
         client = self._get_client()
         try:
@@ -296,9 +389,9 @@ class LLMExplainer:
         text = ""
         if response.choices:
             text = response.choices[0].message.content or ""
-        usage = getattr(response, "usage", None)
-        prompt_tokens = getattr(usage, "prompt_tokens", None) if usage is not None else None
-        completion_tokens = getattr(usage, "completion_tokens", None) if usage is not None else None
+        token_usage = getattr(response, "usage", None)
+        prompt_tokens = getattr(token_usage, "prompt_tokens", None) if token_usage is not None else None
+        completion_tokens = getattr(token_usage, "completion_tokens", None) if token_usage is not None else None
         try:
             diagnosis, parsed = parse_diagnosis(text), True
         except (json.JSONDecodeError, ValueError, TypeError) as exc:
@@ -319,11 +412,12 @@ class LLMExplainer:
         logs: PodLogs,
         retrieved: list[RetrievedChunk] | None = None,
         anomaly: AnomalyScore | None = None,
+        usage: PodUsage | None = None,
     ) -> Iterator[str]:
         """Yield text chunks from the model, then the caller parses the full text."""
         messages = [
             {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": build_user_prompt(pod, events, logs, retrieved, anomaly)},
+            {"role": "user", "content": build_user_prompt(pod, events, logs, retrieved, anomaly, usage)},
         ]
         client = self._get_client()
         kwargs = self._create_kwargs(messages, stream=True)
@@ -356,7 +450,8 @@ class LLMExplainer:
         logs: PodLogs,
         retrieved: list[RetrievedChunk] | None = None,
         anomaly: AnomalyScore | None = None,
+        usage: PodUsage | None = None,
     ) -> AsyncIterator[str]:
         # The official OpenAI SDK streaming iterator is sync; wrap it for SSE.
-        for piece in self.explain_stream(pod, events, logs, retrieved, anomaly):
+        for piece in self.explain_stream(pod, events, logs, retrieved, anomaly, usage):
             yield piece

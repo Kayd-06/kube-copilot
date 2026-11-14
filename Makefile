@@ -7,7 +7,7 @@
 	grafana-up grafana-forward chaos-up chaos-run chaos-stop chaos-down \
 	collect collect-dry-run train-real eval-lifecycle \
 	actions-demo-up backend-dev-actions actions-e2e \
-	eval eval-ablations eval-dry-run eval-capture eval-judge help
+	eval eval-ablations eval-dry-run eval-capture eval-judge eval-heldout eval-capture-heldout eval-compare help
 
 KIND_CLUSTER ?= kube-copilot
 IMAGE_TAG ?= dev
@@ -62,6 +62,9 @@ help:
 	@echo "  eval-dry-run     No API calls: check fixtures, prompt sizes and model-free baselines"
 	@echo "  eval-capture     Re-create the incidents on kind and refresh ml/data/llm_eval/cases (ONLY=id1,id2)"
 	@echo "  eval-judge       Optional LLM judge + agreement with the hand checks (RESULTS=..., JUDGE_MODEL=...)"
+	@echo "  eval-heldout     Score the 12 held-out incidents (ml/data/llm_eval/heldout)"
+	@echo "  eval-capture-heldout  Re-create the held-out incidents on kind"
+	@echo "  eval-compare     Before/after table for the default model (v1 vs v2 reports + hand checks)"
 
 cluster-up:
 	kind create cluster --config demo/kind-config.yaml
@@ -273,6 +276,17 @@ eval-dry-run:
 ONLY ?=
 eval-capture:
 	PYTHONPATH=.:backend $(ROOT_PY) -m ml.llm_eval.capture $(if $(ONLY),--only $(ONLY),)
+
+eval-heldout:
+	PYTHONPATH=.:backend $(ROOT_PY) -m ml.llm_eval.run $(EVAL_MODEL_ARG) --fixtures ml/data/llm_eval/heldout --out-dir ml/reports/llm_eval/heldout $(EVAL_ARGS)
+
+eval-capture-heldout:
+	PYTHONPATH=.:backend $(ROOT_PY) -m ml.llm_eval.capture --set heldout
+
+eval-compare:
+	PYTHONPATH=.:backend $(ROOT_PY) -m ml.llm_eval.compare \
+		--before ml/reports/llm_eval/openai_gpt-oss-120b.json --before-hand ml/data/llm_eval/hand_checks.json \
+		--after ml/reports/llm_eval/v2/openai_gpt-oss-120b.json --after-hand ml/data/llm_eval/hand_checks_v2.json
 
 RESULTS ?= ml/reports/llm_eval/openai_gpt-oss-120b.json
 JUDGE_MODEL ?= openai/gpt-oss-20b

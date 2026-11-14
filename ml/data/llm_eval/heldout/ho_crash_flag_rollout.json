@@ -1,0 +1,263 @@
+{
+  "schema_version": 2,
+  "id": "ho_crash_flag_rollout",
+  "title": "Rollout passes a flag the new binary rejects",
+  "labels": {
+    "category": "app_crash",
+    "expected_actions": [
+      "rollback_deployment"
+    ],
+    "expected_runbooks": [
+      "crashloopbackoff.md"
+    ],
+    "difficulty": "easy",
+    "fault": "Deployment updated to a command that exits 64 with 'unknown flag: --worker-threads'.",
+    "notes": ""
+  },
+  "namespace": "kc-ho-02",
+  "workload": "router",
+  "pod_name": "router-7478c6cc8c-zrf9h",
+  "captured_at": "2026-11-14T08:32:50+00:00",
+  "cluster": "kind kube-copilot (single node, Kubernetes v1.32.2)",
+  "diagnose_input": {
+    "pod": {
+      "name": "router-7478c6cc8c-zrf9h",
+      "namespace": "kc-ho-02",
+      "phase": "Running",
+      "reason": "Error",
+      "message": null,
+      "restart_count": 4,
+      "ready": false,
+      "created_at": "2026-11-14T08:31:19Z",
+      "node": "kube-copilot-control-plane",
+      "qos_class": "Burstable",
+      "containers": [
+        {
+          "name": "router",
+          "ready": false,
+          "restart_count": 4,
+          "state": "terminated",
+          "reason": "Error",
+          "message": null,
+          "exit_code": 64,
+          "resources": {
+            "requests": {
+              "cpu": "10m",
+              "memory": "16Mi"
+            },
+            "limits": {
+              "memory": "64Mi"
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "type": "Normal",
+        "reason": "Scheduled",
+        "message": "Successfully assigned kc-ho-02/router-7478c6cc8c-zrf9h to kube-copilot-control-plane",
+        "count": 1,
+        "first_timestamp": "2026-11-14T08:31:19Z",
+        "last_timestamp": "2026-11-14T08:31:19Z",
+        "source": "default-scheduler"
+      },
+      {
+        "type": "Normal",
+        "reason": "Pulled",
+        "message": "Container image \"busybox:1.36\" already present on machine",
+        "count": 5,
+        "first_timestamp": "2026-11-14T08:31:20Z",
+        "last_timestamp": "2026-11-14T08:32:41Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Created",
+        "message": "Created container: router",
+        "count": 5,
+        "first_timestamp": "2026-11-14T08:31:20Z",
+        "last_timestamp": "2026-11-14T08:32:41Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Started",
+        "message": "Started container router",
+        "count": 5,
+        "first_timestamp": "2026-11-14T08:31:20Z",
+        "last_timestamp": "2026-11-14T08:32:41Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Warning",
+        "reason": "BackOff",
+        "message": "Back-off restarting failed container router in pod router-7478c6cc8c-zrf9h_kc-ho-02(b26527d5-688c-4790-bd02-ba4df419fd01)",
+        "count": 7,
+        "first_timestamp": "2026-11-14T08:31:21Z",
+        "last_timestamp": "2026-11-14T08:32:42Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      }
+    ],
+    "logs": {
+      "current": "2026-11-14T08:32:41.929195068Z error: unknown flag: --worker-threads\n2026-11-14T08:32:41.929208368Z router v3.0.0\n2026-11-14T08:32:41.929210533Z usage: router [--port N] [--log-format json|text]\n",
+      "previous": "unable to retrieve container logs for containerd://dbd35e9f73f1b423adf37bdcf67f2fd413896bb0840af6cc94cf41d3b3beeb94",
+      "container": "router"
+    },
+    "retrieval_query": "Running Error Error exit code 64 Scheduled Successfully assigned kc-ho-02/router-7478c6cc8c-zrf9h to kube-copilot-control-plane Pulled Container image \"busybox:1.36\" already present on machine Created Created container: router Started Started container router BackOff Back-off restarting failed container router in pod router-7478c6cc8c-zrf9h_kc-ho-02(b26527d5-688c-4790-bd02-ba4df419fd01) unable to retrieve container logs for containerd://dbd35e9f73f1b423adf37bdcf67f2fd413896bb0840af6cc94cf41d3b3beeb94 2026-11-14T08:32:41.929195068Z error: unknown flag: --worker-threads 2026-11-14T08:32:41.929208368Z router v3.0.0 2026-11-14T08:32:41.929210533Z usage: router [--port N] [--log-format json|text]",
+    "retrieved": [
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Read the last termination reason and exit code:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get pod <pod> -n <ns> -o jsonpath='{range .status.containerStatuses[*]}{.name}{\" \"}{.state}{\" \"}{.lastState.terminated}{\"\\n\"}{end}'\n   ```\n\n2. Always fetch previous logs if `restartCount > 0`:\n\n   ```bash\n   kubectl logs <pod> -n <ns> --previous --tail=200\n   kubectl logs <pod> -n <ns> --tail=200\n   ```\n\n3. Confirm the command that actually ran (`command` / `args` in the pod spec) and whether the image entrypoint expects different arguments.\n4. If logs mention a missing file, env var, or connection refused, inspect the related ConfigMap, Secret, and Service.",
+        "score": 0.7694856467155864,
+        "kind": "runbook"
+      },
+      {
+        "title": "CreateContainerError",
+        "source": "create-container-error.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- Pod is `Waiting` with reason `CreateContainerError`.\n- Events include `Failed` from the kubelet with a runtime error (device mapper, `no space left on device`, seccomp / AppArmor / SELinux denial, invalid capability, or a missing device plugin).\n- The image has often already been pulled (`ImagePullBackOff` is not the current reason).\n- Application logs are typically unavailable because the container never started.",
+        "score": 0.7691612342938111,
+        "kind": "runbook"
+      },
+      {
+        "title": "CreateContainerConfigError",
+        "source": "create-container-config-error.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- Pod is `Pending` or `Waiting` with reason `CreateContainerConfigError`.\n- Events include `Failed` with a message such as `Error: secret \"...\" not found`, `couldn't find key ... in ConfigMap ...`, or `configmap \"...\" not found`.\n- Restart count is usually zero. `kubectl logs` will fail or return an \"unavailable\" message.",
+        "score": 0.7648458583651386,
+        "kind": "runbook"
+      },
+      {
+        "title": "DNS issues inside the cluster",
+        "source": "dns-issues.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- Application logs show `unknown host`, `Name or service not known`, `no such host`, `i/o timeout` talking to a Service name, or repeated reconnects to a hostname that should exist.\n- `nslookup` / `getent hosts` / `dig` from a debug container fail for `kubernetes.default` or for the target Service.\n- CoreDNS pods in `kube-system` may be crash-looping, pending, or not ready. Nodes may show `NetworkUnavailable`.\n- Traffic to raw ClusterIPs or pod IPs still works, which is a strong hint the problem is name resolution, not the network path itself.",
+        "score": 0.7621870970355002,
+        "kind": "runbook"
+      },
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- `kubectl get pods` shows `STATUS` as `CrashLoopBackOff` or `Error` with a climbing restart count.\n- The pod phase may still be `Running` because a container is mid-backoff, not because the app is healthy.\n- Current logs are often empty or just a short \"waiting\" message. The useful signal is usually in the **previous** container logs (`kubectl logs --previous`).\n- Events include `BackOff`, `Failed`, or `Unhealthy` from the kubelet.",
+        "score": 0.7580763093581561,
+        "kind": "runbook"
+      }
+    ],
+    "knowledge_unavailable": false,
+    "anomaly": {
+      "namespace": "kc-ho-02",
+      "name": "router-7478c6cc8c-zrf9h",
+      "score": 0.0,
+      "is_anomaly": true,
+      "threshold": 0.013067,
+      "metric_anomaly": false,
+      "detectors": [
+        "lifecycle"
+      ],
+      "lifecycle_signals": [
+        {
+          "kind": "container_restarted",
+          "at": "2026-11-14T08:31:58Z",
+          "workload": "router",
+          "pod": "router-7478c6cc8c-zrf9h",
+          "detail": "+1 (Error)"
+        },
+        {
+          "kind": "event:BackOff",
+          "at": "2026-11-14T08:32:42Z",
+          "workload": "router",
+          "pod": "router-7478c6cc8c-zrf9h",
+          "detail": "Back-off restarting failed container router in pod router-7478c6cc8c-zrf9h_kc-ho-02(b26527d5-688c-4790-bd02-ba4df419fd01"
+        }
+      ],
+      "contributing_features": [],
+      "series": [],
+      "warning": "Insufficient metric history for kc-ho-02/router-7478c6cc8c-zrf9h (0 sample(s); need at least 3)."
+    },
+    "anomaly_unavailable": false,
+    "usage": {
+      "containers": [
+        {
+          "name": "router",
+          "cpu_cores": null,
+          "cpu_limit_cores": null,
+          "cpu_request_cores": 0.01,
+          "cpu_throttled_ratio": null,
+          "memory_mib": null,
+          "memory_limit_mib": 64.0
+        }
+      ],
+      "window": "5m"
+    }
+  },
+  "propose_input": {
+    "deployment": {
+      "namespace": "kc-ho-02",
+      "name": "router",
+      "replicas": 1,
+      "ready": 1,
+      "available": 1,
+      "updated": 1,
+      "generation": 2,
+      "observed_generation": 2,
+      "revision": 2,
+      "previous_revision": 1,
+      "summary": {
+        "replicas": 1,
+        "revision": 2,
+        "template": {
+          "annotations": {},
+          "containers": [
+            {
+              "name": "router",
+              "image": "busybox:1.36",
+              "command": [
+                "sh",
+                "-c",
+                "echo \"router v3.0.0\"; echo \"error: unknown flag: --worker-threads\" >&2; echo \"usage: router [--port N] [--log-format json|text]\" >&2; exit 64"
+              ],
+              "args": null
+            }
+          ]
+        }
+      },
+      "previous_summary": {
+        "annotations": {},
+        "containers": [
+          {
+            "name": "router",
+            "image": "busybox:1.36",
+            "command": [
+              "sh",
+              "-c",
+              "echo \"$(date -Iseconds) INFO starting router v1.4.2\"; echo \"$(date -Iseconds) INFO listening on :8080\"; while true; do echo \"$(date -Iseconds) INFO handled request path=/api/v1/items status=200 latency_ms=$((RANDOM%40+5))\"; sleep 3; done"
+            ],
+            "args": null
+          }
+        ]
+      },
+      "template_diff": [
+        "~ spec.containers[router].command: [\"sh\",\"-c\",\"echo \\\"$(date -Iseconds) INFO starting router v1.4.2\\\"; echo \\\"$(date -Iseconds) INFO listening on :8080\\\"; while true; do echo \\\"$(date -Iseconds)\u2026 -> [\"sh\",\"-c\",\"echo \\\"router v3.0.0\\\"; echo \\\"error: unknown flag: --worker-threads\\\" >&2; echo \\\"usage: router [--port N] [--log-format json|text]\\\" >&2; exit 64\u2026"
+      ],
+      "template_refs": {}
+    },
+    "pod_state": {
+      "namespace": "kc-ho-02",
+      "name": "router-7478c6cc8c-zrf9h",
+      "controller_kind": "ReplicaSet",
+      "controller_name": "router-7478c6cc8c",
+      "deployment": "router",
+      "crashlooping": true,
+      "restart_count": 4,
+      "reason": "repeated restarts"
+    },
+    "signals": [
+      "container_restarted pod=router-7478c6cc8c-zrf9h +1 (Error)",
+      "event:BackOff pod=router-7478c6cc8c-zrf9h Back-off restarting failed container router in pod router-7478c6cc8c-zrf9h_kc-ho-02(b26527d5-688c-4790-bd02-ba4df419fd01"
+    ]
+  }
+}

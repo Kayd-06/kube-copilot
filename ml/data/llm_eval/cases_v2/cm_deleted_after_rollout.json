@@ -1,0 +1,241 @@
+{
+  "schema_version": 2,
+  "id": "cm_deleted_after_rollout",
+  "title": "Shared ConfigMap deleted after a healthy rollout, then scaled up",
+  "labels": {
+    "category": "missing_config",
+    "expected_actions": [
+      "no_action"
+    ],
+    "expected_runbooks": [
+      "create-container-config-error.md"
+    ],
+    "difficulty": "hard",
+    "fault": "Both revisions use ConfigMap pricing-config. After a healthy rollout someone deleted it; the new replica from a scale-up fails with CreateContainerConfigError. Rolling back would not help.",
+    "notes": "Previous revision exists, so 'rollback whenever you can' is wrong here."
+  },
+  "namespace": "kc-eval-32",
+  "workload": "pricing",
+  "pod_name": "pricing-6c79ccf64-w7xpp",
+  "captured_at": "2026-11-14T08:26:34+00:00",
+  "cluster": "kind kube-copilot (single node, Kubernetes v1.32.2)",
+  "diagnose_input": {
+    "pod": {
+      "name": "pricing-6c79ccf64-w7xpp",
+      "namespace": "kc-eval-32",
+      "phase": "Pending",
+      "reason": "CreateContainerConfigError",
+      "message": "configmap \"pricing-config\" not found",
+      "restart_count": 0,
+      "ready": false,
+      "created_at": "2026-11-14T08:25:16Z",
+      "node": "kube-copilot-control-plane",
+      "qos_class": "Burstable",
+      "containers": [
+        {
+          "name": "pricing",
+          "ready": false,
+          "restart_count": 0,
+          "state": "waiting",
+          "reason": "CreateContainerConfigError",
+          "message": "configmap \"pricing-config\" not found",
+          "exit_code": null,
+          "resources": {
+            "requests": {
+              "cpu": "10m",
+              "memory": "16Mi"
+            },
+            "limits": {
+              "memory": "64Mi"
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "type": "Normal",
+        "reason": "Scheduled",
+        "message": "Successfully assigned kc-eval-32/pricing-6c79ccf64-w7xpp to kube-copilot-control-plane",
+        "count": 1,
+        "first_timestamp": "2026-11-14T08:25:16Z",
+        "last_timestamp": "2026-11-14T08:25:16Z",
+        "source": "default-scheduler"
+      },
+      {
+        "type": "Normal",
+        "reason": "Pulled",
+        "message": "Container image \"busybox:1.36\" already present on machine",
+        "count": 8,
+        "first_timestamp": "2026-11-14T08:25:17Z",
+        "last_timestamp": "2026-11-14T08:26:28Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Warning",
+        "reason": "Failed",
+        "message": "Error: configmap \"pricing-config\" not found",
+        "count": 8,
+        "first_timestamp": "2026-11-14T08:25:17Z",
+        "last_timestamp": "2026-11-14T08:26:28Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      }
+    ],
+    "logs": {
+      "current": "(logs unavailable: Bad Request)",
+      "previous": null,
+      "container": "pricing"
+    },
+    "retrieval_query": "Pending CreateContainerConfigError configmap \"pricing-config\" not found CreateContainerConfigError configmap \"pricing-config\" not found Scheduled Successfully assigned kc-eval-32/pricing-6c79ccf64-w7xpp to kube-copilot-control-plane Pulled Container image \"busybox:1.36\" already present on machine Failed Error: configmap \"pricing-config\" not found",
+    "retrieved": [
+      {
+        "title": "CreateContainerConfigError",
+        "source": "create-container-config-error.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- Pod is `Pending` or `Waiting` with reason `CreateContainerConfigError`.\n- Events include `Failed` with a message such as `Error: secret \"...\" not found`, `couldn't find key ... in ConfigMap ...`, or `configmap \"...\" not found`.\n- Restart count is usually zero. `kubectl logs` will fail or return an \"unavailable\" message.",
+        "score": 0.7958920822502181,
+        "kind": "runbook"
+      },
+      {
+        "title": "CreateContainerConfigError",
+        "source": "create-container-config-error.md",
+        "section": "CreateContainerConfigError",
+        "text": "# CreateContainerConfigError\n\nThe kubelet refused to create the container because its configuration is invalid. This happens before the image even starts, so there are no application logs. The most common triggers are missing Secrets, ConfigMaps, or projected keys that the pod spec references.",
+        "score": 0.7737304951332611,
+        "kind": "runbook"
+      },
+      {
+        "title": "CreateContainerError",
+        "source": "create-container-error.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- Pod is `Waiting` with reason `CreateContainerError`.\n- Events include `Failed` from the kubelet with a runtime error (device mapper, `no space left on device`, seccomp / AppArmor / SELinux denial, invalid capability, or a missing device plugin).\n- The image has often already been pulled (`ImagePullBackOff` is not the current reason).\n- Application logs are typically unavailable because the container never started.",
+        "score": 0.7576457197959381,
+        "kind": "runbook"
+      },
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Fixes",
+        "text": "## Fixes\n\n- If the command is wrong (for example a demo container that ends in `exit 1`), correct `command`/`args` or the image entrypoint so the main process stays in the foreground.\n- If a config value is missing, add the env var or volume and roll the workload.\n- If a dependency is down, fix that service or make startup retry instead of exiting.\n- If a liveness probe is too aggressive, increase `initialDelaySeconds` / `failureThreshold` (see probe-failures).\n- After a fix, roll the deployment and confirm the restart count stops climbing:\n\n  ```bash\n  kubectl rollout status deploy/<name> -n <ns>\n  kubectl get pod <pod> -n <ns> --watch\n  ```",
+        "score": 0.7555894309445164,
+        "kind": "runbook"
+      },
+      {
+        "title": "FailedMount and volume mount errors",
+        "source": "failed-mount.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- Pod stays `Pending` or `ContainerCreating` for a long time.\n- Events include `FailedMount`, `FailedAttachVolume`, or `FailedMapVolume`, citing a PVC, Secret, ConfigMap, or projected volume.\n- `kubectl logs` is usually unavailable because the container has not been created.\n- Timeout messages such as `MountVolume.SetUp failed` or `timed out waiting for the condition` are common.",
+        "score": 0.7197098422449957,
+        "kind": "runbook"
+      }
+    ],
+    "knowledge_unavailable": false,
+    "anomaly": {
+      "namespace": "kc-eval-32",
+      "name": "pricing-6c79ccf64-w7xpp",
+      "score": 0.0,
+      "is_anomaly": true,
+      "threshold": 0.013067,
+      "metric_anomaly": false,
+      "detectors": [
+        "lifecycle"
+      ],
+      "lifecycle_signals": [
+        {
+          "kind": "event:Failed",
+          "at": "2026-11-14T08:26:28Z",
+          "workload": "pricing",
+          "pod": "pricing-6c79ccf64-w7xpp",
+          "detail": "Error: configmap \"pricing-config\" not found"
+        }
+      ],
+      "contributing_features": [],
+      "series": [],
+      "warning": "Insufficient metric history for kc-eval-32/pricing-6c79ccf64-w7xpp (0 sample(s); need at least 3)."
+    },
+    "anomaly_unavailable": false,
+    "usage": {
+      "containers": [
+        {
+          "name": "pricing",
+          "cpu_cores": null,
+          "cpu_limit_cores": null,
+          "cpu_request_cores": 0.01,
+          "cpu_throttled_ratio": null,
+          "memory_mib": null,
+          "memory_limit_mib": 64.0
+        }
+      ],
+      "window": "5m"
+    }
+  },
+  "propose_input": {
+    "deployment": {
+      "namespace": "kc-eval-32",
+      "name": "pricing",
+      "replicas": 2,
+      "ready": 1,
+      "available": 1,
+      "updated": 2,
+      "generation": 3,
+      "observed_generation": 3,
+      "revision": 2,
+      "previous_revision": 1,
+      "summary": {
+        "replicas": 2,
+        "revision": 2,
+        "template": {
+          "annotations": {},
+          "containers": [
+            {
+              "name": "pricing",
+              "image": "busybox:1.36",
+              "command": [
+                "sh",
+                "-c",
+                "case \"$LOG_LEVEL\" in debug|info|warn|error) ;; *) echo \"FATAL unknown log level \\\"$LOG_LEVEL\\\" (valid: debug, info, warn, error)\"; exit 1;; esac; echo \"$(date -Iseconds) INFO starting pricing v1.4.2\"; echo \"$(date -Iseconds) INFO listening on :8080\"; while true; do echo \"$(date -Iseconds) INFO handled request path=/api/v1/items status=200 latency_ms=$((RANDOM%40+5))\"; sleep 3; done"
+              ],
+              "args": null
+            }
+          ]
+        }
+      },
+      "previous_summary": {
+        "annotations": {},
+        "containers": [
+          {
+            "name": "pricing",
+            "image": "busybox:1.36",
+            "command": [
+              "sh",
+              "-c",
+              "case \"$LOG_LEVEL\" in debug|info|warn|error) ;; *) echo \"FATAL unknown log level \\\"$LOG_LEVEL\\\" (valid: debug, info, warn, error)\"; exit 1;; esac; echo \"$(date -Iseconds) INFO starting pricing v1.4.2\"; echo \"$(date -Iseconds) INFO listening on :8080\"; while true; do echo \"$(date -Iseconds) INFO handled request path=/api/v1/items status=200 latency_ms=$((RANDOM%40+5))\"; sleep 3; done"
+            ],
+            "args": null
+          }
+        ]
+      },
+      "template_diff": [
+        "+ spec.containers[pricing].env[APP_VERSION].value: \"1.5.0\""
+      ],
+      "template_refs": {
+        "configmaps": [
+          "pricing-config"
+        ]
+      }
+    },
+    "pod_state": {
+      "namespace": "kc-eval-32",
+      "name": "pricing-6c79ccf64-w7xpp",
+      "controller_kind": "ReplicaSet",
+      "controller_name": "pricing-6c79ccf64",
+      "deployment": "pricing",
+      "crashlooping": false,
+      "restart_count": 0,
+      "reason": null
+    },
+    "signals": [
+      "event:Failed pod=pricing-6c79ccf64-w7xpp Error: configmap \"pricing-config\" not found"
+    ]
+  }
+}

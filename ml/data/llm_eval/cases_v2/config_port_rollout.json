@@ -1,0 +1,263 @@
+{
+  "schema_version": 2,
+  "id": "config_port_rollout",
+  "title": "Rollout sets PORT to a non-numeric value",
+  "labels": {
+    "category": "bad_config_value",
+    "expected_actions": [
+      "rollback_deployment"
+    ],
+    "expected_runbooks": [
+      "crashloopbackoff.md"
+    ],
+    "difficulty": "easy",
+    "fault": "Deployment updated with env PORT=eighty; the app validates PORT and exits 2.",
+    "notes": ""
+  },
+  "namespace": "kc-eval-08",
+  "workload": "payments",
+  "pod_name": "payments-6d7bd7849-rldhh",
+  "captured_at": "2026-11-14T08:25:04+00:00",
+  "cluster": "kind kube-copilot (single node, Kubernetes v1.32.2)",
+  "diagnose_input": {
+    "pod": {
+      "name": "payments-6d7bd7849-rldhh",
+      "namespace": "kc-eval-08",
+      "phase": "Running",
+      "reason": "CrashLoopBackOff",
+      "message": "back-off 40s restarting failed container=payments pod=payments-6d7bd7849-rldhh_kc-eval-08(4132de30-06b0-4d51-b624-d351cb83b296)",
+      "restart_count": 3,
+      "ready": false,
+      "created_at": "2026-11-14T08:23:30Z",
+      "node": "kube-copilot-control-plane",
+      "qos_class": "Burstable",
+      "containers": [
+        {
+          "name": "payments",
+          "ready": false,
+          "restart_count": 3,
+          "state": "waiting",
+          "reason": "CrashLoopBackOff",
+          "message": "back-off 40s restarting failed container=payments pod=payments-6d7bd7849-rldhh_kc-eval-08(4132de30-06b0-4d51-b624-d351cb83b296)",
+          "exit_code": 2,
+          "resources": {
+            "requests": {
+              "cpu": "10m",
+              "memory": "16Mi"
+            },
+            "limits": {
+              "memory": "64Mi"
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "type": "Normal",
+        "reason": "Scheduled",
+        "message": "Successfully assigned kc-eval-08/payments-6d7bd7849-rldhh to kube-copilot-control-plane",
+        "count": 1,
+        "first_timestamp": "2026-11-14T08:23:30Z",
+        "last_timestamp": "2026-11-14T08:23:30Z",
+        "source": "default-scheduler"
+      },
+      {
+        "type": "Normal",
+        "reason": "Pulled",
+        "message": "Container image \"busybox:1.36\" already present on machine",
+        "count": 4,
+        "first_timestamp": "2026-11-14T08:23:30Z",
+        "last_timestamp": "2026-11-14T08:24:09Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Created",
+        "message": "Created container: payments",
+        "count": 4,
+        "first_timestamp": "2026-11-14T08:23:30Z",
+        "last_timestamp": "2026-11-14T08:24:09Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Started",
+        "message": "Started container payments",
+        "count": 4,
+        "first_timestamp": "2026-11-14T08:23:30Z",
+        "last_timestamp": "2026-11-14T08:24:09Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Warning",
+        "reason": "BackOff",
+        "message": "Back-off restarting failed container payments in pod payments-6d7bd7849-rldhh_kc-eval-08(4132de30-06b0-4d51-b624-d351cb83b296)",
+        "count": 7,
+        "first_timestamp": "2026-11-14T08:23:32Z",
+        "last_timestamp": "2026-11-14T08:24:49Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      }
+    ],
+    "logs": {
+      "current": "2026-11-14T08:24:09.222650961Z 2026-11-14T08:24:09+00:00 INFO payments starting\n2026-11-14T08:24:09.223603660Z 2026-11-14T08:24:09+00:00 FATAL invalid value for PORT: \"eighty\" (expected an integer 1-65535)\n",
+      "previous": "2026-11-14T08:24:09.222650961Z 2026-11-14T08:24:09+00:00 INFO payments starting\n2026-11-14T08:24:09.223603660Z 2026-11-14T08:24:09+00:00 FATAL invalid value for PORT: \"eighty\" (expected an integer 1-65535)\n",
+      "container": "payments"
+    },
+    "retrieval_query": "Running CrashLoopBackOff back-off 40s restarting failed container=payments pod=payments-6d7bd7849-rldhh_kc-eval-08(4132de30-06b0-4d51-b624-d351cb83b296) CrashLoopBackOff back-off 40s restarting failed container=payments pod=payments-6d7bd7849-rldhh_kc-eval-08(4132de30-06b0-4d51-b624-d351cb83b296) exit code 2 Scheduled Successfully assigned kc-eval-08/payments-6d7bd7849-rldhh to kube-copilot-control-plane Pulled Container image \"busybox:1.36\" already present on machine Created Created container: payments Started Started container payments BackOff Back-off restarting failed container payments in pod payments-6d7bd7849-rldhh_kc-eval-08(4132de30-06b0-4d51-b624-d351cb83b296) 2026-11-14T08:24:09.222650961Z 2026-11-14T08:24:09+00:00 INFO payments starting 2026-11-14T08:24:09.223603660Z 2026-11-14T08:24:09+00:00 FATAL invalid value for PORT: \"eighty\" (expected an integer 1-65535) 2026-11-14T08:24:09.222650961Z 2026-11-14T08:24:09+00:00 INFO payments starting 2026-11-14T08:24:09.223603660Z 2026-11-14T08:24:09+00:00 FATAL invalid value for PORT: \"eighty\" (expected an integer 1-65535)",
+    "retrieved": [
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- `kubectl get pods` shows `STATUS` as `CrashLoopBackOff` or `Error` with a climbing restart count.\n- The pod phase may still be `Running` because a container is mid-backoff, not because the app is healthy.\n- Current logs are often empty or just a short \"waiting\" message. The useful signal is usually in the **previous** container logs (`kubectl logs --previous`).\n- Events include `BackOff`, `Failed`, or `Unhealthy` from the kubelet.",
+        "score": 0.7794026296921011,
+        "kind": "runbook"
+      },
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "CrashLoopBackOff",
+        "text": "# CrashLoopBackOff\n\nA pod is in `CrashLoopBackOff` when Kubernetes has started the container repeatedly and it keeps exiting. The kubelet backs off between restarts, so the pod can sit in this state for a long time while the application itself only lives for a few seconds at a time.",
+        "score": 0.7753647470380309,
+        "kind": "runbook"
+      },
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Read the last termination reason and exit code:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get pod <pod> -n <ns> -o jsonpath='{range .status.containerStatuses[*]}{.name}{\" \"}{.state}{\" \"}{.lastState.terminated}{\"\\n\"}{end}'\n   ```\n\n2. Always fetch previous logs if `restartCount > 0`:\n\n   ```bash\n   kubectl logs <pod> -n <ns> --previous --tail=200\n   kubectl logs <pod> -n <ns> --tail=200\n   ```\n\n3. Confirm the command that actually ran (`command` / `args` in the pod spec) and whether the image entrypoint expects different arguments.\n4. If logs mention a missing file, env var, or connection refused, inspect the related ConfigMap, Secret, and Service.",
+        "score": 0.7684181006479751,
+        "kind": "runbook"
+      },
+      {
+        "title": "OOMKilled",
+        "source": "oomkilled.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Confirm the termination reason and the current limits:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get pod <pod> -n <ns> -o jsonpath='{.spec.containers[*].resources}'\n   ```\n\n2. Compare usage if metrics are available:\n\n   ```bash\n   kubectl top pod <pod> -n <ns> --containers\n   ```\n\n3. Read previous logs for allocation errors, heap dumps, or a sudden stop.\n4. Check whether the node itself is under memory pressure (`kubectl describe node <node>` and look for evictions or `MemoryPressure`).",
+        "score": 0.7538806725741878,
+        "kind": "runbook"
+      },
+      {
+        "title": "OOMKilled",
+        "source": "oomkilled.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- Container `lastState.terminated.reason` is `OOMKilled`.\n- Restart count climbs; the pod may also show `CrashLoopBackOff` once the kubelet starts backing off.\n- Events may include `OOMKilling` from the kubelet. Logs often stop abruptly, sometimes in the middle of a request or a large allocation.\n- `kubectl describe pod` shows a memory `limit` that is close to, or below, what the process actually uses.",
+        "score": 0.7419564389111512,
+        "kind": "runbook"
+      }
+    ],
+    "knowledge_unavailable": false,
+    "anomaly": {
+      "namespace": "kc-eval-08",
+      "name": "payments-6d7bd7849-rldhh",
+      "score": 0.0,
+      "is_anomaly": true,
+      "threshold": 0.013067,
+      "metric_anomaly": false,
+      "detectors": [
+        "lifecycle"
+      ],
+      "lifecycle_signals": [
+        {
+          "kind": "container_restarted",
+          "at": "2026-11-14T08:24:09Z",
+          "workload": "payments",
+          "pod": "payments-6d7bd7849-rldhh",
+          "detail": "+1 (Error)"
+        },
+        {
+          "kind": "event:BackOff",
+          "at": "2026-11-14T08:25:04Z",
+          "workload": "payments",
+          "pod": "payments-6d7bd7849-rldhh",
+          "detail": "Back-off restarting failed container payments in pod payments-6d7bd7849-rldhh_kc-eval-08(4132de30-06b0-4d51-b624-d351cb8"
+        }
+      ],
+      "contributing_features": [],
+      "series": [],
+      "warning": "Insufficient metric history for kc-eval-08/payments-6d7bd7849-rldhh (0 sample(s); need at least 3)."
+    },
+    "anomaly_unavailable": false,
+    "usage": {
+      "containers": [
+        {
+          "name": "payments",
+          "cpu_cores": null,
+          "cpu_limit_cores": null,
+          "cpu_request_cores": 0.01,
+          "cpu_throttled_ratio": null,
+          "memory_mib": null,
+          "memory_limit_mib": 64.0
+        }
+      ],
+      "window": "5m"
+    }
+  },
+  "propose_input": {
+    "deployment": {
+      "namespace": "kc-eval-08",
+      "name": "payments",
+      "replicas": 1,
+      "ready": 1,
+      "available": 1,
+      "updated": 1,
+      "generation": 2,
+      "observed_generation": 2,
+      "revision": 2,
+      "previous_revision": 1,
+      "summary": {
+        "replicas": 1,
+        "revision": 2,
+        "template": {
+          "annotations": {},
+          "containers": [
+            {
+              "name": "payments",
+              "image": "busybox:1.36",
+              "command": [
+                "sh",
+                "-c",
+                "echo \"$(date -Iseconds) INFO payments starting\"; case \"$PORT\" in \"\"|*[!0-9]*) echo \"$(date -Iseconds) FATAL invalid value for PORT: \\\"$PORT\\\" (expected an integer 1-65535)\"; exit 2;; esac; echo \"$(date -Iseconds) INFO starting payments v1.4.2\"; echo \"$(date -Iseconds) INFO listening on :8080\"; while true; do echo \"$(date -Iseconds) INFO handled request path=/api/v1/items status=200 latency_ms=$((RANDOM%40+5))\"; sleep 3; done"
+              ],
+              "args": null
+            }
+          ]
+        }
+      },
+      "previous_summary": {
+        "annotations": {},
+        "containers": [
+          {
+            "name": "payments",
+            "image": "busybox:1.36",
+            "command": [
+              "sh",
+              "-c",
+              "echo \"$(date -Iseconds) INFO payments starting\"; case \"$PORT\" in \"\"|*[!0-9]*) echo \"$(date -Iseconds) FATAL invalid value for PORT: \\\"$PORT\\\" (expected an integer 1-65535)\"; exit 2;; esac; echo \"$(date -Iseconds) INFO starting payments v1.4.2\"; echo \"$(date -Iseconds) INFO listening on :8080\"; while true; do echo \"$(date -Iseconds) INFO handled request path=/api/v1/items status=200 latency_ms=$((RANDOM%40+5))\"; sleep 3; done"
+            ],
+            "args": null
+          }
+        ]
+      },
+      "template_diff": [
+        "~ spec.containers[payments].env[PORT].value: \"8080\" -> \"eighty\""
+      ],
+      "template_refs": {}
+    },
+    "pod_state": {
+      "namespace": "kc-eval-08",
+      "name": "payments-6d7bd7849-rldhh",
+      "controller_kind": "ReplicaSet",
+      "controller_name": "payments-6d7bd7849",
+      "deployment": "payments",
+      "crashlooping": true,
+      "restart_count": 4,
+      "reason": "repeated restarts"
+    },
+    "signals": [
+      "container_restarted pod=payments-6d7bd7849-rldhh +1 (Error)",
+      "event:BackOff pod=payments-6d7bd7849-rldhh Back-off restarting failed container payments in pod payments-6d7bd7849-rldhh_kc-eval-08(4132de30-06b0-4d51-b624-d351cb8"
+    ]
+  }
+}
