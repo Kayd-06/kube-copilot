@@ -7,7 +7,7 @@
 	grafana-up grafana-forward chaos-up chaos-run chaos-stop chaos-down \
 	collect collect-dry-run train-real eval-lifecycle \
 	actions-demo-up backend-dev-actions actions-e2e \
-	eval eval-ablations eval-dry-run eval-capture eval-judge eval-heldout eval-capture-heldout eval-compare help
+	eval eval-ablations eval-dry-run eval-capture eval-judge eval-heldout eval-capture-heldout eval-compare eval-compare-all help
 
 KIND_CLUSTER ?= kube-copilot
 IMAGE_TAG ?= dev
@@ -65,6 +65,7 @@ help:
 	@echo "  eval-heldout     Score the 12 held-out incidents (ml/data/llm_eval/heldout)"
 	@echo "  eval-capture-heldout  Re-create the held-out incidents on kind"
 	@echo "  eval-compare     Before/after table for the default model (v1 vs v2 reports + hand checks)"
+	@echo "  eval-compare-all Before/after tables for both models, original 38 and held-out"
 
 cluster-up:
 	kind create cluster --config demo/kind-config.yaml
@@ -287,6 +288,16 @@ eval-compare:
 	PYTHONPATH=.:backend $(ROOT_PY) -m ml.llm_eval.compare \
 		--before ml/reports/llm_eval/openai_gpt-oss-120b.json --before-hand ml/data/llm_eval/hand_checks.json \
 		--after ml/reports/llm_eval/v2/openai_gpt-oss-120b.json --after-hand ml/data/llm_eval/hand_checks_v2.json
+
+eval-compare-all:
+	@for m in 120b 20b; do \
+		PYTHONPATH=.:backend $(ROOT_PY) -m ml.llm_eval.compare \
+			--before ml/reports/llm_eval/openai_gpt-oss-$$m.json --before-hand ml/data/llm_eval/hand_checks.json \
+			--after ml/reports/llm_eval/v2/openai_gpt-oss-$$m.json --after-hand ml/data/llm_eval/hand_checks_v2.json; \
+		PYTHONPATH=.:backend $(ROOT_PY) -m ml.llm_eval.compare \
+			--before ml/reports/llm_eval/heldout_before/openai_gpt-oss-$$m.json --before-hand ml/data/llm_eval/hand_checks_heldout_before.json \
+			--after ml/reports/llm_eval/heldout/openai_gpt-oss-$$m.json --after-hand ml/data/llm_eval/hand_checks_heldout.json; \
+	done
 
 RESULTS ?= ml/reports/llm_eval/openai_gpt-oss-120b.json
 JUDGE_MODEL ?= openai/gpt-oss-20b
