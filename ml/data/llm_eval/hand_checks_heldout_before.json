@@ -1,0 +1,45 @@
+{
+  "_about": "Hand checks for the old-code baseline on the held-out set. Old code (PR #31 merge cc30707, v1 prompts and context) on the same 12 incidents, fixtures reduced to schema 1 and retrieval re-run against the v1 runbooks. Reports in ml/reports/llm_eval/heldout_before/. Same rubric as hand_checks.json; written by reading each diagnosis, not by the matcher or a model.",
+  "openai/gpt-oss-120b": {
+    "ho_cm_key_first": {
+      "correct": true,
+      "note": "ConfigMap exists but lacks key RATE_LIMIT -> correct; regex has no 'does not contain'."
+    },
+    "ho_cpu_limit_rollout": {
+      "correct": false,
+      "note": "Blames an idle upstream input source; never mentions the 15m CPU limit or throttling (the old context has no limits/usage)."
+    },
+    "ho_crash_flag_rollout": {
+      "correct": true
+    },
+    "ho_dns_proxy_first": {
+      "correct": true
+    },
+    "ho_env_dburl_rollout": {
+      "correct": true
+    },
+    "ho_healthy_mailer": {
+      "correct": true
+    },
+    "ho_img_quay_rollout": {
+      "correct": true,
+      "note": "Blames DNS for failing to resolve quay.io; the evidence is a registry DNS failure (no registry egress on the box's kind node), same convention as the v1 image-pull cases."
+    },
+    "ho_mem_request_rollout": {
+      "correct": true
+    },
+    "ho_oom_render_first": {
+      "correct": true
+    },
+    "ho_pod_kill_two": {
+      "correct": false,
+      "note": "Follows the metric anomaly (rising memory); ignores the pod replacement."
+    },
+    "ho_readiness_http_rollout": {
+      "correct": true
+    },
+    "ho_secret_volume_rollout": {
+      "correct": true
+    }
+  }
+}
