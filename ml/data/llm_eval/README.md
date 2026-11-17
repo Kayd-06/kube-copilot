@@ -53,7 +53,9 @@ ConfigMap key, and a Service name that doesn't resolve. 7 expect
 
 The "old code" baseline on the held-out set uses the same files
 reduced to schema 1, with retrieval redone against the v1 runbooks (no CPU
-throttling runbook), and is run from the PR #31 merge commit (`cc30707`).
+throttling runbook), and is run from the PR #31 merge commit (`cc30707`). Its reports are in
+`ml/reports/llm_eval/heldout_before/` and its hand checks in
+`hand_checks_heldout_before.json`.
 
 - `diagnose_input`: pod summary, events, logs (current and previous), the
   retrieval query and the top-5 runbook chunks it returned, and the anomaly

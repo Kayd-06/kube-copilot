@@ -19,7 +19,8 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 - `ml/data/llm_eval/cases_v2/` (schema 2): v1 with 16 cases re-captured for the new fields, with the same scenarios and labels. `cases/` (v1) is kept unchanged.
 - `ml/data/llm_eval/heldout/`: 12 held-out incidents (`ml/llm_eval/cases_heldout.py`), labels committed before capture, captured after the prompts were frozen. `make eval-heldout`, `make eval-capture-heldout`, and `make eval-compare` (`ml/llm_eval/compare.py`).
 - The runner waits for Groq's daily quota with `--wait-daily HOURS`; reports default to `ml/reports/llm_eval/v2/`.
-- Results (`ml/reports/llm_eval/v2/README.md`): held-out, gpt-oss-120b, root cause 12/12 hand-checked and remediation 11/12. The re-run on the original 38 is partial (daily quota): gpt-oss-20b Diagnose 27/38 to 33/38 by regex (pod kills 0/3 to 3/3), and gpt-oss-120b 15/21 to 19/21 on the cases finished. Those prompts were tuned after seeing these failures.
+- Results (`ml/reports/llm_eval/v2/README.md`), all hand-checked. **Held-out** (old code from PR #31 vs new code, same 12 incidents): root cause 10/12 to 12/12 and remediation 7/12 to 11/12 for both gpt-oss-120b and gpt-oss-20b, with rollouts 2/7 to 6/7. A trivial "roll back if a previous revision exists" rule also scores 12/12 there, because the held-out set has no rollback traps. **Original 38** (prompts tuned on these): root cause 30/38 to 36/38 (120b) and 31/38 to 37/38 (20b). Remediation 30/38 to 37/38 and 29/38 to 38/38. All 7 previously refused rollbacks are now correct, and the 4 traps where rollback would not help still get none. 20b's healthy-pod "regressions" by regex are matcher misses. `stale_dependency` is a real 20b regression.
+- `ml/reports/llm_eval/heldout_before/` (old code on the held-out set), `hand_checks_v2.json`, `hand_checks_heldout_before.json`, and gpt-oss-20b held-out hand checks.
 
 ### Added (LLM eval harness, PR #31)
 
