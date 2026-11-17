@@ -14,6 +14,3 @@ How they were produced:
   temperature as the "after" runs.
 - Hand checks are in `ml/data/llm_eval/hand_checks_heldout_before.json`.
 
-The old Diagnose context also had no structured lifecycle section, which the
-old code didn't build, so the reduced fixtures match what the old pipeline
-would have sent.

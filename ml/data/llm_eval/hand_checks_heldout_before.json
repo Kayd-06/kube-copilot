@@ -41,5 +41,47 @@
     "ho_secret_volume_rollout": {
       "correct": true
     }
+  },
+  "openai/gpt-oss-20b": {
+    "ho_cm_key_first": {
+      "correct": true
+    },
+    "ho_cpu_limit_rollout": {
+      "correct": false,
+      "note": "Calls it an anomaly false positive from low utilization; never mentions the 15m CPU limit or throttling (the old context has no limits/usage)."
+    },
+    "ho_crash_flag_rollout": {
+      "correct": true,
+      "note": "Unsupported --worker-threads flag -> correct; regex missed this phrasing."
+    },
+    "ho_dns_proxy_first": {
+      "correct": true
+    },
+    "ho_env_dburl_rollout": {
+      "correct": true
+    },
+    "ho_healthy_mailer": {
+      "correct": true
+    },
+    "ho_img_quay_rollout": {
+      "correct": true,
+      "note": "Blames DNS for failing to resolve quay.io; the evidence is a registry DNS failure (no registry egress on the box's kind node), same convention as the v1 image-pull cases."
+    },
+    "ho_mem_request_rollout": {
+      "correct": true
+    },
+    "ho_oom_render_first": {
+      "correct": true
+    },
+    "ho_pod_kill_two": {
+      "correct": false,
+      "note": "Follows the metric anomaly (memory leak); ignores the pod replacement."
+    },
+    "ho_readiness_http_rollout": {
+      "correct": true
+    },
+    "ho_secret_volume_rollout": {
+      "correct": true
+    }
   }
 }
