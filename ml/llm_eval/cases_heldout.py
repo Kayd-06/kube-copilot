@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from ml.llm_eval.cases import (
     BUSYBOX,
+    CURL,
     NGINX,
     Case,
     Obj,
@@ -29,10 +30,14 @@ from ml.llm_eval.cases import (
     ready,
     restarts_at_least,
     running_not_ready,
+    secret,
     serve_loop,
+    service,
     unscheduled,
     waiting,
 )
+
+NODE = "kube-copilot-control-plane"
 
 
 def _svc(name: str, **kw) -> Obj:
@@ -203,6 +208,132 @@ def build_heldout() -> list[Case]:
         [deployment("settlement", [container("settlement", image=BUSYBOX, script=dns_script,
                                              env={"DB_PROXY": "http://ledger-db-proxy:6432/"})])],
         restarts_at_least(2), expected_runbooks=["dns-issues.md"], difficulty="medium",
+    ))
+    cases.extend(build_traps())
+    return cases
+
+
+def _bump(var: str, value: str):
+    """A routine rollout: one env value changes and nothing else."""
+    def fn(d: Obj) -> None:
+        for e in pod_spec(d)["containers"][0].setdefault("env", []):
+            if e["name"] == var:
+                e["value"] = value
+                return
+        pod_spec(d)["containers"][0]["env"].append({"name": var, "value": value})
+
+    return fn
+
+
+def build_traps() -> list[Case]:
+    """Rollback traps: a healthy routine rollout happened shortly before the incident, but the cause is elsewhere.
+
+    Added in PR #34 after the PR #33 report noted the held-out set had none. Labels and the hand-check
+    rubric (ml/data/llm_eval/trap_rubric.md) were written and committed before any model saw these cases.
+    In every one the previous revision would fail the same way, so `rollback_deployment` is wrong.
+    """
+    cases: list[Case] = []
+    add = cases.append
+
+    # 1. Dependency outage: the upstream Deployment is scaled to 0 after the client's routine rollout.
+    checkout_script = (
+        'echo "$(date -Iseconds) INFO checkout $APP_VERSION starting, ledger=$LEDGER_URL"; '
+        "while true; do "
+        'curl -fsS -m 3 -o /dev/null "$LEDGER_URL" || { echo "$(date -Iseconds) ERROR ledger request failed, exiting"; exit 1; }; '
+        'echo "$(date -Iseconds) INFO ledger ok"; sleep 5; done'
+    )
+    ledger = deployment("ledger", [container("ledger", image=NGINX, port=80)])
+    checkout = deployment("checkout", [container("checkout", image=CURL, script=checkout_script,
+                                                 env={"APP_VERSION": "2.3.0", "LEDGER_URL": "http://ledger/"})])
+    add(Case(
+        "ho_trap_dependency_down", "Upstream scaled to zero shortly after a routine client rollout",
+        "dependency_connectivity", ["no_action"],
+        "checkout rolled out APP_VERSION 2.3.0 -> 2.3.1 (healthy). Then its upstream Deployment ledger was scaled "
+        "to 0, so checkout's curl gets connection refused and it crashloops. Both revisions fail the same way; the "
+        "upstream must be restored.",
+        "checkout", [ledger, service("ledger", "ledger", 80, 80), checkout],
+        restarts_at_least(2), rollout=[mutate(checkout, _bump("APP_VERSION", "2.3.1"))],
+        post=[["scale", "deploy/ledger", "--replicas=0"]],
+        expected_runbooks=["crashloopbackoff.md", "dns-issues.md"], difficulty="hard",
+        notes="Rollback trap. The only template change is APP_VERSION.",
+    ))
+
+    # 2. A mounted ConfigMap is edited to an invalid value after a routine rollout; the app hot-reloads it.
+    pricing_script = (
+        'echo "$(date -Iseconds) INFO quote-engine build $BUILD starting"; '
+        "while true; do "
+        "v=$(sed -n 's/^max_discount_pct=//p' /etc/quote/engine.properties); "
+        'case "$v" in [0-9]|[0-9][0-9]) ;; *) echo "$(date -Iseconds) FATAL /etc/quote/engine.properties: '
+        'max_discount_pct=\"$v\" is not an integer 0-99"; exit 1;; esac; '
+        'echo "$(date -Iseconds) INFO config ok (max_discount_pct=$v), serving quotes"; sleep 5; done'
+    )
+    quote = deployment("quote-engine", [container(
+        "quote-engine", script=pricing_script, env={"BUILD": "881", "REGION": "eu-west-1"},
+        mounts=[{"name": "conf", "mountPath": "/etc/quote", "readOnly": True}])],
+        volumes=[{"name": "conf", "configMap": {"name": "quote-engine-conf"}}])
+    add(Case(
+        "ho_trap_configmap_reload", "Mounted ConfigMap edited to an invalid value after a routine rollout",
+        "bad_config_value", ["no_action"],
+        "quote-engine rolled out BUILD 881 -> 882 (healthy). Later the mounted ConfigMap quote-engine-conf was "
+        "edited to max_discount_pct=thirty; the app re-reads the file, rejects it and exits 1 on every start. Both "
+        "revisions mount the same ConfigMap; the ConfigMap must be fixed.",
+        "quote-engine", [configmap("quote-engine-conf", {"engine.properties": "max_discount_pct=30\n"}), quote],
+        restarts_at_least(2), rollout=[mutate(quote, _bump("BUILD", "882"))],
+        post=[["patch", "configmap", "quote-engine-conf", "-p",
+               '{"data":{"engine.properties":"max_discount_pct=thirty\\n"}}']],
+        expected_runbooks=["crashloopbackoff.md"], difficulty="hard",
+        notes="Rollback trap. The ConfigMap is not part of the pod template, so the diff shows only BUILD.",
+    ))
+
+    # 3. The only node is cordoned (maintenance) and the pod is deleted, after a routine rollout.
+    reports = _svc("reports")
+    pod_spec(reports)["containers"][0]["env"] = [{"name": "FEATURE_PDF_EXPORT", "value": "false"}]
+    add(Case(
+        "ho_trap_node_cordoned", "Node cordoned for maintenance after a routine rollout; replacement pod Pending",
+        "unschedulable", ["no_action"],
+        "reports rolled out FEATURE_PDF_EXPORT false -> true (healthy). Then the only node was cordoned and the "
+        "pod deleted (as a drain would); the replacement stays Pending because the node is unschedulable. A "
+        "rolled-back pod could not schedule either; the node must be uncordoned or capacity added.",
+        "reports", [reports], unscheduled, rollout=[mutate(reports, _bump("FEATURE_PDF_EXPORT", "true"))],
+        post=[["cordon", NODE], ["delete", "pod", "-l", "app=reports", "--wait=false"]],
+        cleanup=[["uncordon", NODE]],
+        expected_runbooks=["pending-unschedulable.md", "node-not-ready.md"], settle_s=40, difficulty="medium",
+        notes="Rollback trap. Cordons the cluster's only node: capture alone (--parallel 1).",
+    ))
+
+    # 4. A Secret both revisions read is deleted after a routine rollout; the replacement pod cannot start.
+    notifier = deployment("notifier", [container(
+        "notifier", script=serve_loop("notifier"), env={"SMTP_HOST": "smtp.internal", "TEMPLATE_SET": "v7"},
+        env_extra=[{"name": "SMTP_PASSWORD",
+                    "valueFrom": {"secretKeyRef": {"name": "smtp-credentials", "key": "password"}}}])])
+    add(Case(
+        "ho_trap_secret_deleted", "Secret deleted after a routine rollout; the replacement pod cannot start",
+        "missing_config", ["no_action"],
+        "notifier rolled out TEMPLATE_SET v7 -> v8 (healthy). Then Secret smtp-credentials was deleted and the pod "
+        "was deleted; the replacement fails with CreateContainerConfigError. The previous revision reads the same "
+        "Secret; it must be restored.",
+        "notifier", [secret("smtp-credentials", {"password": "not-a-real-password"}), notifier],
+        waiting("CreateContainerConfigError"), rollout=[mutate(notifier, _bump("TEMPLATE_SET", "v8"))],
+        post=[["delete", "secret", "smtp-credentials"], ["delete", "pod", "-l", "app=notifier", "--wait=false"]],
+        expected_runbooks=["create-container-config-error.md"], difficulty="medium",
+        notes="Rollback trap.",
+    ))
+
+    # 5. Healthy after a routine rollout, but the logs are full of retried timeouts that succeed.
+    retry_script = (
+        'echo "$(date -Iseconds) INFO feed-sync $RELEASE started"; n=0; while true; do n=$((n+1)); '
+        'echo "$(date -Iseconds) WARN partner-api timeout after 2000ms (attempt 1/3), retrying"; '
+        'echo "$(date -Iseconds) WARN partner-api 503 Service Unavailable (attempt 2/3), retrying"; '
+        'echo "$(date -Iseconds) INFO partner-api ok on attempt 3, synced page $n (200 items)"; sleep 4; done'
+    )
+    feed = deployment("feed-sync", [container("feed-sync", script=retry_script, env={"RELEASE": "r41"})])
+    add(Case(
+        "ho_trap_healthy_retry_logs", "Healthy after a routine rollout; logs show retried timeouts that succeed",
+        "healthy", ["no_action"],
+        "feed-sync rolled out RELEASE r41 -> r42. Nothing is broken: the pod is Ready with no restarts, and the "
+        "WARN lines are retries that succeed on the third attempt (written by the workload script).",
+        "feed-sync", [feed], ready, rollout=[mutate(feed, _bump("RELEASE", "r42"))], settle_s=75,
+        difficulty="hard", notes="Rollback trap and a noisy-logs check.",
     ))
     return cases
 
