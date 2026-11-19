@@ -7,6 +7,23 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 
 ## [Unreleased]
 
+### Fixed (from the LLM eval, PR #34)
+
+- **Dependency check** (`app/dependencies.py`). For the in-cluster Services named in a pod's env, it reports whether each one exists, its Ready backing pods and when they became Ready, and whether the Service `targetPort` matches a port the pods declare. The result is added to Diagnose and the proposer as a verdict: missing, down now, port mismatch, or recovered after this pod started. It is also returned as `DiagnoseResponse.dependencies`. A new `stale-dependency.md` runbook covers the recovered case.
+- **Health summary** in the Diagnose prompt, computed from Kubernetes state (Ready, restarts, warning events, throttling, disruption, dependencies) and not from logs. The new rules say that log noise on a healthy pod is not an outage and that a failing readiness probe is often a symptom.
+- **The proposer sees resource regressions.** It now gets Prometheus usage and throttling, and resource diffs are annotated (for example `LOWERED cpu limit to 6% of the previous value`). A rollout that cut a limit and left the pod throttled is rolled back even when the pod is Ready.
+
+### Added (eval, PR #34)
+
+- 5 held-out **rollback traps** (`build_traps`), with a rubric committed before any run, plus `cases_v3/` and `heldout_v3/` (schema 3, with the dependency field and retrieval re-run). `traps_before/` runs the PR #33 code on the traps. `compare.py` can merge reports and scores the traps.
+- Results (`ml/reports/llm_eval/v3/README.md`), hand-checked, on held-out 17 (12 + 5 traps), PR #33 → PR #34:
+  - **gpt-oss-120b:** root cause 16/17 → 16/17, remediation 16/17 → 16/17.
+  - **gpt-oss-20b:** root cause 15/17 → 17/17, remediation 15/17 → 16/17.
+  - `ho_cpu_limit_rollout` is now rolled back by both models.
+  - Rollback was avoided on 5/5 traps by both code versions.
+  - New regressions: `ho_secret_volume_rollout` and `ho_pod_kill_two` (120b), and `ho_img_quay_rollout` (20b).
+- The original-38 re-run is **partial** (daily quota). 120b covered 30/76 calls and 20b covered 25/76, all of them Diagnose. On those cases there are no regressions. `stale_dependency` was not reached.
+
 ### Fixed (from the LLM eval)
 
 - **Safe actions see the whole rollout.** `DeploymentState` carries `template_diff`, a field-level diff of the full pod template between the previous and current ReplicaSet revisions (env, envFrom, ConfigMap/Secret refs, probes, resources, nodeSelector/affinity, volumes; API-server defaults dropped), and `template_refs`. The proposer prompt rolls back when the failure matches a change and refuses when the only change is unrelated.
