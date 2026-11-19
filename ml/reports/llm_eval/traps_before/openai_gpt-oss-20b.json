@@ -1,0 +1,504 @@
+{
+  "model": "openai/gpt-oss-20b",
+  "base_url": "https://api.groq.com/openai/v1",
+  "status": "complete",
+  "stopped_reason": null,
+  "started_at": "2026-11-19T12:19:55+00:00",
+  "finished_at": "2026-11-19T12:23:06+00:00",
+  "variants": [
+    "full"
+  ],
+  "tasks": [
+    "diagnose",
+    "propose"
+  ],
+  "dataset": {
+    "cases": 5,
+    "by_category": {
+      "bad_config_value": 1,
+      "dependency_connectivity": 1,
+      "healthy": 1,
+      "unschedulable": 1,
+      "missing_config": 1
+    },
+    "by_difficulty": {
+      "hard": 3,
+      "medium": 2
+    },
+    "by_expected_action": {
+      "no_action": 5
+    },
+    "with_lifecycle_signals": 4,
+    "with_previous_revision": 5
+  },
+  "baselines": {
+    "cases": 5,
+    "category_reason_lookup_accuracy": 60.0,
+    "remediation_always_no_action_accuracy": 100.0,
+    "remediation_rollback_if_previous_revision_accuracy": 0.0,
+    "retrieval": {
+      "cases_with_expected_runbook": 4,
+      "hit_at_k": 100.0,
+      "hit_at_1": 75.0,
+      "mrr": 0.833,
+      "misses": []
+    }
+  },
+  "pacing": {
+    "tpm": 7000,
+    "waited_s": 181,
+    "retries": 0,
+    "daily_quota_waited_s": 0
+  },
+  "fixtures_dir": "/workspace/kube-copilot/ml/data/llm_eval/traps_before",
+  "runs": [],
+  "summary": {
+    "diagnose/full": {
+      "cases": 5,
+      "errors": 0,
+      "latency_p50_s": 1.04,
+      "latency_p95_s": 2.3,
+      "prompt_tokens": 12420,
+      "completion_tokens": 3600,
+      "cost_usd": 0.002,
+      "category_correct": 4,
+      "category_accuracy": 80.0,
+      "category_accuracy_ci95": [
+        37.6,
+        96.4
+      ],
+      "schema_valid": 100.0,
+      "hallucination_rate": 0.0,
+      "placeholder_rate": 60.0,
+      "mean_confidence_correct": 0.85,
+      "mean_confidence_wrong": 0.9
+    },
+    "propose/full": {
+      "cases": 5,
+      "errors": 0,
+      "latency_p50_s": 0.58,
+      "latency_p95_s": 1.15,
+      "prompt_tokens": 9058,
+      "completion_tokens": 1970,
+      "cost_usd": 0.0013,
+      "remediation_correct": 4,
+      "remediation_accuracy": 80.0,
+      "remediation_accuracy_ci95": [
+        37.6,
+        96.4
+      ],
+      "target_errors": 0,
+      "policy_blocked_proposals": 0,
+      "proposals": 1,
+      "no_action_rate": 80.0
+    },
+    "ablations": {},
+    "by_category": {
+      "bad_config_value": {
+        "diagnose_n": 1,
+        "diagnose_ok": 1,
+        "propose_n": 1,
+        "propose_ok": 1
+      },
+      "dependency_connectivity": {
+        "diagnose_n": 1,
+        "diagnose_ok": 0,
+        "propose_n": 1,
+        "propose_ok": 0
+      },
+      "healthy": {
+        "diagnose_n": 1,
+        "diagnose_ok": 1,
+        "propose_n": 1,
+        "propose_ok": 1
+      },
+      "missing_config": {
+        "diagnose_n": 1,
+        "diagnose_ok": 1,
+        "propose_n": 1,
+        "propose_ok": 1
+      },
+      "unschedulable": {
+        "diagnose_n": 1,
+        "diagnose_ok": 1,
+        "propose_n": 1,
+        "propose_ok": 1
+      }
+    },
+    "by_difficulty": {
+      "hard": {
+        "diagnose_n": 3,
+        "diagnose_ok": 2,
+        "propose_n": 3,
+        "propose_ok": 2
+      },
+      "medium": {
+        "diagnose_n": 2,
+        "diagnose_ok": 2,
+        "propose_n": 2,
+        "propose_ok": 2
+      }
+    }
+  },
+  "labels": {
+    "ho_trap_configmap_reload": {
+      "category": "bad_config_value",
+      "expected_actions": [
+        "no_action"
+      ],
+      "expected_runbooks": [
+        "crashloopbackoff.md"
+      ],
+      "difficulty": "hard",
+      "fault": "quote-engine rolled out BUILD 881 -> 882 (healthy). Later the mounted ConfigMap quote-engine-conf was edited to max_discount_pct=thirty; the app re-reads the file, rejects it and exits 1 on every start. Both revisions mount the same ConfigMap; the ConfigMap must be fixed.",
+      "notes": "Rollback trap. The ConfigMap is not part of the pod template, so the diff shows only BUILD."
+    },
+    "ho_trap_dependency_down": {
+      "category": "dependency_connectivity",
+      "expected_actions": [
+        "no_action"
+      ],
+      "expected_runbooks": [
+        "crashloopbackoff.md",
+        "dns-issues.md"
+      ],
+      "difficulty": "hard",
+      "fault": "checkout rolled out APP_VERSION 2.3.0 -> 2.3.1 (healthy). Then its upstream Deployment ledger was scaled to 0, so checkout's curl gets connection refused and it crashloops. Both revisions fail the same way; the upstream must be restored.",
+      "notes": "Rollback trap. The only template change is APP_VERSION."
+    },
+    "ho_trap_healthy_retry_logs": {
+      "category": "healthy",
+      "expected_actions": [
+        "no_action"
+      ],
+      "expected_runbooks": [],
+      "difficulty": "hard",
+      "fault": "feed-sync rolled out RELEASE r41 -> r42. Nothing is broken: the pod is Ready with no restarts, and the WARN lines are retries that succeed on the third attempt (written by the workload script).",
+      "notes": "Rollback trap and a noisy-logs check."
+    },
+    "ho_trap_node_cordoned": {
+      "category": "unschedulable",
+      "expected_actions": [
+        "no_action"
+      ],
+      "expected_runbooks": [
+        "pending-unschedulable.md",
+        "node-not-ready.md"
+      ],
+      "difficulty": "medium",
+      "fault": "reports rolled out FEATURE_PDF_EXPORT false -> true (healthy). Then the only node was cordoned and the pod deleted (as a drain would); the replacement stays Pending because the node is unschedulable. A rolled-back pod could not schedule either; the node must be uncordoned or capacity added.",
+      "notes": "Rollback trap. Cordons the cluster's only node: capture alone (--parallel 1)."
+    },
+    "ho_trap_secret_deleted": {
+      "category": "missing_config",
+      "expected_actions": [
+        "no_action"
+      ],
+      "expected_runbooks": [
+        "create-container-config-error.md"
+      ],
+      "difficulty": "medium",
+      "fault": "notifier rolled out TEMPLATE_SET v7 -> v8 (healthy). Then Secret smtp-credentials was deleted and the pod was deleted; the replacement fails with CreateContainerConfigError. The previous revision reads the same Secret; it must be restored.",
+      "notes": "Rollback trap."
+    }
+  },
+  "records": [
+    {
+      "case": "ho_trap_configmap_reload",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 1.04,
+      "prompt_tokens": 2584,
+      "completion_tokens": 532,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The quote-engine container exits with code\u202f1 after parsing its configuration file, causing a CrashLoopBackOff. The log shows the property `max_discount_pct` is set to the string \"thirty\" instead of an integer, which the application rejects and terminates.",
+        "likely_root_cause": "Invalid configuration value in /etc/quote/engine.properties (max_discount_pct=thirty).",
+        "suggested_fix": "Correct the value of `max_discount_pct` to a valid integer between 0 and 99 in the ConfigMap or Secret that supplies /etc/quote/engine.properties, then redeploy the workload so the pod can start successfully.",
+        "kubectl_commands": [
+          "kubectl describe pod quote-engine-864b6c959f-8hfcx -n kc-ho-14",
+          "kubectl logs quote-engine-864b6c959f-8hfcx -n kc-ho-14 --previous",
+          "kubectl get configmap -n kc-ho-14 -o wide | grep quote-engine",
+          "kubectl edit configmap <configmap-name> -n kc-ho-14",
+          "kubectl rollout restart deployment/quote-engine -n kc-ho-14"
+        ],
+        "confidence": 0.95
+      },
+      "category": {
+        "correct": true,
+        "predicted": "bad_config_value",
+        "also_matched": [
+          "bad_config_value"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 8,
+        "unknown_refs": [],
+        "placeholders": [
+          "<configmap-name>"
+        ],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "ho_trap_dependency_down",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 1.639,
+      "prompt_tokens": 2757,
+      "completion_tokens": 1194,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The checkout pod is repeatedly crashing with exit code\u00a01. The container runs a curl command that immediately fails to connect to a service named\u00a0ledger, causing the pod to enter a CrashLoopBackOff. The image used is the minimal curl image, which is not the intended checkout application, so the pod is misconfigured.",
+        "likely_root_cause": "The pod spec uses the wrong image/command \u2013 it runs a curl image that exits immediately because it cannot reach the ledger service.",
+        "suggested_fix": "Update the deployment to use the correct checkout image (or correct command) and ensure the ledger service is reachable from the pod. After correcting the spec, roll the deployment and verify the pod stabilises.",
+        "kubectl_commands": [
+          "kubectl describe pod checkout-6b6d48dd9d-bnzzj -n kc-ho-13",
+          "kubectl get events -n kc-ho-13 --field-selector involvedObject.name=checkout-6b6d48dd9d-bnzzj",
+          "kubectl logs checkout-6b6d48dd9d-bnzzj -n kc-ho-13 --previous",
+          "kubectl get svc -n kc-ho-13",
+          "kubectl get deployment <deployment-name> -n kc-ho-13 -o yaml | grep -A5 'containers:'",
+          "kubectl edit deployment <deployment-name> -n kc-ho-13"
+        ],
+        "confidence": 0.9
+      },
+      "category": {
+        "correct": false,
+        "predicted": "app_crash",
+        "also_matched": [
+          "app_crash"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 9,
+        "unknown_refs": [],
+        "placeholders": [
+          "<deployment-name>",
+          "<deployment-name>"
+        ],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "ho_trap_healthy_retry_logs",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 0.957,
+      "prompt_tokens": 3342,
+      "completion_tokens": 483,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The pod kc-ho-17/feed-sync-fb5647cb6-tp2w2 is running, ready, and has never restarted. Its logs show normal retry logic against a partner API, and Prometheus metrics indicate very low CPU and memory usage well below the requested/limited values. The anomaly detector flagged the pod, but all other evidence shows it is healthy, so the flag is likely a false positive.",
+        "likely_root_cause": "Anomaly detector false positive \u2013 the pod is healthy and functioning normally.",
+        "suggested_fix": "No action required for the pod itself. If the anomaly alert is bothersome, investigate the anomaly model configuration or suppress alerts for this workload. Verify CoreDNS and network health if you suspect external issues, but current evidence shows none.",
+        "kubectl_commands": [
+          "kubectl describe pod feed-sync-fb5647cb6-tp2w2 -n kc-ho-17",
+          "kubectl logs feed-sync-fb5647cb6-tp2w2 -n kc-ho-17 -c feed-sync",
+          "kubectl top pod feed-sync-fb5647cb6-tp2w2 -n kc-ho-17 --containers",
+          "kubectl get events -n kc-ho-17 --sort-by=.metadata.creationTimestamp"
+        ],
+        "confidence": 0.9
+      },
+      "category": {
+        "correct": true,
+        "predicted": "healthy",
+        "also_matched": [
+          "healthy"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 7,
+        "unknown_refs": [],
+        "placeholders": [],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "ho_trap_node_cordoned",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 2.466,
+      "prompt_tokens": 1892,
+      "completion_tokens": 1098,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The pod reports-5c96759d85-kwp7c is stuck in Pending because the scheduler cannot find a suitable node. The only node in the cluster is considered unschedulable for this pod, likely due to resource requests or node constraints.",
+        "likely_root_cause": "The pod\u2019s resource requests exceed the allocatable resources on the only available node (or node constraints such as nodeSelector/taints prevent scheduling).",
+        "suggested_fix": "1. Inspect the pod\u2019s CPU/memory requests and compare them to the node\u2019s allocatable capacity. 2. If the requests are too high, reduce them or add a node with sufficient resources. 3. Verify that any nodeSelector, affinity, or taint/toleration settings on the pod match the node\u2019s labels/taints. 4. If a PersistentVolumeClaim is involved, ensure it is bound.",
+        "kubectl_commands": [
+          "kubectl describe pod kc-ho-15/reports-5c96759d85-kwp7c -n kc-ho-15",
+          "kubectl get nodes -o wide",
+          "kubectl describe node <node-name>",
+          "kubectl get nodes -o custom-columns=NAME:.metadata.name,CPU:.status.allocatable.cpu,MEM:.status.allocatable.memory",
+          "kubectl get pod kc-ho-15/reports-5c96759d85-kwp7c -n kc-ho-15 -o jsonpath='{.spec.containers[*].resources.requests}'",
+          "kubectl get events -n kc-ho-15 --field-selector reason=FailedScheduling"
+        ],
+        "confidence": 0.6
+      },
+      "category": {
+        "correct": true,
+        "predicted": "unschedulable",
+        "also_matched": [
+          "unschedulable"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 3,
+        "unknown_refs": [],
+        "placeholders": [
+          "<node-name>"
+        ],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "ho_trap_secret_deleted",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 0.712,
+      "prompt_tokens": 1845,
+      "completion_tokens": 293,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The pod is stuck in Pending because the kubelet cannot create the container due to a missing secret referenced in the pod spec. The event log shows a CreateContainerConfigError with the message \"secret \\\"smtp-credentials\\\" not found\".",
+        "likely_root_cause": "The secret \"smtp-credentials\" referenced by the pod does not exist in the namespace kc-ho-16.",
+        "suggested_fix": "Create the missing secret in the namespace (or correct the pod spec to reference an existing secret). After the secret is present, the pod will transition to Running.",
+        "kubectl_commands": [
+          "kubectl get secret -n kc-ho-16",
+          "kubectl describe pod notifier-cf6d89bb-58z48 -n kc-ho-16",
+          "kubectl create secret generic smtp-credentials --from-literal=user=example@example.com --from-literal=password=secret -n kc-ho-16"
+        ],
+        "confidence": 0.95
+      },
+      "category": {
+        "correct": true,
+        "predicted": "missing_config",
+        "also_matched": [
+          "missing_config"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 4,
+        "unknown_refs": [],
+        "placeholders": [],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "ho_trap_configmap_reload",
+      "task": "propose",
+      "variant": "full",
+      "latency_s": 0.528,
+      "prompt_tokens": 1938,
+      "completion_tokens": 263,
+      "proposals": [],
+      "note": "The pod fails because the ConfigMap quote-engine-conf contains an invalid value for max_discount_pct (\"thirty\" is not an integer). The Deployment template has not changed, so rolling back or restarting the Deployment will not resolve the issue. A human must edit the ConfigMap to provide a valid integer value (0\u201199) and then redeploy or restart the pod.",
+      "remediation": {
+        "primary": "no_action",
+        "correct": true,
+        "all_expected": true,
+        "target_errors": []
+      },
+      "policy_violations": [],
+      "policy_blocked": 0,
+      "retried_without_required_tool": false
+    },
+    {
+      "case": "ho_trap_dependency_down",
+      "task": "propose",
+      "variant": "full",
+      "latency_s": 1.207,
+      "prompt_tokens": 1935,
+      "completion_tokens": 878,
+      "proposals": [
+        {
+          "kind": "restart_deployment",
+          "params": {
+            "name": "checkout",
+            "namespace": "kc-ho-13"
+          },
+          "rationale": "The pod is crashing due to inability to reach the ledger service; restarting the deployment will create a fresh pod that may succeed if the ledger service is now available."
+        }
+      ],
+      "note": "",
+      "remediation": {
+        "primary": "restart_deployment",
+        "correct": false,
+        "all_expected": false,
+        "target_errors": []
+      },
+      "policy_violations": [
+        []
+      ],
+      "policy_blocked": 0,
+      "retried_without_required_tool": false
+    },
+    {
+      "case": "ho_trap_healthy_retry_logs",
+      "task": "propose",
+      "variant": "full",
+      "latency_s": 0.529,
+      "prompt_tokens": 2151,
+      "completion_tokens": 193,
+      "proposals": [],
+      "note": "The pod is healthy and running; the warnings are due to transient external partner API failures, not a bug in the current deployment. No Kubernetes action is required.",
+      "remediation": {
+        "primary": "no_action",
+        "correct": true,
+        "all_expected": true,
+        "target_errors": []
+      },
+      "policy_violations": [],
+      "policy_blocked": 0,
+      "retried_without_required_tool": false
+    },
+    {
+      "case": "ho_trap_node_cordoned",
+      "task": "propose",
+      "variant": "full",
+      "latency_s": 0.907,
+      "prompt_tokens": 1465,
+      "completion_tokens": 360,
+      "proposals": [],
+      "note": "The pod is unschedulable due to node constraints (e.g., taints, nodeSelector, or insufficient resources) that are unrelated to the recent template change. No deployment rollback or restart will resolve the scheduling issue. A human should inspect the node status, taints, and any nodeSelector/affinity settings, and adjust the deployment or node configuration accordingly.",
+      "remediation": {
+        "primary": "no_action",
+        "correct": true,
+        "all_expected": true,
+        "target_errors": []
+      },
+      "policy_violations": [],
+      "policy_blocked": 0,
+      "retried_without_required_tool": false
+    },
+    {
+      "case": "ho_trap_secret_deleted",
+      "task": "propose",
+      "variant": "full",
+      "latency_s": 0.585,
+      "prompt_tokens": 1569,
+      "completion_tokens": 276,
+      "proposals": [],
+      "note": "The pod cannot start because the referenced secret \"smtp-credentials\" is missing. The Deployment template has not changed in a way that would cause this error, so rolling back or restarting will not resolve the issue. A human must create or restore the missing secret in the \"kc-ho-16\" namespace.",
+      "remediation": {
+        "primary": "no_action",
+        "correct": true,
+        "all_expected": true,
+        "target_errors": []
+      },
+      "policy_violations": [],
+      "policy_blocked": 0,
+      "retried_without_required_tool": false
+    }
+  ]
+}

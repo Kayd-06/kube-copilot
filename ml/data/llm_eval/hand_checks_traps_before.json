@@ -1,0 +1,17 @@
+{
+  "_about": "Hand checks for the PR #33 code (eval-v2-full @ edb78e5) on the 5 held-out rollback traps (fixtures ml/data/llm_eval/traps_before: dependency check removed, retrieval re-run against the PR #33 runbooks). Rubric: ml/data/llm_eval/trap_rubric.md, written before any model run. Written by reading each diagnosis, not by the matcher or a model.",
+  "openai/gpt-oss-120b": {
+    "ho_trap_configmap_reload": {"correct": true},
+    "ho_trap_dependency_down": {"correct": true, "note": "Cannot reach the ledger service; hedges between a wrong URL, a missing Service and the service being down, but names the dependency."},
+    "ho_trap_healthy_retry_logs": {"correct": false, "note": "Calls the retried WARN lines an intermittent partner-api outage; the pod is healthy."},
+    "ho_trap_node_cordoned": {"correct": true},
+    "ho_trap_secret_deleted": {"correct": true}
+  },
+  "openai/gpt-oss-20b": {
+    "ho_trap_configmap_reload": {"correct": true},
+    "ho_trap_dependency_down": {"correct": false, "note": "Blames the image/command in the pod spec."},
+    "ho_trap_healthy_retry_logs": {"correct": true},
+    "ho_trap_node_cordoned": {"correct": false, "note": "Primary cause given is requests exceeding allocatable resources; taints/nodeSelector only as an aside. The node is cordoned. Regex counted it right."},
+    "ho_trap_secret_deleted": {"correct": true}
+  }
+}

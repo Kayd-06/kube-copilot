@@ -21,7 +21,7 @@ def load(report_path: Path, hand_path: Path | None) -> dict[str, Any]:
     hand = {}
     if hand_path and hand_path.exists():
         hand = json.loads(hand_path.read_text()).get(report["model"], {})
-    diag, prop, errors, retried = {}, {}, [], []
+    diag, prop, errors, retried, rollbacks = {}, {}, [], [], {}
     for r in report["records"]:
         if r["variant"] != "full":
             continue
@@ -33,19 +33,39 @@ def load(report_path: Path, hand_path: Path | None) -> dict[str, Any]:
             diag[r["case"]] = {"regex": regex, "hand": h, "final": regex if h is None else h}
         else:
             prop[r["case"]] = bool(r.get("remediation", {}).get("correct"))
+            rollbacks[r["case"]] = any(p.get("kind") == "rollback_deployment" for p in r.get("proposals") or [])
             if r.get("retried_without_required_tool"):
                 retried.append(r["case"])
     return {"model": report["model"], "labels": report["labels"], "diag": diag, "prop": prop,
-            "errors": errors, "retried": retried, "hand_cases": sum(1 for v in diag.values() if v["hand"] is not None)}
+            "errors": errors, "retried": retried, "rollbacks": rollbacks, "hand_cases": sum(1 for v in diag.values() if v["hand"] is not None)}
 
 
-# Cases in cases.py with a healthy previous revision where rolling back would not help.
+# Cases in cases.py with a healthy previous revision where rolling back would not help; the held-out
+# traps (cases_heldout.build_traps) are the `ho_trap_*` ids.
 NO_ROLLBACK_TRAPS = {"cm_deleted_after_rollout", "cm_edited_after_rollout", "pod_kill_after_rollout",
                      "healthy_after_rollout"}
+
+
+def is_trap(case_id: str) -> bool:
+    return case_id in NO_ROLLBACK_TRAPS or case_id.startswith("ho_trap_")
+
+
+def merge(runs: list[dict[str, Any]]) -> dict[str, Any]:
+    """Several reports for one model (e.g. the PR #33 held-out run plus the traps run) as one."""
+    out = {"model": runs[0]["model"], "labels": {}, "diag": {}, "prop": {}, "errors": [], "retried": [],
+           "hand_cases": 0, "rollbacks": {}}
+    for r in runs:
+        assert r["model"] == out["model"], "merge one model at a time"
+        for key in ("labels", "diag", "prop", "rollbacks"):
+            out[key].update(r[key])
+        out["errors"] += r["errors"]
+        out["retried"] += r["retried"]
+        out["hand_cases"] += r["hand_cases"]
+    return out
 GROUPS = {
     "Rollout cases (rollback expected)": ("prop", lambda lab: "rollback_deployment" in lab["expected_actions"]),
     "Previous revision exists, rollback would not help": (
-        "prop", lambda lab: lab.get("_id") in NO_ROLLBACK_TRAPS),
+        "prop", lambda lab: is_trap(lab.get("_id", ""))),
     "Pod kills (Diagnose)": ("diag", lambda lab: lab["category"] == "pod_disruption"),
     "Healthy pods (Diagnose)": ("diag", lambda lab: lab["category"] == "healthy"),
     "CPU throttling (Diagnose)": ("diag", lambda lab: lab["category"] == "cpu_throttling"),
@@ -79,6 +99,15 @@ def table(before: dict[str, Any] | None, after: dict[str, Any]) -> str:
         group = [c for c in cases if pred(labels[c])]
         if group:
             row(f"{name}", lambda r, g=group, k=kind: score(r, k, g))
+    traps = [c for c in cases if is_trap(c)]
+    if traps:
+        row("Traps: rollback avoided", lambda r: (sum(c in r["prop"] and not r["rollbacks"].get(c) for c in traps),
+                                                   len(traps)))
+    with_prev = [c for c in cases if labels[c].get("_has_previous")]
+    if with_prev:
+        row("Baseline: roll back whenever a previous revision exists",
+            lambda r: (sum(("rollback_deployment" if c in with_prev else "no_action") in labels[c]["expected_actions"]
+                           for c in cases), len(cases)))
     vals = [str(len(r["errors"])) for r in ([before] if before else []) + [after]]
     lines.append(f"| Request errors | {' | '.join(vals)} |")
     return "\n".join(lines)
@@ -92,20 +121,32 @@ def flips(before: dict[str, Any], after: dict[str, Any]) -> str:
             a = after[key].get(c)
             b = b["final"] if isinstance(b, dict) else b
             a = a["final"] if isinstance(a, dict) else a
-            if b != a:
+            if b is None:
+                out.append(f"- {kind} `{c}`: not in the before run -> {'right' if a else 'wrong'}")
+            elif bool(b) != bool(a):
                 out.append(f"- {kind} `{c}`: {'right' if b else 'wrong'} -> {'right' if a else 'wrong'}")
     return "\n".join(out) or "- (none)"
 
 
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--before", type=Path)
-    p.add_argument("--before-hand", type=Path)
+    p.add_argument("--before", type=Path, nargs="*", default=[],
+                   help="One or more reports for the same model; merged (e.g. PR #33 held-out + traps)")
+    p.add_argument("--before-hand", type=Path, nargs="*", default=[])
+    p.add_argument("--fixtures", type=Path, default=None,
+                   help="Fixture dir of the after run, for the 'previous revision exists' baseline")
     p.add_argument("--after", type=Path, required=True)
     p.add_argument("--after-hand", type=Path)
     args = p.parse_args(argv)
     after = load(args.after, args.after_hand)
-    before = load(args.before, args.before_hand) if args.before else None
+    if args.fixtures:
+        for f in args.fixtures.glob("*.json"):
+            raw = json.loads(f.read_text())
+            dep = raw["propose_input"].get("deployment") or {}
+            if raw["id"] in after["labels"]:
+                after["labels"][raw["id"]]["_has_previous"] = dep.get("previous_revision") is not None
+    hands = list(args.before_hand) + [None] * (len(args.before) - len(args.before_hand))
+    before = merge([load(b, h) for b, h in zip(args.before, hands)]) if args.before else None
     print(f"## {after['model']}\n")
     print(table(before, after))
     if before:
