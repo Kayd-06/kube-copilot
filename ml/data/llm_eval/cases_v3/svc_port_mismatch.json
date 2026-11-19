@@ -1,0 +1,259 @@
+{
+  "schema_version": 3,
+  "id": "svc_port_mismatch",
+  "title": "Client crashloops: upstream Service targetPort is wrong",
+  "labels": {
+    "category": "dependency_connectivity",
+    "expected_actions": [
+      "no_action"
+    ],
+    "expected_runbooks": [],
+    "difficulty": "hard",
+    "fault": "Service inventory maps port 80 to targetPort 8080, but the inventory pods listen on 80; storefront exits on connection refused.",
+    "notes": "The Service spec is not in the context; only the client's curl error is."
+  },
+  "namespace": "kc-eval-27",
+  "workload": "storefront",
+  "pod_name": "storefront-7b7c555f76-fqsjf",
+  "captured_at": "2026-11-19T12:14:05+00:00",
+  "cluster": "kind kube-copilot (single node, Kubernetes v1.32.2)",
+  "diagnose_input": {
+    "pod": {
+      "name": "storefront-7b7c555f76-fqsjf",
+      "namespace": "kc-eval-27",
+      "phase": "Running",
+      "reason": "CrashLoopBackOff",
+      "message": "back-off 40s restarting failed container=storefront pod=storefront-7b7c555f76-fqsjf_kc-eval-27(e49f6c77-c351-462f-ab72-600c09a38391)",
+      "restart_count": 3,
+      "ready": false,
+      "created_at": "2026-11-19T12:12:32Z",
+      "node": "kube-copilot-control-plane",
+      "qos_class": "Burstable",
+      "containers": [
+        {
+          "name": "storefront",
+          "ready": false,
+          "restart_count": 3,
+          "state": "waiting",
+          "reason": "CrashLoopBackOff",
+          "message": "back-off 40s restarting failed container=storefront pod=storefront-7b7c555f76-fqsjf_kc-eval-27(e49f6c77-c351-462f-ab72-600c09a38391)",
+          "exit_code": 1,
+          "resources": {
+            "requests": {
+              "cpu": "10m",
+              "memory": "16Mi"
+            },
+            "limits": {
+              "memory": "64Mi"
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "type": "Normal",
+        "reason": "Scheduled",
+        "message": "Successfully assigned kc-eval-27/storefront-7b7c555f76-fqsjf to kube-copilot-control-plane",
+        "count": 1,
+        "first_timestamp": "2026-11-19T12:12:32Z",
+        "last_timestamp": "2026-11-19T12:12:32Z",
+        "source": "default-scheduler"
+      },
+      {
+        "type": "Normal",
+        "reason": "Pulled",
+        "message": "Container image \"curlimages/curl:8.11.1\" already present on machine",
+        "count": 4,
+        "first_timestamp": "2026-11-19T12:12:32Z",
+        "last_timestamp": "2026-11-19T12:13:14Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Created",
+        "message": "Created container: storefront",
+        "count": 4,
+        "first_timestamp": "2026-11-19T12:12:32Z",
+        "last_timestamp": "2026-11-19T12:13:14Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Started",
+        "message": "Started container storefront",
+        "count": 4,
+        "first_timestamp": "2026-11-19T12:12:32Z",
+        "last_timestamp": "2026-11-19T12:13:14Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Warning",
+        "reason": "BackOff",
+        "message": "Back-off restarting failed container storefront in pod storefront-7b7c555f76-fqsjf_kc-eval-27(e49f6c77-c351-462f-ab72-600c09a38391)",
+        "count": 7,
+        "first_timestamp": "2026-11-19T12:12:34Z",
+        "last_timestamp": "2026-11-19T12:13:54Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      }
+    ],
+    "logs": {
+      "current": "2026-11-19T12:13:14.842246488Z 2026-11-19T12:13:14+00:00 INFO storefront starting, upstream=http://inventory/stock\n2026-11-19T12:13:14.847287801Z curl: (7) Failed to connect to inventory port 80 after 0 ms: Could not connect to server\n2026-11-19T12:13:14.852110173Z 2026-11-19T12:13:14+00:00 ERROR upstream request failed, exiting\n",
+      "previous": "2026-11-19T12:13:14.842246488Z 2026-11-19T12:13:14+00:00 INFO storefront starting, upstream=http://inventory/stock\n2026-11-19T12:13:14.847287801Z curl: (7) Failed to connect to inventory port 80 after 0 ms: Could not connect to server\n2026-11-19T12:13:14.852110173Z 2026-11-19T12:13:14+00:00 ERROR upstream request failed, exiting\n",
+      "container": "storefront"
+    },
+    "retrieval_query": "Running CrashLoopBackOff back-off 40s restarting failed container=storefront pod=storefront-7b7c555f76-fqsjf_kc-eval-27(e49f6c77-c351-462f-ab72-600c09a38391) CrashLoopBackOff back-off 40s restarting failed container=storefront pod=storefront-7b7c555f76-fqsjf_kc-eval-27(e49f6c77-c351-462f-ab72-600c09a38391) exit code 1 Scheduled Successfully assigned kc-eval-27/storefront-7b7c555f76-fqsjf to kube-copilot-control-plane Pulled Container image \"curlimages/curl:8.11.1\" already present on machine Created Created container: storefront Started Started container storefront BackOff Back-off restarting failed container storefront in pod storefront-7b7c555f76-fqsjf_kc-eval-27(e49f6c77-c351-462f-ab72-600c09a38391) 2026-11-19T12:13:14.842246488Z 2026-11-19T12:13:14+00:00 INFO storefront starting, upstream=http://inventory/stock 2026-11-19T12:13:14.847287801Z curl: (7) Failed to connect to inventory port 80 after 0 ms: Could not connect to server 2026-11-19T12:13:14.852110173Z 2026-11-19T12:13:14+00:00 ERROR upstream request failed, exiting 2026-11-19T12:13:14.842246488Z 2026-11-19T12:13:14+00:00 INFO storefront starting, upstream=http://inventory/stock 2026-11-19T12:13:14.847287801Z curl: (7) Failed to connect to inventory port 80 after 0 ms: Could not connect to server 2026-11-19T12:13:14.852110173Z 2026-11-19T12:13:14+00:00 ERROR upstream request failed, exiting",
+    "retrieved": [
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- `kubectl get pods` shows `STATUS` as `CrashLoopBackOff` or `Error` with a climbing restart count.\n- The pod phase may still be `Running` because a container is mid-backoff, not because the app is healthy.\n- Current logs are often empty or just a short \"waiting\" message. The useful signal is usually in the **previous** container logs (`kubectl logs --previous`).\n- Events include `BackOff`, `Failed`, or `Unhealthy` from the kubelet.",
+        "score": 0.8078307164312098,
+        "kind": "runbook"
+      },
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "CrashLoopBackOff",
+        "text": "# CrashLoopBackOff\n\nA pod is in `CrashLoopBackOff` when Kubernetes has started the container repeatedly and it keeps exiting. The kubelet backs off between restarts, so the pod can sit in this state for a long time while the application itself only lives for a few seconds at a time.",
+        "score": 0.7736725819613428,
+        "kind": "runbook"
+      },
+      {
+        "title": "App stuck after its dependency recovered (stale startup state)",
+        "source": "stale-dependency.md",
+        "section": "Fixes",
+        "text": "## Fixes\n\n- **Restart the workload** so it reconnects: `kubectl rollout restart deploy/<name> -n <ns>`. For one stuck replica among healthy ones, delete that pod.\n- Do **not** change or remove the readiness probe. It is correctly reporting that the app is not ready.\n- Do not roll back. The pod spec is not the problem.\n- Long term: retry the dependency with backoff instead of only checking at startup, re-create connections on failure, and make readiness reflect the current state of the dependency.",
+        "score": 0.7673063479732121,
+        "kind": "runbook"
+      },
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Read the last termination reason and exit code:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get pod <pod> -n <ns> -o jsonpath='{range .status.containerStatuses[*]}{.name}{\" \"}{.state}{\" \"}{.lastState.terminated}{\"\\n\"}{end}'\n   ```\n\n2. Always fetch previous logs if `restartCount > 0`:\n\n   ```bash\n   kubectl logs <pod> -n <ns> --previous --tail=200\n   kubectl logs <pod> -n <ns> --tail=200\n   ```\n\n3. Confirm the command that actually ran (`command` / `args` in the pod spec) and whether the image entrypoint expects different arguments.\n4. If logs mention a missing file, env var, or connection refused, inspect the related ConfigMap, Secret, and Service.",
+        "score": 0.7612462563877759,
+        "kind": "runbook"
+      },
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Fixes",
+        "text": "## Fixes\n\n- If the command is wrong (for example a demo container that ends in `exit 1`), correct `command`/`args` or the image entrypoint so the main process stays in the foreground.\n- If a config value is missing, add the env var or volume and roll the workload.\n- If a dependency is down, fix that service or make startup retry instead of exiting.\n- If a liveness probe is too aggressive, increase `initialDelaySeconds` / `failureThreshold` (see probe-failures).\n- After a fix, roll the deployment and confirm the restart count stops climbing:\n\n  ```bash\n  kubectl rollout status deploy/<name> -n <ns>\n  kubectl get pod <pod> -n <ns> --watch\n  ```",
+        "score": 0.7548182054166392,
+        "kind": "runbook"
+      }
+    ],
+    "knowledge_unavailable": false,
+    "anomaly": {
+      "namespace": "kc-eval-27",
+      "name": "storefront-7b7c555f76-fqsjf",
+      "score": 0.0,
+      "is_anomaly": true,
+      "threshold": 0.013067,
+      "metric_anomaly": false,
+      "detectors": [
+        "lifecycle"
+      ],
+      "lifecycle_signals": [
+        {
+          "kind": "container_restarted",
+          "at": "2026-11-19T12:13:14Z",
+          "workload": "storefront",
+          "pod": "storefront-7b7c555f76-fqsjf",
+          "detail": "+1 (Error)"
+        },
+        {
+          "kind": "event:BackOff",
+          "at": "2026-11-19T12:13:54Z",
+          "workload": "storefront",
+          "pod": "storefront-7b7c555f76-fqsjf",
+          "detail": "Back-off restarting failed container storefront in pod storefront-7b7c555f76-fqsjf_kc-eval-27(e49f6c77-c351-462f-ab72-60"
+        }
+      ],
+      "contributing_features": [],
+      "series": [],
+      "warning": "Insufficient metric history for kc-eval-27/storefront-7b7c555f76-fqsjf (0 sample(s); need at least 3)."
+    },
+    "anomaly_unavailable": false,
+    "usage": {
+      "containers": [
+        {
+          "name": "storefront",
+          "cpu_cores": null,
+          "cpu_limit_cores": null,
+          "cpu_request_cores": 0.01,
+          "cpu_throttled_ratio": null,
+          "memory_mib": null,
+          "memory_limit_mib": 64.0
+        }
+      ],
+      "window": "5m"
+    },
+    "dependencies": [
+      {
+        "source": "env UPSTREAM",
+        "target": "http://inventory/stock",
+        "namespace": "kc-eval-27",
+        "service": "inventory",
+        "exists": true,
+        "backing_pods": 1,
+        "ready_pods": 1,
+        "ready_since": "2026-11-19T12:12:33Z",
+        "port_mismatch": "Service port 80 -> targetPort 8080, but its pods declare containerPort(s) [80]",
+        "note": null
+      }
+    ]
+  },
+  "propose_input": {
+    "deployment": {
+      "namespace": "kc-eval-27",
+      "name": "storefront",
+      "replicas": 1,
+      "ready": 0,
+      "available": 0,
+      "updated": 1,
+      "generation": 1,
+      "observed_generation": 1,
+      "revision": 1,
+      "previous_revision": null,
+      "summary": {
+        "replicas": 1,
+        "revision": 1,
+        "template": {
+          "annotations": {},
+          "containers": [
+            {
+              "name": "storefront",
+              "image": "curlimages/curl:8.11.1",
+              "command": [
+                "sh",
+                "-c",
+                "echo \"$(date -Iseconds) INFO storefront starting, upstream=$UPSTREAM\"; while true; do curl -fsS -m 3 -o /dev/null \"$UPSTREAM\" || { echo \"$(date -Iseconds) ERROR upstream request failed, exiting\"; exit 1; }; echo \"$(date -Iseconds) INFO upstream ok\"; sleep 5; done"
+              ],
+              "args": null
+            }
+          ]
+        }
+      },
+      "previous_summary": null,
+      "template_diff": null,
+      "template_refs": {}
+    },
+    "pod_state": {
+      "namespace": "kc-eval-27",
+      "name": "storefront-7b7c555f76-fqsjf",
+      "controller_kind": "ReplicaSet",
+      "controller_name": "storefront-7b7c555f76",
+      "deployment": "storefront",
+      "crashlooping": true,
+      "restart_count": 3,
+      "reason": "CrashLoopBackOff"
+    },
+    "signals": [
+      "container_restarted pod=storefront-7b7c555f76-fqsjf +1 (Error)",
+      "event:BackOff pod=storefront-7b7c555f76-fqsjf Back-off restarting failed container storefront in pod storefront-7b7c555f76-fqsjf_kc-eval-27(e49f6c77-c351-462f-ab72-60"
+    ]
+  }
+}

@@ -1,0 +1,355 @@
+{
+  "schema_version": 2,
+  "id": "ho_trap_dependency_down",
+  "title": "Upstream scaled to zero shortly after a routine client rollout",
+  "labels": {
+    "category": "dependency_connectivity",
+    "expected_actions": [
+      "no_action"
+    ],
+    "expected_runbooks": [
+      "crashloopbackoff.md",
+      "dns-issues.md"
+    ],
+    "difficulty": "hard",
+    "fault": "checkout rolled out APP_VERSION 2.3.0 -> 2.3.1 (healthy). Then its upstream Deployment ledger was scaled to 0, so checkout's curl gets connection refused and it crashloops. Both revisions fail the same way; the upstream must be restored.",
+    "notes": "Rollback trap. The only template change is APP_VERSION."
+  },
+  "namespace": "kc-ho-13",
+  "workload": "checkout",
+  "pod_name": "checkout-6b6d48dd9d-bnzzj",
+  "captured_at": "2026-11-19T12:16:22+00:00",
+  "cluster": "kind kube-copilot (single node, Kubernetes v1.32.2)",
+  "diagnose_input": {
+    "pod": {
+      "name": "checkout-6b6d48dd9d-bnzzj",
+      "namespace": "kc-ho-13",
+      "phase": "Running",
+      "reason": "Error",
+      "message": null,
+      "restart_count": 4,
+      "ready": false,
+      "created_at": "2026-11-19T12:14:39Z",
+      "node": "kube-copilot-control-plane",
+      "qos_class": "Burstable",
+      "containers": [
+        {
+          "name": "checkout",
+          "ready": false,
+          "restart_count": 4,
+          "state": "terminated",
+          "reason": "Error",
+          "message": null,
+          "exit_code": 1,
+          "resources": {
+            "requests": {
+              "cpu": "10m",
+              "memory": "16Mi"
+            },
+            "limits": {
+              "memory": "64Mi"
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "type": "Normal",
+        "reason": "Scheduled",
+        "message": "Successfully assigned kc-ho-13/checkout-6b6d48dd9d-bnzzj to kube-copilot-control-plane",
+        "count": 1,
+        "first_timestamp": "2026-11-19T12:14:39Z",
+        "last_timestamp": "2026-11-19T12:14:39Z",
+        "source": "default-scheduler"
+      },
+      {
+        "type": "Normal",
+        "reason": "Pulled",
+        "message": "Container image \"curlimages/curl:8.11.1\" already present on machine",
+        "count": 5,
+        "first_timestamp": "2026-11-19T12:14:40Z",
+        "last_timestamp": "2026-11-19T12:16:17Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Created",
+        "message": "Created container: checkout",
+        "count": 5,
+        "first_timestamp": "2026-11-19T12:14:40Z",
+        "last_timestamp": "2026-11-19T12:16:17Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Started",
+        "message": "Started container checkout",
+        "count": 5,
+        "first_timestamp": "2026-11-19T12:14:40Z",
+        "last_timestamp": "2026-11-19T12:16:17Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Warning",
+        "reason": "BackOff",
+        "message": "Back-off restarting failed container checkout in pod checkout-6b6d48dd9d-bnzzj_kc-ho-13(9a90c64a-fa8e-4693-b59d-11cbdbf7e2ee)",
+        "count": 8,
+        "first_timestamp": "2026-11-19T12:14:51Z",
+        "last_timestamp": "2026-11-19T12:16:18Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      }
+    ],
+    "logs": {
+      "current": "2026-11-19T12:16:17.842536709Z 2026-11-19T12:16:17+00:00 INFO checkout 2.3.1 starting, ledger=http://ledger/\n2026-11-19T12:16:17.849773667Z curl: (7) Failed to connect to ledger port 80 after 1 ms: Could not connect to server\n2026-11-19T12:16:17.850728352Z 2026-11-19T12:16:17+00:00 ERROR ledger request failed, exiting\n",
+      "previous": "unable to retrieve container logs for containerd://3cb39ab5920a03670db8d508118c215d293c40ed280d46bb57584e4fa2d94b45",
+      "container": "checkout"
+    },
+    "retrieval_query": "Running Error Error exit code 1 Scheduled Successfully assigned kc-ho-13/checkout-6b6d48dd9d-bnzzj to kube-copilot-control-plane Pulled Container image \"curlimages/curl:8.11.1\" already present on machine Created Created container: checkout Started Started container checkout BackOff Back-off restarting failed container checkout in pod checkout-6b6d48dd9d-bnzzj_kc-ho-13(9a90c64a-fa8e-4693-b59d-11cbdbf7e2ee) unable to retrieve container logs for containerd://3cb39ab5920a03670db8d508118c215d293c40ed280d46bb57584e4fa2d94b45 2026-11-19T12:16:17.842536709Z 2026-11-19T12:16:17+00:00 INFO checkout 2.3.1 starting, ledger=http://ledger/ 2026-11-19T12:16:17.849773667Z curl: (7) Failed to connect to ledger port 80 after 1 ms: Could not connect to server 2026-11-19T12:16:17.850728352Z 2026-11-19T12:16:17+00:00 ERROR ledger request failed, exiting",
+    "retrieved": [
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Read the last termination reason and exit code:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get pod <pod> -n <ns> -o jsonpath='{range .status.containerStatuses[*]}{.name}{\" \"}{.state}{\" \"}{.lastState.terminated}{\"\\n\"}{end}'\n   ```\n\n2. Always fetch previous logs if `restartCount > 0`:\n\n   ```bash\n   kubectl logs <pod> -n <ns> --previous --tail=200\n   kubectl logs <pod> -n <ns> --tail=200\n   ```\n\n3. Confirm the command that actually ran (`command` / `args` in the pod spec) and whether the image entrypoint expects different arguments.\n4. If logs mention a missing file, env var, or connection refused, inspect the related ConfigMap, Secret, and Service.",
+        "score": 0.7560400581266923,
+        "kind": "runbook"
+      },
+      {
+        "title": "ImagePullBackOff and ErrImagePull",
+        "source": "imagepullbackoff.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Read the event message \u2014 it usually names the exact reference and the registry error:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get events -n <ns> --field-selector involvedObject.name=<pod>\n   ```\n\n2. Confirm the image the pod is actually asking for:\n\n   ```bash\n   kubectl get pod <pod> -n <ns> -o jsonpath='{range .spec.containers[*]}{.name}{\" \"}{.image}{\"\\n\"}{end}'\n   ```\n\n3. If it is a private image, check that a pull Secret exists in the same namespace and is referenced on the ServiceAccount or pod:\n\n   ```bash\n   kubectl get sa default -n <ns> -o yaml\n   kubectl get secret -n <ns>\n   ```\n\n4. From a node or a debug pod, try `crictl pull` / `docker pull` with the same reference to distinguish \"does not exist\" from \"auth\" and \"network\".",
+        "score": 0.7550412340369039,
+        "kind": "runbook"
+      },
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Fixes",
+        "text": "## Fixes\n\n- If the command is wrong (for example a demo container that ends in `exit 1`), correct `command`/`args` or the image entrypoint so the main process stays in the foreground.\n- If a config value is missing, add the env var or volume and roll the workload.\n- If a dependency is down, fix that service or make startup retry instead of exiting.\n- If a liveness probe is too aggressive, increase `initialDelaySeconds` / `failureThreshold` (see probe-failures).\n- After a fix, roll the deployment and confirm the restart count stops climbing:\n\n  ```bash\n  kubectl rollout status deploy/<name> -n <ns>\n  kubectl get pod <pod> -n <ns> --watch\n  ```",
+        "score": 0.7457271961674968,
+        "kind": "runbook"
+      },
+      {
+        "title": "CreateContainerError",
+        "source": "create-container-error.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- Pod is `Waiting` with reason `CreateContainerError`.\n- Events include `Failed` from the kubelet with a runtime error (device mapper, `no space left on device`, seccomp / AppArmor / SELinux denial, invalid capability, or a missing device plugin).\n- The image has often already been pulled (`ImagePullBackOff` is not the current reason).\n- Application logs are typically unavailable because the container never started.",
+        "score": 0.7433436908970632,
+        "kind": "runbook"
+      },
+      {
+        "title": "OOMKilled",
+        "source": "oomkilled.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Confirm the termination reason and the current limits:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get pod <pod> -n <ns> -o jsonpath='{.spec.containers[*].resources}'\n   ```\n\n2. Compare usage if metrics are available:\n\n   ```bash\n   kubectl top pod <pod> -n <ns> --containers\n   ```\n\n3. Read previous logs for allocation errors, heap dumps, or a sudden stop.\n4. Check whether the node itself is under memory pressure (`kubectl describe node <node>` and look for evictions or `MemoryPressure`).",
+        "score": 0.7397106663976083,
+        "kind": "runbook"
+      }
+    ],
+    "knowledge_unavailable": false,
+    "anomaly": {
+      "namespace": "kc-ho-13",
+      "name": "checkout-6b6d48dd9d-bnzzj",
+      "score": 0.9956,
+      "is_anomaly": true,
+      "threshold": 0.013067,
+      "metric_anomaly": true,
+      "detectors": [
+        "isolation_forest",
+        "lifecycle"
+      ],
+      "lifecycle_signals": [
+        {
+          "kind": "event:BackOff",
+          "at": "2026-11-19T12:14:19Z",
+          "workload": "checkout",
+          "pod": "checkout-6bf58d7c59-x9vpt",
+          "detail": "Back-off restarting failed container checkout in pod checkout-6bf58d7c59-x9vpt_kc-ho-13(25edfdd4-03b1-4842-a08f-6e95421c"
+        },
+        {
+          "kind": "container_restarted",
+          "at": "2026-11-19T12:15:29Z",
+          "workload": "checkout",
+          "pod": "checkout-6b6d48dd9d-bnzzj",
+          "detail": "+1 (Error)"
+        },
+        {
+          "kind": "event:BackOff",
+          "at": "2026-11-19T12:16:18Z",
+          "workload": "checkout",
+          "pod": "checkout-6b6d48dd9d-bnzzj",
+          "detail": "Back-off restarting failed container checkout in pod checkout-6b6d48dd9d-bnzzj_kc-ho-13(9a90c64a-fa8e-4693-b59d-11cbdbf7"
+        }
+      ],
+      "contributing_features": [
+        {
+          "name": "restart_rate_per_min",
+          "value": 2.0,
+          "zscore": 33.05053298920745,
+          "direction": "high"
+        },
+        {
+          "name": "restart_delta",
+          "value": 3.0,
+          "zscore": 17.95012546133618,
+          "direction": "high"
+        },
+        {
+          "name": "restart_last",
+          "value": 3.0,
+          "zscore": 11.43625171309188,
+          "direction": "high"
+        },
+        {
+          "name": "mem_mean_mib",
+          "value": 2.2109375,
+          "zscore": -4.842544663492832,
+          "direction": "low"
+        },
+        {
+          "name": "mem_last_mib",
+          "value": 2.2109375,
+          "zscore": -4.837332293835212,
+          "direction": "low"
+        }
+      ],
+      "series": [
+        {
+          "ts": 1795090492.0,
+          "cpu": 0.0,
+          "memory_mib": 2.211,
+          "mem_to_limit_ratio": 0.0345,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1795090507.0,
+          "cpu": 0.0,
+          "memory_mib": 2.211,
+          "mem_to_limit_ratio": 0.0345,
+          "restarts": 1.0
+        },
+        {
+          "ts": 1795090522.0,
+          "cpu": 0.0,
+          "memory_mib": 2.211,
+          "mem_to_limit_ratio": 0.0345,
+          "restarts": 2.0
+        },
+        {
+          "ts": 1795090537.0,
+          "cpu": 0.0,
+          "memory_mib": 2.211,
+          "mem_to_limit_ratio": 0.0345,
+          "restarts": 3.0
+        },
+        {
+          "ts": 1795090552.0,
+          "cpu": 0.0,
+          "memory_mib": 2.211,
+          "mem_to_limit_ratio": 0.0345,
+          "restarts": 3.0
+        },
+        {
+          "ts": 1795090567.0,
+          "cpu": 0.0,
+          "memory_mib": 2.211,
+          "mem_to_limit_ratio": 0.0345,
+          "restarts": 3.0
+        },
+        {
+          "ts": 1795090582.0,
+          "cpu": 0.0,
+          "memory_mib": 2.211,
+          "mem_to_limit_ratio": 0.0345,
+          "restarts": 3.0
+        }
+      ],
+      "warning": null
+    },
+    "anomaly_unavailable": false,
+    "usage": {
+      "containers": [
+        {
+          "name": "checkout",
+          "cpu_cores": null,
+          "cpu_limit_cores": null,
+          "cpu_request_cores": 0.01,
+          "cpu_throttled_ratio": null,
+          "memory_mib": 2.2,
+          "memory_limit_mib": 64.0
+        }
+      ],
+      "window": "5m"
+    }
+  },
+  "propose_input": {
+    "deployment": {
+      "namespace": "kc-ho-13",
+      "name": "checkout",
+      "replicas": 1,
+      "ready": 0,
+      "available": 0,
+      "updated": 1,
+      "generation": 2,
+      "observed_generation": 2,
+      "revision": 2,
+      "previous_revision": 1,
+      "summary": {
+        "replicas": 1,
+        "revision": 2,
+        "template": {
+          "annotations": {},
+          "containers": [
+            {
+              "name": "checkout",
+              "image": "curlimages/curl:8.11.1",
+              "command": [
+                "sh",
+                "-c",
+                "echo \"$(date -Iseconds) INFO checkout $APP_VERSION starting, ledger=$LEDGER_URL\"; while true; do curl -fsS -m 3 -o /dev/null \"$LEDGER_URL\" || { echo \"$(date -Iseconds) ERROR ledger request failed, exiting\"; exit 1; }; echo \"$(date -Iseconds) INFO ledger ok\"; sleep 5; done"
+              ],
+              "args": null
+            }
+          ]
+        }
+      },
+      "previous_summary": {
+        "annotations": {},
+        "containers": [
+          {
+            "name": "checkout",
+            "image": "curlimages/curl:8.11.1",
+            "command": [
+              "sh",
+              "-c",
+              "echo \"$(date -Iseconds) INFO checkout $APP_VERSION starting, ledger=$LEDGER_URL\"; while true; do curl -fsS -m 3 -o /dev/null \"$LEDGER_URL\" || { echo \"$(date -Iseconds) ERROR ledger request failed, exiting\"; exit 1; }; echo \"$(date -Iseconds) INFO ledger ok\"; sleep 5; done"
+            ],
+            "args": null
+          }
+        ]
+      },
+      "template_diff": [
+        "~ spec.containers[checkout].env[APP_VERSION].value: \"2.3.0\" -> \"2.3.1\""
+      ],
+      "template_refs": {}
+    },
+    "pod_state": {
+      "namespace": "kc-ho-13",
+      "name": "checkout-6b6d48dd9d-bnzzj",
+      "controller_kind": "ReplicaSet",
+      "controller_name": "checkout-6b6d48dd9d",
+      "deployment": "checkout",
+      "crashlooping": true,
+      "restart_count": 4,
+      "reason": "repeated restarts"
+    },
+    "signals": [
+      "event:BackOff pod=checkout-6bf58d7c59-x9vpt Back-off restarting failed container checkout in pod checkout-6bf58d7c59-x9vpt_kc-ho-13(25edfdd4-03b1-4842-a08f-6e95421c",
+      "container_restarted pod=checkout-6b6d48dd9d-bnzzj +1 (Error)",
+      "event:BackOff pod=checkout-6b6d48dd9d-bnzzj Back-off restarting failed container checkout in pod checkout-6b6d48dd9d-bnzzj_kc-ho-13(9a90c64a-fa8e-4693-b59d-11cbdbf7"
+    ]
+  },
+  "notes_before": "PR #33 baseline input: dependency check removed, retrieval re-run against the PR #33 runbooks."
+}

@@ -1,0 +1,336 @@
+{
+  "schema_version": 3,
+  "id": "ho_dns_proxy_first",
+  "title": "Worker calls a Service name that does not exist",
+  "labels": {
+    "category": "dependency_connectivity",
+    "expected_actions": [
+      "no_action"
+    ],
+    "expected_runbooks": [
+      "dns-issues.md"
+    ],
+    "difficulty": "medium",
+    "fault": "settlement calls http://ledger-db-proxy:6432/; no such Service exists, so the DNS lookup fails and it exits 1.",
+    "notes": ""
+  },
+  "namespace": "kc-ho-12",
+  "workload": "settlement",
+  "pod_name": "settlement-5f56d57785-2wkg6",
+  "captured_at": "2026-11-19T12:15:59+00:00",
+  "cluster": "kind kube-copilot (single node, Kubernetes v1.32.2)",
+  "diagnose_input": {
+    "pod": {
+      "name": "settlement-5f56d57785-2wkg6",
+      "namespace": "kc-ho-12",
+      "phase": "Running",
+      "reason": "Error",
+      "message": null,
+      "restart_count": 4,
+      "ready": true,
+      "created_at": "2026-11-19T12:14:16Z",
+      "node": "kube-copilot-control-plane",
+      "qos_class": "Burstable",
+      "containers": [
+        {
+          "name": "settlement",
+          "ready": true,
+          "restart_count": 4,
+          "state": "running",
+          "reason": "Error",
+          "message": null,
+          "exit_code": 1,
+          "resources": {
+            "requests": {
+              "cpu": "10m",
+              "memory": "16Mi"
+            },
+            "limits": {
+              "memory": "64Mi"
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "type": "Normal",
+        "reason": "Scheduled",
+        "message": "Successfully assigned kc-ho-12/settlement-5f56d57785-2wkg6 to kube-copilot-control-plane",
+        "count": 1,
+        "first_timestamp": "2026-11-19T12:14:16Z",
+        "last_timestamp": "2026-11-19T12:14:16Z",
+        "source": "default-scheduler"
+      },
+      {
+        "type": "Warning",
+        "reason": "BackOff",
+        "message": "Back-off restarting failed container settlement in pod settlement-5f56d57785-2wkg6_kc-ho-12(5a2865a4-7370-4a86-bfa5-33b2f1d258b8)",
+        "count": 6,
+        "first_timestamp": "2026-11-19T12:14:26Z",
+        "last_timestamp": "2026-11-19T12:15:42Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Pulled",
+        "message": "Container image \"busybox:1.36\" already present on machine",
+        "count": 5,
+        "first_timestamp": "2026-11-19T12:14:17Z",
+        "last_timestamp": "2026-11-19T12:15:58Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Created",
+        "message": "Created container: settlement",
+        "count": 5,
+        "first_timestamp": "2026-11-19T12:14:17Z",
+        "last_timestamp": "2026-11-19T12:15:58Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Started",
+        "message": "Started container settlement",
+        "count": 5,
+        "first_timestamp": "2026-11-19T12:14:17Z",
+        "last_timestamp": "2026-11-19T12:15:58Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      }
+    ],
+    "logs": {
+      "current": "2026-11-19T12:15:58.862982554Z 2026-11-19T12:15:58+00:00 INFO settlement worker starting, db proxy=http://ledger-db-proxy:6432/\n",
+      "previous": "2026-11-19T12:15:13.835905143Z 2026-11-19T12:15:13+00:00 INFO settlement worker starting, db proxy=http://ledger-db-proxy:6432/\n2026-11-19T12:15:17.840139374Z wget: bad address 'ledger-db-proxy:6432'\n2026-11-19T12:15:17.841861631Z 2026-11-19T12:15:17+00:00 ERROR cannot reach db proxy, exiting\n",
+      "container": "settlement"
+    },
+    "retrieval_query": "Running Error Error exit code 1 Scheduled Successfully assigned kc-ho-12/settlement-5f56d57785-2wkg6 to kube-copilot-control-plane BackOff Back-off restarting failed container settlement in pod settlement-5f56d57785-2wkg6_kc-ho-12(5a2865a4-7370-4a86-bfa5-33b2f1d258b8) Pulled Container image \"busybox:1.36\" already present on machine Created Created container: settlement Started Started container settlement 2026-11-19T12:15:13.835905143Z 2026-11-19T12:15:13+00:00 INFO settlement worker starting, db proxy=http://ledger-db-proxy:6432/ 2026-11-19T12:15:17.840139374Z wget: bad address 'ledger-db-proxy:6432' 2026-11-19T12:15:17.841861631Z 2026-11-19T12:15:17+00:00 ERROR cannot reach db proxy, exiting 2026-11-19T12:15:58.862982554Z 2026-11-19T12:15:58+00:00 INFO settlement worker starting, db proxy=http://ledger-db-proxy:6432/",
+    "retrieved": [
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Fixes",
+        "text": "## Fixes\n\n- If the command is wrong (for example a demo container that ends in `exit 1`), correct `command`/`args` or the image entrypoint so the main process stays in the foreground.\n- If a config value is missing, add the env var or volume and roll the workload.\n- If a dependency is down, fix that service or make startup retry instead of exiting.\n- If a liveness probe is too aggressive, increase `initialDelaySeconds` / `failureThreshold` (see probe-failures).\n- After a fix, roll the deployment and confirm the restart count stops climbing:\n\n  ```bash\n  kubectl rollout status deploy/<name> -n <ns>\n  kubectl get pod <pod> -n <ns> --watch\n  ```",
+        "score": 0.781084179495918,
+        "kind": "runbook"
+      },
+      {
+        "title": "App stuck after its dependency recovered (stale startup state)",
+        "source": "stale-dependency.md",
+        "section": "Fixes",
+        "text": "## Fixes\n\n- **Restart the workload** so it reconnects: `kubectl rollout restart deploy/<name> -n <ns>`. For one stuck replica among healthy ones, delete that pod.\n- Do **not** change or remove the readiness probe. It is correctly reporting that the app is not ready.\n- Do not roll back. The pod spec is not the problem.\n- Long term: retry the dependency with backoff instead of only checking at startup, re-create connections on failure, and make readiness reflect the current state of the dependency.",
+        "score": 0.7678353082471767,
+        "kind": "runbook"
+      },
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Read the last termination reason and exit code:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get pod <pod> -n <ns> -o jsonpath='{range .status.containerStatuses[*]}{.name}{\" \"}{.state}{\" \"}{.lastState.terminated}{\"\\n\"}{end}'\n   ```\n\n2. Always fetch previous logs if `restartCount > 0`:\n\n   ```bash\n   kubectl logs <pod> -n <ns> --previous --tail=200\n   kubectl logs <pod> -n <ns> --tail=200\n   ```\n\n3. Confirm the command that actually ran (`command` / `args` in the pod spec) and whether the image entrypoint expects different arguments.\n4. If logs mention a missing file, env var, or connection refused, inspect the related ConfigMap, Secret, and Service.",
+        "score": 0.7661803858139034,
+        "kind": "runbook"
+      },
+      {
+        "title": "Pending and unschedulable pods",
+        "source": "pending-unschedulable.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Read the `FailedScheduling` message first \u2014 it usually lists every reason a node was skipped:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get events -n <ns> --field-selector reason=FailedScheduling\n   ```\n\n2. Compare requests to allocatable resources:\n\n   ```bash\n   kubectl get pod <pod> -n <ns> -o jsonpath='{.spec.containers[*].resources.requests}'\n   kubectl get nodes -o custom-columns=NAME:.metadata.name,STATUS:.status.conditions[-1],CPU:.status.allocatable.cpu,MEM:.status.allocatable.memory\n   kubectl describe node <node>\n   ```\n\n3. Check taints, affinity, and selectors on the pod against labels and taints on the nodes.\n4. If the message mentions a PVC or volume, inspect the claim (see the PVC pending runbook).",
+        "score": 0.7628543471641882,
+        "kind": "runbook"
+      },
+      {
+        "title": "CreateContainerError",
+        "source": "create-container-error.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- Pod is `Waiting` with reason `CreateContainerError`.\n- Events include `Failed` from the kubelet with a runtime error (device mapper, `no space left on device`, seccomp / AppArmor / SELinux denial, invalid capability, or a missing device plugin).\n- The image has often already been pulled (`ImagePullBackOff` is not the current reason).\n- Application logs are typically unavailable because the container never started.",
+        "score": 0.7607906091153255,
+        "kind": "runbook"
+      }
+    ],
+    "knowledge_unavailable": false,
+    "anomaly": {
+      "namespace": "kc-ho-12",
+      "name": "settlement-5f56d57785-2wkg6",
+      "score": 0.9956,
+      "is_anomaly": true,
+      "threshold": 0.013067,
+      "metric_anomaly": true,
+      "detectors": [
+        "isolation_forest",
+        "lifecycle"
+      ],
+      "lifecycle_signals": [
+        {
+          "kind": "container_restarted",
+          "at": "2026-11-19T12:15:17Z",
+          "workload": "settlement",
+          "pod": "settlement-5f56d57785-2wkg6",
+          "detail": "+1 (Error)"
+        },
+        {
+          "kind": "event:BackOff",
+          "at": "2026-11-19T12:15:42Z",
+          "workload": "settlement",
+          "pod": "settlement-5f56d57785-2wkg6",
+          "detail": "Back-off restarting failed container settlement in pod settlement-5f56d57785-2wkg6_kc-ho-12(5a2865a4-7370-4a86-bfa5-33b2"
+        }
+      ],
+      "contributing_features": [
+        {
+          "name": "restart_rate_per_min",
+          "value": 1.6,
+          "zscore": 26.406353676944093,
+          "direction": "high"
+        },
+        {
+          "name": "restart_delta",
+          "value": 2.0,
+          "zscore": 11.909962450187681,
+          "direction": "high"
+        },
+        {
+          "name": "restart_last",
+          "value": 3.0,
+          "zscore": 11.43625171309188,
+          "direction": "high"
+        },
+        {
+          "name": "mem_mean_mib",
+          "value": 2.1953125,
+          "zscore": -4.843628285750192,
+          "direction": "low"
+        },
+        {
+          "name": "mem_last_mib",
+          "value": 2.1953125,
+          "zscore": -4.838414648991521,
+          "direction": "low"
+        }
+      ],
+      "series": [
+        {
+          "ts": 1795090484.0,
+          "cpu": 0.0,
+          "memory_mib": 2.195,
+          "mem_to_limit_ratio": 0.0343,
+          "restarts": 1.0
+        },
+        {
+          "ts": 1795090499.0,
+          "cpu": 0.0,
+          "memory_mib": 2.195,
+          "mem_to_limit_ratio": 0.0343,
+          "restarts": 2.0
+        },
+        {
+          "ts": 1795090514.0,
+          "cpu": 0.0,
+          "memory_mib": 2.195,
+          "mem_to_limit_ratio": 0.0343,
+          "restarts": 2.0
+        },
+        {
+          "ts": 1795090529.0,
+          "cpu": 0.0,
+          "memory_mib": 2.195,
+          "mem_to_limit_ratio": 0.0343,
+          "restarts": 3.0
+        },
+        {
+          "ts": 1795090544.0,
+          "cpu": 0.0,
+          "memory_mib": 2.195,
+          "mem_to_limit_ratio": 0.0343,
+          "restarts": 3.0
+        },
+        {
+          "ts": 1795090559.0,
+          "cpu": 0.0,
+          "memory_mib": 2.195,
+          "mem_to_limit_ratio": 0.0343,
+          "restarts": 3.0
+        }
+      ],
+      "warning": null
+    },
+    "anomaly_unavailable": false,
+    "usage": {
+      "containers": [
+        {
+          "name": "settlement",
+          "cpu_cores": null,
+          "cpu_limit_cores": null,
+          "cpu_request_cores": 0.01,
+          "cpu_throttled_ratio": null,
+          "memory_mib": 2.2,
+          "memory_limit_mib": 64.0
+        }
+      ],
+      "window": "5m"
+    },
+    "dependencies": [
+      {
+        "source": "env DB_PROXY",
+        "target": "http://ledger-db-proxy:6432/",
+        "namespace": "kc-ho-12",
+        "service": "ledger-db-proxy",
+        "exists": false,
+        "backing_pods": null,
+        "ready_pods": null,
+        "ready_since": null,
+        "port_mismatch": null,
+        "note": "no Service named ledger-db-proxy in namespace kc-ho-12; the name will not resolve"
+      }
+    ]
+  },
+  "propose_input": {
+    "deployment": {
+      "namespace": "kc-ho-12",
+      "name": "settlement",
+      "replicas": 1,
+      "ready": 1,
+      "available": 1,
+      "updated": 1,
+      "generation": 1,
+      "observed_generation": 1,
+      "revision": 1,
+      "previous_revision": null,
+      "summary": {
+        "replicas": 1,
+        "revision": 1,
+        "template": {
+          "annotations": {},
+          "containers": [
+            {
+              "name": "settlement",
+              "image": "busybox:1.36",
+              "command": [
+                "sh",
+                "-c",
+                "echo \"$(date -Iseconds) INFO settlement worker starting, db proxy=$DB_PROXY\"; wget -q -T 3 -O /dev/null \"$DB_PROXY\" || { echo \"$(date -Iseconds) ERROR cannot reach db proxy, exiting\"; exit 1; }; sleep 3600"
+              ],
+              "args": null
+            }
+          ]
+        }
+      },
+      "previous_summary": null,
+      "template_diff": null,
+      "template_refs": {}
+    },
+    "pod_state": {
+      "namespace": "kc-ho-12",
+      "name": "settlement-5f56d57785-2wkg6",
+      "controller_kind": "ReplicaSet",
+      "controller_name": "settlement-5f56d57785",
+      "deployment": "settlement",
+      "crashlooping": false,
+      "restart_count": 4,
+      "reason": null
+    },
+    "signals": [
+      "container_restarted pod=settlement-5f56d57785-2wkg6 +1 (Error)",
+      "event:BackOff pod=settlement-5f56d57785-2wkg6 Back-off restarting failed container settlement in pod settlement-5f56d57785-2wkg6_kc-ho-12(5a2865a4-7370-4a86-bfa5-33b2"
+    ]
+  }
+}

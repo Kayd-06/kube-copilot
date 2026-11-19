@@ -10,7 +10,7 @@ import pytest
 from app.actions.proposer import build_context
 from app.llm_explainer import build_user_prompt
 from ml.llm_eval.cases import CASES, CASES_BY_ID
-from ml.llm_eval.fixtures import FIXTURE_DIR, FIXTURE_DIR_V1, load_all
+from ml.llm_eval.fixtures import FIXTURE_DIR, FIXTURE_DIR_V1, HELDOUT_DIR_V3, load_all
 from ml.llm_eval.run import Pacer, baselines, diagnose_inputs, runs_variant, summarize
 from ml.llm_eval.scoring import kubectl_refs, schema_check, score_hallucination, score_remediation, score_retrieval
 from ml.llm_eval.taxonomy import ACTIONS, CATEGORIES, matches, predict_category
@@ -37,7 +37,7 @@ def test_v2_recaptures_keep_labels_and_add_context():
 @pytest.mark.parametrize("fx", FIXTURES + FIXTURES_V1, ids=lambda f: f"{f.raw['schema_version']}-{f.id}")
 def test_fixture_schema_and_labels(fx):
     case = CASES_BY_ID[fx.id]
-    assert fx.raw["schema_version"] in (1, 2)
+    assert fx.raw["schema_version"] in (1, 2, 3)
     assert fx.labels == case.labels(), "fixture labels must match the hand labels in cases.py"
     assert fx.labels["category"] in CATEGORIES
     assert fx.labels["expected_actions"] and set(fx.labels["expected_actions"]) <= set(ACTIONS)
@@ -55,6 +55,42 @@ def test_fixture_schema_and_labels(fx):
     # Rollout cases really have a previous revision to roll back to.
     if "rollback_deployment" in fx.labels["expected_actions"] and fx.labels["category"] != "dependency_connectivity":
         assert fx.deployment is not None and fx.deployment.previous_revision is not None
+
+
+def _env_service_refs(case) -> list[str]:
+    from app.dependencies import service_ref
+
+    out = []
+    for obj in case.base + case.rollout:
+        if obj.get("kind") == "Deployment" and obj["metadata"]["name"] == case.workload:
+            for c in obj["spec"]["template"]["spec"]["containers"]:
+                out += [e["value"] for e in c.get("env", []) if e.get("value") and service_ref(e["value"], "ns")]
+    return out
+
+
+def test_v3_dependency_field_matches_the_scenarios():
+    """Copied fixtures got dependencies=[]; that is only right when the workload's env names no Service."""
+    from ml.llm_eval.cases_heldout import HELDOUT_BY_ID
+
+    by_id = {**CASES_BY_ID, **HELDOUT_BY_ID}
+    for fx in FIXTURES + load_all(HELDOUT_DIR_V3):
+        assert fx.raw["schema_version"] == 3
+        deps = fx.raw["diagnose_input"]["dependencies"]
+        # The captured pod's own env decides; ho_env_dburl_rollout's broken URL names no Service.
+        if not deps:
+            refs = _env_service_refs(by_id[fx.id])
+            assert not refs or fx.id == "ho_env_dburl_rollout", (fx.id, refs)
+        else:
+            assert fx.raw["captured_at"] >= "2026-11-19", "dependency checks come from a re-capture"
+
+
+def test_heldout_traps_are_labelled_no_action_with_a_previous_revision():
+    traps = [f for f in load_all(HELDOUT_DIR_V3) if f.id.startswith("ho_trap_")]
+    assert len(traps) >= 4
+    for fx in traps:
+        assert fx.labels["expected_actions"] == ["no_action"]
+        assert fx.deployment is not None and fx.deployment.previous_revision is not None
+        assert fx.deployment.template_diff and all("env[" in line for line in fx.deployment.template_diff)
 
 
 def test_dataset_has_hard_and_healthy_cases():
@@ -132,7 +168,7 @@ def test_remediation_and_retrieval_scoring():
 def test_variants_and_summary_offline():
     fx = FIXTURES[0]
     assert runs_variant(fx, "diagnose", "full")
-    _, _, _, retrieved, _, _ = diagnose_inputs(fx, "no_rag")
+    _, _, _, retrieved, _, _, _ = diagnose_inputs(fx, "no_rag")
     assert retrieved is None
     records = [{
         "case": fx.id, "task": "diagnose", "variant": "full", "latency_s": 1.0, "prompt_tokens": 10,

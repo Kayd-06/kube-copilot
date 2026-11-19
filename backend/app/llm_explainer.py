@@ -11,8 +11,9 @@ from dataclasses import dataclass
 from openai import APIError, OpenAI, OpenAIError
 
 from app.config import Settings, get_settings
+from app.dependencies import dependency_lines
 from app.logcompact import compact_logs
-from app.models import AnomalyScore, Diagnosis, PodEvent, PodLogs, PodSummary, PodUsage
+from app.models import AnomalyScore, DependencyStatus, Diagnosis, PodEvent, PodLogs, PodSummary, PodUsage
 from app.rag.retriever import RetrievedChunk
 
 logger = logging.getLogger(__name__)
@@ -62,9 +63,32 @@ How to weigh the evidence:
    If the pod is Running/Ready (or Succeeded), has no restarts, no warning events,
    no errors in its logs and no disruption or throttling, conclude that it is
    healthy and the anomaly flag is most likely a false positive.
-5. Log warnings on a Ready pod with no restarts are usually routine (retries
-   that succeed, cache stats). Only treat them as the root cause when they show
-   real failures that match the pod's state.
+5. Start from the health summary, which is computed from Kubernetes state, not
+   from logs. When it says the pod is healthy, the answer is that the pod is
+   healthy: say so in likely_root_cause and describe the log lines for what they
+   are (retries, timeouts that later succeed, warnings, cache stats). WARN or
+   ERROR lines on a Ready pod with no restarts, no warning events, no throttling
+   and no disruption are not an outage, and are not a root cause, unless they show
+   work that ultimately fails AND some other evidence (status, events, metrics, a
+   dependency check) agrees.
+6. Dependencies: when present, the dependency check says whether each in-cluster
+   Service the pod's env points at is serving *now*. Compare it with what the
+   logs say the app saw:
+   - The dependency is down or missing now: that is the root cause (name it);
+     the fix is to restore the dependency, not to change this workload.
+   - The app logged that the dependency failed at startup, the check says the
+     dependency is serving now (in particular, it recovered after this pod
+     started) and the pod has been stuck since without restarting: the app is
+     holding stale state from startup (a startup-only check, a cached failed
+     connection, a degraded mode it never leaves). That is the root cause; the
+     fix is to restart the pod or roll the Deployment so it reconnects, and
+     ideally to make the app re-check the dependency instead of only at startup.
+7. A failing readiness probe is often a symptom. If the probe checks something
+   the app only provides once it has initialised (a ready file, a health
+   endpoint that depends on a backend), first ask why the app did not get
+   ready (logs, dependencies). Only call it a probe misconfiguration when the
+   probe itself is wrong (wrong path, port or command) for an app that is
+   otherwise working.
 
 Respond with a single JSON object (no markdown fences) with exactly these keys:
 - "summary": two or three sentences describing what is happening to the pod.
@@ -208,6 +232,52 @@ def _lifecycle_lines(anomaly: AnomalyScore | None) -> list[str]:
     return out
 
 
+def health_lines(
+    pod: PodSummary,
+    events: list[PodEvent],
+    usage: PodUsage | None = None,
+    anomaly: AnomalyScore | None = None,
+    dependencies: list[DependencyStatus] | None = None,
+) -> list[str]:
+    """A deterministic verdict from Kubernetes state (never from logs), so log noise is weighed against it."""
+    containers = pod.containers
+    ready = sum(1 for c in containers if c.ready)
+    warnings = [e for e in events if e.type == "Warning"]
+    throttled = [c for c in (usage.containers if usage else []) if (c.cpu_throttled_ratio or 0) >= THROTTLED_HIGH]
+    disruptive = sorted({
+        s.kind.removeprefix("event:") for s in (anomaly.lifecycle_signals if anomaly else [])
+        if s.kind.removeprefix("event:") in DISRUPTIVE_SIGNALS
+    })
+    deps_down = [d for d in (dependencies or []) if not d.exists or d.ready_pods == 0]
+    ratios = [c.cpu_throttled_ratio for c in (usage.containers if usage else []) if c.cpu_throttled_ratio is not None]
+    throttle_txt = f"{100 * max(ratios):.0f}% of CFS periods" if ratios else "not measured (no CPU limit or no metrics)"
+    facts = (f"- phase {pod.phase}; containers Ready {ready}/{len(containers)}; restarts {pod.restart_count}; "
+             f"Warning events {len(warnings)}; CPU throttling {throttle_txt}; "
+             f"workload disruption signals: {', '.join(disruptive) or 'none'}")
+    problems = []
+    if pod.phase == "Succeeded":
+        verdict = "completed successfully (Succeeded); nothing is running and nothing is wrong unless other evidence says so."
+    else:
+        if pod.phase != "Running":
+            problems.append(f"phase is {pod.phase}")
+        if not containers or ready < len(containers):
+            problems.append("not all containers are Ready")
+        if pod.restart_count:
+            problems.append(f"{pod.restart_count} restart(s)")
+        if warnings:
+            problems.append(f"{len(warnings)} Warning event(s)")
+        if throttled:
+            problems.append("CPU-throttled in a high share of periods")
+        if disruptive:
+            problems.append("pods of this workload were stopped/replaced")
+        if deps_down:
+            problems.append("a dependency it points at is down or missing")
+        verdict = ("NOT healthy: " + "; ".join(problems) + ".") if problems else (
+            "HEALTHY by every Kubernetes signal (Running, Ready, no restarts, no warning events, no throttling, "
+            "no disruption). Log lines alone do not make this an incident.")
+    return ["Health summary (computed from Kubernetes state and metrics, not from logs):", facts, f"- verdict: {verdict}"]
+
+
 def build_user_prompt(
     pod: PodSummary,
     events: list[PodEvent],
@@ -215,6 +285,7 @@ def build_user_prompt(
     retrieved: list[RetrievedChunk] | None = None,
     anomaly: AnomalyScore | None = None,
     usage: PodUsage | None = None,
+    dependencies: list[DependencyStatus] | None = None,
 ) -> str:
     containers = []
     for c in pod.containers:
@@ -255,7 +326,12 @@ def build_user_prompt(
         "Containers:",
         json.dumps(containers, indent=2),
         "",
+        *health_lines(pod, events, usage, anomaly, dependencies),
+        "",
     ]
+    deps_part = dependency_lines(dependencies, pod.created_at, pod.restart_count)
+    if deps_part:
+        parts += deps_part + [""]
     usage_part = _usage_lines(usage)
     if usage_part:
         parts += usage_part + [""]
@@ -351,8 +427,9 @@ class LLMExplainer:
         retrieved: list[RetrievedChunk] | None = None,
         anomaly: AnomalyScore | None = None,
         usage: PodUsage | None = None,
+        dependencies: list[DependencyStatus] | None = None,
     ) -> Diagnosis:
-        return self.explain_detailed(pod, events, logs, retrieved, anomaly, usage).diagnosis
+        return self.explain_detailed(pod, events, logs, retrieved, anomaly, usage, dependencies).diagnosis
 
     def explain_detailed(
         self,
@@ -362,11 +439,12 @@ class LLMExplainer:
         retrieved: list[RetrievedChunk] | None = None,
         anomaly: AnomalyScore | None = None,
         usage: PodUsage | None = None,
+        dependencies: list[DependencyStatus] | None = None,
     ) -> DiagnosisRun:
         """Like explain(), but also returns the raw text, parse status and token usage (used by evals)."""
         messages = [
             {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": build_user_prompt(pod, events, logs, retrieved, anomaly, usage)},
+            {"role": "user", "content": build_user_prompt(pod, events, logs, retrieved, anomaly, usage, dependencies)},
         ]
         client = self._get_client()
         try:
@@ -413,11 +491,12 @@ class LLMExplainer:
         retrieved: list[RetrievedChunk] | None = None,
         anomaly: AnomalyScore | None = None,
         usage: PodUsage | None = None,
+        dependencies: list[DependencyStatus] | None = None,
     ) -> Iterator[str]:
         """Yield text chunks from the model, then the caller parses the full text."""
         messages = [
             {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": build_user_prompt(pod, events, logs, retrieved, anomaly, usage)},
+            {"role": "user", "content": build_user_prompt(pod, events, logs, retrieved, anomaly, usage, dependencies)},
         ]
         client = self._get_client()
         kwargs = self._create_kwargs(messages, stream=True)
@@ -451,7 +530,8 @@ class LLMExplainer:
         retrieved: list[RetrievedChunk] | None = None,
         anomaly: AnomalyScore | None = None,
         usage: PodUsage | None = None,
+        dependencies: list[DependencyStatus] | None = None,
     ) -> AsyncIterator[str]:
         # The official OpenAI SDK streaming iterator is sync; wrap it for SSE.
-        for piece in self.explain_stream(pod, events, logs, retrieved, anomaly, usage):
+        for piece in self.explain_stream(pod, events, logs, retrieved, anomaly, usage, dependencies):
             yield piece

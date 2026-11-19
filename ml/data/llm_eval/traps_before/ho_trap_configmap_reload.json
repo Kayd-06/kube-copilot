@@ -1,0 +1,393 @@
+{
+  "schema_version": 2,
+  "id": "ho_trap_configmap_reload",
+  "title": "Mounted ConfigMap edited to an invalid value after a routine rollout",
+  "labels": {
+    "category": "bad_config_value",
+    "expected_actions": [
+      "no_action"
+    ],
+    "expected_runbooks": [
+      "crashloopbackoff.md"
+    ],
+    "difficulty": "hard",
+    "fault": "quote-engine rolled out BUILD 881 -> 882 (healthy). Later the mounted ConfigMap quote-engine-conf was edited to max_discount_pct=thirty; the app re-reads the file, rejects it and exits 1 on every start. Both revisions mount the same ConfigMap; the ConfigMap must be fixed.",
+    "notes": "Rollback trap. The ConfigMap is not part of the pod template, so the diff shows only BUILD."
+  },
+  "namespace": "kc-ho-14",
+  "workload": "quote-engine",
+  "pod_name": "quote-engine-864b6c959f-8hfcx",
+  "captured_at": "2026-11-19T12:17:15+00:00",
+  "cluster": "kind kube-copilot (single node, Kubernetes v1.32.2)",
+  "diagnose_input": {
+    "pod": {
+      "name": "quote-engine-864b6c959f-8hfcx",
+      "namespace": "kc-ho-14",
+      "phase": "Running",
+      "reason": "Error",
+      "message": null,
+      "restart_count": 4,
+      "ready": false,
+      "created_at": "2026-11-19T12:14:22Z",
+      "node": "kube-copilot-control-plane",
+      "qos_class": "Burstable",
+      "containers": [
+        {
+          "name": "quote-engine",
+          "ready": false,
+          "restart_count": 4,
+          "state": "terminated",
+          "reason": "Error",
+          "message": null,
+          "exit_code": 1,
+          "resources": {
+            "requests": {
+              "cpu": "10m",
+              "memory": "16Mi"
+            },
+            "limits": {
+              "memory": "64Mi"
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "type": "Normal",
+        "reason": "Scheduled",
+        "message": "Successfully assigned kc-ho-14/quote-engine-864b6c959f-8hfcx to kube-copilot-control-plane",
+        "count": 1,
+        "first_timestamp": "2026-11-19T12:14:22Z",
+        "last_timestamp": "2026-11-19T12:14:22Z",
+        "source": "default-scheduler"
+      },
+      {
+        "type": "Normal",
+        "reason": "Pulled",
+        "message": "Container image \"busybox:1.36\" already present on machine",
+        "count": 5,
+        "first_timestamp": "2026-11-19T12:14:23Z",
+        "last_timestamp": "2026-11-19T12:17:14Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Created",
+        "message": "Created container: quote-engine",
+        "count": 5,
+        "first_timestamp": "2026-11-19T12:14:23Z",
+        "last_timestamp": "2026-11-19T12:17:14Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Started",
+        "message": "Started container quote-engine",
+        "count": 5,
+        "first_timestamp": "2026-11-19T12:14:23Z",
+        "last_timestamp": "2026-11-19T12:17:14Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Warning",
+        "reason": "BackOff",
+        "message": "Back-off restarting failed container quote-engine in pod quote-engine-864b6c959f-8hfcx_kc-ho-14(f9d17ce5-ba76-4e2a-a882-69f13eaf1d2b)",
+        "count": 8,
+        "first_timestamp": "2026-11-19T12:15:44Z",
+        "last_timestamp": "2026-11-19T12:17:15Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      }
+    ],
+    "logs": {
+      "current": "2026-11-19T12:17:14.839632289Z 2026-11-19T12:17:14+00:00 INFO quote-engine build 882 starting\n2026-11-19T12:17:14.841360715Z 2026-11-19T12:17:14+00:00 FATAL /etc/quote/engine.properties: max_discount_pct=thirty is not an integer 0-99\n",
+      "previous": "unable to retrieve container logs for containerd://ef10400c08fbeb6a18ad9790abc9852f2203717793109fcb524c516cc017fa51",
+      "container": "quote-engine"
+    },
+    "retrieval_query": "Running Error Error exit code 1 Scheduled Successfully assigned kc-ho-14/quote-engine-864b6c959f-8hfcx to kube-copilot-control-plane Pulled Container image \"busybox:1.36\" already present on machine Created Created container: quote-engine Started Started container quote-engine BackOff Back-off restarting failed container quote-engine in pod quote-engine-864b6c959f-8hfcx_kc-ho-14(f9d17ce5-ba76-4e2a-a882-69f13eaf1d2b) unable to retrieve container logs for containerd://ef10400c08fbeb6a18ad9790abc9852f2203717793109fcb524c516cc017fa51 2026-11-19T12:17:14.839632289Z 2026-11-19T12:17:14+00:00 INFO quote-engine build 882 starting 2026-11-19T12:17:14.841360715Z 2026-11-19T12:17:14+00:00 FATAL /etc/quote/engine.properties: max_discount_pct=thirty is not an integer 0-99",
+    "retrieved": [
+      {
+        "title": "CreateContainerConfigError",
+        "source": "create-container-config-error.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- Pod is `Pending` or `Waiting` with reason `CreateContainerConfigError`.\n- Events include `Failed` with a message such as `Error: secret \"...\" not found`, `couldn't find key ... in ConfigMap ...`, or `configmap \"...\" not found`.\n- Restart count is usually zero. `kubectl logs` will fail or return an \"unavailable\" message.",
+        "score": 0.7603022995874821,
+        "kind": "runbook"
+      },
+      {
+        "title": "OOMKilled",
+        "source": "oomkilled.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Confirm the termination reason and the current limits:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get pod <pod> -n <ns> -o jsonpath='{.spec.containers[*].resources}'\n   ```\n\n2. Compare usage if metrics are available:\n\n   ```bash\n   kubectl top pod <pod> -n <ns> --containers\n   ```\n\n3. Read previous logs for allocation errors, heap dumps, or a sudden stop.\n4. Check whether the node itself is under memory pressure (`kubectl describe node <node>` and look for evictions or `MemoryPressure`).",
+        "score": 0.7589268213782886,
+        "kind": "runbook"
+      },
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Read the last termination reason and exit code:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get pod <pod> -n <ns> -o jsonpath='{range .status.containerStatuses[*]}{.name}{\" \"}{.state}{\" \"}{.lastState.terminated}{\"\\n\"}{end}'\n   ```\n\n2. Always fetch previous logs if `restartCount > 0`:\n\n   ```bash\n   kubectl logs <pod> -n <ns> --previous --tail=200\n   kubectl logs <pod> -n <ns> --tail=200\n   ```\n\n3. Confirm the command that actually ran (`command` / `args` in the pod spec) and whether the image entrypoint expects different arguments.\n4. If logs mention a missing file, env var, or connection refused, inspect the related ConfigMap, Secret, and Service.",
+        "score": 0.7565894567637906,
+        "kind": "runbook"
+      },
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Fixes",
+        "text": "## Fixes\n\n- If the command is wrong (for example a demo container that ends in `exit 1`), correct `command`/`args` or the image entrypoint so the main process stays in the foreground.\n- If a config value is missing, add the env var or volume and roll the workload.\n- If a dependency is down, fix that service or make startup retry instead of exiting.\n- If a liveness probe is too aggressive, increase `initialDelaySeconds` / `failureThreshold` (see probe-failures).\n- After a fix, roll the deployment and confirm the restart count stops climbing:\n\n  ```bash\n  kubectl rollout status deploy/<name> -n <ns>\n  kubectl get pod <pod> -n <ns> --watch\n  ```",
+        "score": 0.746951516874609,
+        "kind": "runbook"
+      },
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- `kubectl get pods` shows `STATUS` as `CrashLoopBackOff` or `Error` with a climbing restart count.\n- The pod phase may still be `Running` because a container is mid-backoff, not because the app is healthy.\n- Current logs are often empty or just a short \"waiting\" message. The useful signal is usually in the **previous** container logs (`kubectl logs --previous`).\n- Events include `BackOff`, `Failed`, or `Unhealthy` from the kubelet.",
+        "score": 0.7454528957606185,
+        "kind": "runbook"
+      }
+    ],
+    "knowledge_unavailable": false,
+    "anomaly": {
+      "namespace": "kc-ho-14",
+      "name": "quote-engine-864b6c959f-8hfcx",
+      "score": 0.9981,
+      "is_anomaly": true,
+      "threshold": 0.013067,
+      "metric_anomaly": true,
+      "detectors": [
+        "isolation_forest",
+        "lifecycle"
+      ],
+      "lifecycle_signals": [
+        {
+          "kind": "container_restarted",
+          "at": "2026-11-19T12:16:23Z",
+          "workload": "quote-engine",
+          "pod": "quote-engine-864b6c959f-8hfcx",
+          "detail": "+1 (Error)"
+        },
+        {
+          "kind": "event:BackOff",
+          "at": "2026-11-19T12:17:15Z",
+          "workload": "quote-engine",
+          "pod": "quote-engine-864b6c959f-8hfcx",
+          "detail": "Back-off restarting failed container quote-engine in pod quote-engine-864b6c959f-8hfcx_kc-ho-14(f9d17ce5-ba76-4e2a-a882-"
+        },
+        {
+          "kind": "replicas_unavailable",
+          "at": "2026-11-19T12:17:15.508414Z",
+          "workload": "quote-engine",
+          "pod": null,
+          "detail": "0/1 available"
+        }
+      ],
+      "contributing_features": [
+        {
+          "name": "restart_rate_per_min",
+          "value": 1.0909090909090908,
+          "zscore": 17.95012546133619,
+          "direction": "high"
+        },
+        {
+          "name": "restart_delta",
+          "value": 3.0,
+          "zscore": 17.95012546133618,
+          "direction": "high"
+        },
+        {
+          "name": "restart_last",
+          "value": 3.0,
+          "zscore": 11.43625171309188,
+          "direction": "high"
+        },
+        {
+          "name": "mem_last_mib",
+          "value": 0.38671875,
+          "zscore": -4.963697258334232,
+          "direction": "low"
+        },
+        {
+          "name": "mem_mean_mib",
+          "value": 0.5657552083333334,
+          "zscore": -4.9566410570073245,
+          "direction": "low"
+        }
+      ],
+      "series": [
+        {
+          "ts": 1795090470.0,
+          "cpu": 0.0,
+          "memory_mib": 2.539,
+          "mem_to_limit_ratio": 0.0,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1795090485.0,
+          "cpu": 0.0002,
+          "memory_mib": 0.383,
+          "mem_to_limit_ratio": 0.006,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1795090500.0,
+          "cpu": 0.0002,
+          "memory_mib": 0.387,
+          "mem_to_limit_ratio": 0.006,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1795090515.0,
+          "cpu": 0.0003,
+          "memory_mib": 0.387,
+          "mem_to_limit_ratio": 0.006,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1795090530.0,
+          "cpu": 0.0004,
+          "memory_mib": 0.387,
+          "mem_to_limit_ratio": 0.006,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1795090545.0,
+          "cpu": 0.0005,
+          "memory_mib": 0.387,
+          "mem_to_limit_ratio": 0.006,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1795090560.0,
+          "cpu": 0.0005,
+          "memory_mib": 0.387,
+          "mem_to_limit_ratio": 0.006,
+          "restarts": 1.0
+        },
+        {
+          "ts": 1795090575.0,
+          "cpu": 0.0005,
+          "memory_mib": 0.387,
+          "mem_to_limit_ratio": 0.006,
+          "restarts": 2.0
+        },
+        {
+          "ts": 1795090590.0,
+          "cpu": 0.0004,
+          "memory_mib": 0.387,
+          "mem_to_limit_ratio": 0.006,
+          "restarts": 2.0
+        },
+        {
+          "ts": 1795090605.0,
+          "cpu": 0.0003,
+          "memory_mib": 0.387,
+          "mem_to_limit_ratio": 0.006,
+          "restarts": 3.0
+        },
+        {
+          "ts": 1795090620.0,
+          "cpu": 0.0002,
+          "memory_mib": 0.387,
+          "mem_to_limit_ratio": 0.006,
+          "restarts": 3.0
+        },
+        {
+          "ts": 1795090635.0,
+          "cpu": 0.0002,
+          "memory_mib": 0.387,
+          "mem_to_limit_ratio": 0.006,
+          "restarts": 3.0
+        }
+      ],
+      "warning": null
+    },
+    "anomaly_unavailable": false,
+    "usage": {
+      "containers": [
+        {
+          "name": "quote-engine",
+          "cpu_cores": 0.0002,
+          "cpu_limit_cores": null,
+          "cpu_request_cores": 0.01,
+          "cpu_throttled_ratio": null,
+          "memory_mib": 0.4,
+          "memory_limit_mib": 64.0
+        }
+      ],
+      "window": "5m"
+    }
+  },
+  "propose_input": {
+    "deployment": {
+      "namespace": "kc-ho-14",
+      "name": "quote-engine",
+      "replicas": 1,
+      "ready": 0,
+      "available": 0,
+      "updated": 1,
+      "generation": 2,
+      "observed_generation": 2,
+      "revision": 2,
+      "previous_revision": 1,
+      "summary": {
+        "replicas": 1,
+        "revision": 2,
+        "template": {
+          "annotations": {},
+          "containers": [
+            {
+              "name": "quote-engine",
+              "image": "busybox:1.36",
+              "command": [
+                "sh",
+                "-c",
+                "echo \"$(date -Iseconds) INFO quote-engine build $BUILD starting\"; while true; do v=$(sed -n 's/^max_discount_pct=//p' /etc/quote/engine.properties); case \"$v\" in [0-9]|[0-9][0-9]) ;; *) echo \"$(date -Iseconds) FATAL /etc/quote/engine.properties: max_discount_pct=\"$v\" is not an integer 0-99\"; exit 1;; esac; echo \"$(date -Iseconds) INFO config ok (max_discount_pct=$v), serving quotes\"; sleep 5; done"
+              ],
+              "args": null
+            }
+          ]
+        }
+      },
+      "previous_summary": {
+        "annotations": {},
+        "containers": [
+          {
+            "name": "quote-engine",
+            "image": "busybox:1.36",
+            "command": [
+              "sh",
+              "-c",
+              "echo \"$(date -Iseconds) INFO quote-engine build $BUILD starting\"; while true; do v=$(sed -n 's/^max_discount_pct=//p' /etc/quote/engine.properties); case \"$v\" in [0-9]|[0-9][0-9]) ;; *) echo \"$(date -Iseconds) FATAL /etc/quote/engine.properties: max_discount_pct=\"$v\" is not an integer 0-99\"; exit 1;; esac; echo \"$(date -Iseconds) INFO config ok (max_discount_pct=$v), serving quotes\"; sleep 5; done"
+            ],
+            "args": null
+          }
+        ]
+      },
+      "template_diff": [
+        "~ spec.containers[quote-engine].env[BUILD].value: \"881\" -> \"882\""
+      ],
+      "template_refs": {
+        "configmaps": [
+          "quote-engine-conf"
+        ]
+      }
+    },
+    "pod_state": {
+      "namespace": "kc-ho-14",
+      "name": "quote-engine-864b6c959f-8hfcx",
+      "controller_kind": "ReplicaSet",
+      "controller_name": "quote-engine-864b6c959f",
+      "deployment": "quote-engine",
+      "crashlooping": true,
+      "restart_count": 4,
+      "reason": "repeated restarts"
+    },
+    "signals": [
+      "container_restarted pod=quote-engine-864b6c959f-8hfcx +1 (Error)",
+      "event:BackOff pod=quote-engine-864b6c959f-8hfcx Back-off restarting failed container quote-engine in pod quote-engine-864b6c959f-8hfcx_kc-ho-14(f9d17ce5-ba76-4e2a-a882-",
+      "replicas_unavailable pod=- 0/1 available"
+    ]
+  },
+  "notes_before": "PR #33 baseline input: dependency check removed, retrieval re-run against the PR #33 runbooks."
+}

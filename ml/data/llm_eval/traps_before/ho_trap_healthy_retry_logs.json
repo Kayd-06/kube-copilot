@@ -1,0 +1,309 @@
+{
+  "schema_version": 2,
+  "id": "ho_trap_healthy_retry_logs",
+  "title": "Healthy after a routine rollout; logs show retried timeouts that succeed",
+  "labels": {
+    "category": "healthy",
+    "expected_actions": [
+      "no_action"
+    ],
+    "expected_runbooks": [],
+    "difficulty": "hard",
+    "fault": "feed-sync rolled out RELEASE r41 -> r42. Nothing is broken: the pod is Ready with no restarts, and the WARN lines are retries that succeed on the third attempt (written by the workload script).",
+    "notes": "Rollback trap and a noisy-logs check."
+  },
+  "namespace": "kc-ho-17",
+  "workload": "feed-sync",
+  "pod_name": "feed-sync-fb5647cb6-tp2w2",
+  "captured_at": "2026-11-19T12:15:40+00:00",
+  "cluster": "kind kube-copilot (single node, Kubernetes v1.32.2)",
+  "diagnose_input": {
+    "pod": {
+      "name": "feed-sync-fb5647cb6-tp2w2",
+      "namespace": "kc-ho-17",
+      "phase": "Running",
+      "reason": null,
+      "message": null,
+      "restart_count": 0,
+      "ready": true,
+      "created_at": "2026-11-19T12:14:22Z",
+      "node": "kube-copilot-control-plane",
+      "qos_class": "Burstable",
+      "containers": [
+        {
+          "name": "feed-sync",
+          "ready": true,
+          "restart_count": 0,
+          "state": "running",
+          "reason": null,
+          "message": null,
+          "exit_code": null,
+          "resources": {
+            "requests": {
+              "cpu": "10m",
+              "memory": "16Mi"
+            },
+            "limits": {
+              "memory": "64Mi"
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "type": "Normal",
+        "reason": "Scheduled",
+        "message": "Successfully assigned kc-ho-17/feed-sync-fb5647cb6-tp2w2 to kube-copilot-control-plane",
+        "count": 1,
+        "first_timestamp": "2026-11-19T12:14:22Z",
+        "last_timestamp": "2026-11-19T12:14:22Z",
+        "source": "default-scheduler"
+      },
+      {
+        "type": "Normal",
+        "reason": "Pulled",
+        "message": "Container image \"busybox:1.36\" already present on machine",
+        "count": 1,
+        "first_timestamp": "2026-11-19T12:14:23Z",
+        "last_timestamp": "2026-11-19T12:14:23Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Created",
+        "message": "Created container: feed-sync",
+        "count": 1,
+        "first_timestamp": "2026-11-19T12:14:23Z",
+        "last_timestamp": "2026-11-19T12:14:23Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Started",
+        "message": "Started container feed-sync",
+        "count": 1,
+        "first_timestamp": "2026-11-19T12:14:23Z",
+        "last_timestamp": "2026-11-19T12:14:23Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      }
+    ],
+    "logs": {
+      "current": "2026-11-19T12:14:23.306935556Z 2026-11-19T12:14:23+00:00 INFO feed-sync r42 started\n2026-11-19T12:14:23.308135629Z 2026-11-19T12:14:23+00:00 WARN partner-api timeout after 2000ms (attempt 1/3), retrying\n2026-11-19T12:14:23.308805861Z 2026-11-19T12:14:23+00:00 WARN partner-api 503 Service Unavailable (attempt 2/3), retrying\n2026-11-19T12:14:23.309761636Z 2026-11-19T12:14:23+00:00 INFO partner-api ok on attempt 3, synced page 1 (200 items)\n2026-11-19T12:14:27.311775066Z 2026-11-19T12:14:27+00:00 WARN partner-api timeout after 2000ms (attempt 1/3), retrying\n2026-11-19T12:14:27.312908289Z 2026-11-19T12:14:27+00:00 WARN partner-api 503 Service Unavailable (attempt 2/3), retrying\n2026-11-19T12:14:27.313816863Z 2026-11-19T12:14:27+00:00 INFO partner-api ok on attempt 3, synced page 2 (200 items)\n2026-11-19T12:14:31.315850859Z 2026-11-19T12:14:31+00:00 WARN partner-api timeout after 2000ms (attempt 1/3), retrying\n2026-11-19T12:14:31.317015699Z 2026-11-19T12:14:31+00:00 WARN partner-api 503 Service Unavailable (attempt 2/3), retrying\n2026-11-19T12:14:31.317909262Z 2026-11-19T12:14:31+00:00 INFO partner-api ok on attempt 3, synced page 3 (200 items)\n2026-11-19T12:14:35.319407399Z 2026-11-19T12:14:35+00:00 WARN partner-api timeout after 2000ms (attempt 1/3), retrying\n2026-11-19T12:14:35.320566943Z 2026-11-19T12:14:35+00:00 WARN partner-api 503 Service Unavailable (attempt 2/3), retrying\n2026-11-19T12:14:35.321679321Z 2026-11-19T12:14:35+00:00 INFO partner-api ok on attempt 3, synced page 4 (200 items)\n2026-11-19T12:14:39.323263788Z 2026-11-19T12:14:39+00:00 WARN partner-api timeout after 2000ms (attempt 1/3), retrying\n2026-11-19T12:14:39.324478730Z 2026-11-19T12:14:39+00:00 WARN partner-api 503 Service Unavailable (attempt 2/3), retrying\n2026-11-19T12:14:39.325119239Z 2026-11-19T12:14:39+00:00 INFO partner-api ok on attempt 3, synced page 5 (200 items)\n2026-11-19T12:14:43.326477047Z 2026-11-19T12:14:43+00:00 WARN partner-api timeout after 2000ms (attempt 1/3), retrying\n2026-11-19T12:14:43.327865238Z 2026-11-19T12:14:43+00:00 WARN partner-api 503 Service Unavailable (attempt 2/3), retrying\n2026-11-19T12:14:43.328678812Z 2026-11-19T12:14:43+00:00 INFO partner-api ok on attempt 3, synced page 6 (200 items)\n2026-11-19T12:14:47.330423546Z 2026-11-19T12:14:47+00:00 WARN partner-api timeout after 2000ms (attempt 1/3), retrying\n2026-11-19T12:14:47.331120448Z 2026-11-19T12:14:47+00:00 WARN partner-api 503 Service Unavailable (attempt 2/3), retrying\n2026-11-19T12:14:47.332312813Z 2026-11-19T12:14:47+00:00 INFO partner-api ok on attempt 3, synced page 7 (200 items)\n2026-11-19T12:14:51.333792974Z 2026-11-19T12:14:51+00:00 WARN partner-api timeout after 2000ms (attempt 1/3), retrying\n2026-11-19T12:14:51.334542914Z 2026-11-19T12:14:51+00:00 WARN partner-api 503 Service Unavailable (attempt 2/3), retrying\n2026-11-19T12:14:51.335564447Z 2026-11-19T12:14:51+00:00 INFO partner-api ok on attempt 3, synced page 8 (200 items)\n2026-11-19T12:14:55.337234935Z 2026-11-19T12:14:55+00:00 WARN partner-api timeout after 2000ms (attempt 1/3), retrying\n2026-11-19T12:14:55.338329051Z 2026-11-19T12:14:55+00:00 WARN partner-api 503 Service Unavailable (attempt 2/3), retrying\n2026-11-19T12:14:55.339001120Z 2026-11-19T12:14:55+00:00 INFO partner-api ok on attempt 3, synced page 9 (200 items)\n2026-11-19T12:14:59.341208171Z 2026-11-19T12:14:59+00:00 WARN partner-api timeout after 2000ms (attempt 1/3), retrying\n2026-11-19T12:14:59.342078450Z 2026-11-19T12:14:59+00:00 WARN partner-api 503 Service Unavailable (attempt 2/3), retrying\n2026-11-19T12:14:59.343413080Z 2026-11-19T12:14:59+00:00 INFO partner-api ok on attempt 3, synced page 10 (200 items)\n2026-11-19T12:15:03.344417453Z 2026-11-19T12:15:03+00:00 WARN partner-api timeout after 2000ms (attempt 1/3), retrying\n2026-11-19T12:15:03.345132972Z 2026-11-19T12:15:03+00:00 WARN partner-api 503 Service Unavailable (attempt 2/3), retrying\n2026-11-19T12:15:03.345960813Z 2026-11-19T12:15:03+00:00 INFO partner-api ok on attempt 3, synced page 11 (200 items)\n2026-11-19T12:15:07.347294699Z 2026-11-19T12:15:07+00:00 WARN partner-api timeout after 2000ms (attempt 1/3), retrying\n2026-11-19T12:15:07.348490291Z 2026-11-19T12:15:07+00:00 WARN partner-api 503 Service Unavailable (attempt 2/3), retrying\n2026-11-19T12:15:07.349256088Z 2026-11-19T12:15:07+00:00 INFO partner-api ok on attempt 3, synced page 12 (200 items)\n2026-11-19T12:15:11.350773986Z 2026-11-19T12:15:11+00:00 WARN partner-api timeout after 2000ms (attempt 1/3), retrying\n2026-11-19T12:15:11.352048082Z 2026-11-19T12:15:11+00:00 WARN partner-api 503 Service Unavailable (attempt 2/3), retrying\n2026-11-19T12:15:11.353151248Z 2026-11-19T12:15:11+00:00 INFO partner-api ok on attempt 3, synced page 13 (200 items)\n2026-11-19T12:15:15.354472517Z 2026-11-19T12:15:15+00:00 WARN partner-api timeout after 2000ms (attempt 1/3), retrying\n2026-11-19T12:15:15.355858760Z 2026-11-19T12:15:15+00:00 WARN partner-api 503 Service Unavailable (attempt 2/3), retrying\n2026-11-19T12:15:15.356998069Z 2026-11-19T12:15:15+00:00 INFO partner-api ok on attempt 3, synced page 14 (200 items)\n2026-11-19T12:15:19.358469433Z 2026-11-19T12:15:19+00:00 WARN partner-api timeout after 2000ms (attempt 1/3), retrying\n2026-11-19T12:15:19.359508695Z 2026-11-19T12:15:19+00:00 WARN partner-api 503 Service Unavailable (attempt 2/3), retrying\n2026-11-19T12:15:19.360572471Z 2026-11-19T12:15:19+00:00 INFO partner-api ok on attempt 3, synced page 15 (200 items)\n2026-11-19T12:15:23.361996076Z 2026-11-19T12:15:23+00:00 WARN partner-api timeout after 2000ms (attempt 1/3), retrying\n2026-11-19T12:15:23.362772610Z 2026-11-19T12:15:23+00:00 WARN partner-api 503 Service Unavailable (attempt 2/3), retrying\n2026-11-19T12:15:23.363975677Z 2026-11-19T12:15:23+00:00 INFO partner-api ok on attempt 3, synced page 16 (200 items)\n2026-11-19T12:15:27.365288287Z 2026-11-19T12:15:27+00:00 WARN partner-api timeout after 2000ms (attempt 1/3), retrying\n2026-11-19T12:15:27.365846167Z 2026-11-19T12:15:27+00:00 WARN partner-api 503 Service Unavailable (attempt 2/3), retrying\n2026-11-19T12:15:27.366911846Z 2026-11-19T12:15:27+00:00 INFO partner-api ok on attempt 3, synced page 17 (200 items)\n2026-11-19T12:15:31.368730284Z 2026-11-19T12:15:31+00:00 WARN partner-api timeout after 2000ms (attempt 1/3), retrying\n2026-11-19T12:15:31.369917712Z 2026-11-19T12:15:31+00:00 WARN partner-api 503 Service Unavailable (attempt 2/3), retrying\n2026-11-19T12:15:31.370669234Z 2026-11-19T12:15:31+00:00 INFO partner-api ok on attempt 3, synced page 18 (200 items)\n2026-11-19T12:15:35.372219688Z 2026-11-19T12:15:35+00:00 WARN partner-api timeout after 2000ms (attempt 1/3), retrying\n2026-11-19T12:15:35.373104068Z 2026-11-19T12:15:35+00:00 WARN partner-api 503 Service Unavailable (attempt 2/3), retrying\n2026-11-19T12:15:35.373924759Z 2026-11-19T12:15:35+00:00 INFO partner-api ok on attempt 3, synced page 19 (200 items)\n",
+      "previous": null,
+      "container": "feed-sync"
+    },
+    "retrieval_query": "Running Scheduled Successfully assigned kc-ho-17/feed-sync-fb5647cb6-tp2w2 to kube-copilot-control-plane Pulled Container image \"busybox:1.36\" already present on machine Created Created container: feed-sync Started Started container feed-sync 2026-11-19T12:14:59.341208171Z 2026-11-19T12:14:59+00:00 WARN partner-api timeout after 2000ms (attempt 1/3), retrying 2026-11-19T12:14:59.342078450Z 2026-11-19T12:14:59+00:00 WARN partner-api 503 Service Unavailable (attempt 2/3), retrying 2026-11-19T12:14:59.343413080Z 2026-11-19T12:14:59+00:00 INFO partner-api ok on attempt 3, synced page 10 (200 items) 2026-11-19T12:15:03.344417453Z 2026-11-19T12:15:03+00:00 WARN partner-api timeout after 2000ms (attempt 1/3), retrying 2026-11-19T12:15:03.345132972Z 2026-11-19T12:15:03+00:00 WARN partner-api 503 Service Unavailable (attempt 2/3), retrying 2026-11-19T12:15:03.345960813Z 2026-11-19T12:15:03+00:00 INFO partner-api ok on attempt 3, synced page 11 (200 items) 2026-11-19T12:15:07.347294699Z 2026-11-19T12:15:07+00:00 WARN partner-api timeout after 2000ms (attempt 1/3), retrying 2026-11-19T12:15:07.348490291Z 2026-11-19T12:15:07+00:00 WARN partner-api 503 Service Unavailable (attempt 2/3), retrying 2026-11-19T12:15:07.349256088Z 2026-11-19T12:15:07+00:00 INFO partner-api ok on attempt 3, synced page 12 (200 items) 2026-11-19T12:15:11.350773986Z 2026-11-19T12:15:11+00:00 WARN partner-api timeout after 2000ms (attempt 1/3), retrying 2026-11-19T12:15:11.352048082Z 2026-11-19T12:15:11+00:00 WARN partner-api 503 Service Unavailable (attempt 2/3), retrying 2026-11-19T12:15:11.353151248Z 2026-11-19T12:15:11+00:00 INFO partner-api ok on attempt 3, synced page 13 (200 items) 2026-11-19T12:15:15.354472517Z 2026-11-19T12:15:15+00:00 WARN partner-api timeout after 2000ms (attempt 1/3), retrying 2026-11-19T12:15:15.355858760Z 2026-11-19T12:15:15+00:00 WARN partner-api 503 Service Unavailable (attempt 2/3), retrying 2026-11-19T12:15:15.356998069Z 2026-11-19T12:15:15+00:00 INFO partner-api ok on attempt 3, synced page 14 (200 items) 2026-11-19T12:15:19.358469433Z 2026-11-19T12:15:19+00:00 WARN partner-api timeout after 2000ms (attempt 1/3), retrying 2026-11-19T12:15:19.359508695Z 2026-11-19T12:15:19+00:00 WARN partner-api 503 Service Unavailable (attempt 2/3), retrying 2026-11-19T12:15:19.360572471Z 2026-11-19T12:15:19+00:00 INFO partner-api ok on attempt 3, synced page 15 (200 items) 2026-11-19T12:15:23.361996076Z 2026-11-19T12:15:23+00:00 WARN partner-api timeout after 2000ms (attempt 1/3), retrying 2026-11-19T12:15:23.362772610Z 2026-11-19T12:15:23+00:00 WARN partner-api 503 Service Unavailable (attempt 2/3), retrying 2026-11-19T12:15:23.363975677Z 2026-11-19T12:15:23+00:00 INFO partner-api ok on attempt 3, synced page 16 (200 items) 2026-11-19T12:15:27.365288287Z 2026-11-19T12:15:27+00:00 WARN partner-api timeout after 2000ms (attempt 1/3), retrying 2026-11-19T12:15:27.365846167Z 2026-11-19T12:15:27+00:00 WARN partner-api 503 Service Unavailable (attempt 2/3), retrying 2026-11-19T12:15:27.366911846Z 2026-11-19T12:15:27+00:00 INFO partner-api ok on attempt 3, synced page 17 (200 items) 2026-11-19T12:15:31.368730284Z 2026-11-19T12:15:31+00:00 WARN partner-api timeout after 2000ms (attempt 1/3), retrying 2026-11-19T12:15:31.369917712Z 2026-11-19T12:15:31+00:00 WARN partner-api 503 Service Unavailable (attempt 2/3), retrying 2026-11-19T12:15:31.370669234Z 2026-11-19T12:15:31+00:00 INFO partner-api ok on attempt 3, synced page 18 (200 items) 2026-11-19T12:15:35.372219688Z 2026-11-19T12:15:35+00:00 WARN partner-api timeout after 2000ms (attempt 1/3), retrying 2026-11-19T12:15:35.373104068Z 2026-11-19T12:15:35+00:00 WARN partner-api 503 Service Unavailable (attempt 2/3), retrying 2026-11-19T12:15:35.373924759Z 2026-11-19T12:15:35+00:00 INFO partner-api ok on attempt 3, synced page 19 (200 items)",
+    "retrieved": [
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Fixes",
+        "text": "## Fixes\n\n- If the command is wrong (for example a demo container that ends in `exit 1`), correct `command`/`args` or the image entrypoint so the main process stays in the foreground.\n- If a config value is missing, add the env var or volume and roll the workload.\n- If a dependency is down, fix that service or make startup retry instead of exiting.\n- If a liveness probe is too aggressive, increase `initialDelaySeconds` / `failureThreshold` (see probe-failures).\n- After a fix, roll the deployment and confirm the restart count stops climbing:\n\n  ```bash\n  kubectl rollout status deploy/<name> -n <ns>\n  kubectl get pod <pod> -n <ns> --watch\n  ```",
+        "score": 0.7658523384190602,
+        "kind": "runbook"
+      },
+      {
+        "title": "CPU throttling",
+        "source": "cpu-throttling.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Read the requests and limits:\n\n   ```bash\n   kubectl get pod <pod> -n <ns> -o jsonpath='{.spec.containers[*].resources}'\n   ```\n\n2. Compare usage with the limit:\n\n   ```bash\n   kubectl top pod <pod> -n <ns> --containers\n   ```\n\n3. Check throttling in Prometheus:\n\n   ```promql\n   sum by (container) (rate(container_cpu_cfs_throttled_periods_total{namespace=\"<ns>\", pod=\"<pod>\"}[5m]))\n     / sum by (container) (rate(container_cpu_cfs_periods_total{namespace=\"<ns>\", pod=\"<pod>\"}[5m]))\n   ```\n\n4. If a rollout changed the resources, compare revisions with `kubectl rollout history deploy/<name> -n <ns> --revision=<n>`.",
+        "score": 0.7636609011008901,
+        "kind": "runbook"
+      },
+      {
+        "title": "CreateContainerError",
+        "source": "create-container-error.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- Pod is `Waiting` with reason `CreateContainerError`.\n- Events include `Failed` from the kubelet with a runtime error (device mapper, `no space left on device`, seccomp / AppArmor / SELinux denial, invalid capability, or a missing device plugin).\n- The image has often already been pulled (`ImagePullBackOff` is not the current reason).\n- Application logs are typically unavailable because the container never started.",
+        "score": 0.7544392836542129,
+        "kind": "runbook"
+      },
+      {
+        "title": "DNS issues inside the cluster",
+        "source": "dns-issues.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- Application logs show `unknown host`, `Name or service not known`, `no such host`, `i/o timeout` talking to a Service name, or repeated reconnects to a hostname that should exist.\n- `nslookup` / `getent hosts` / `dig` from a debug container fail for `kubernetes.default` or for the target Service.\n- CoreDNS pods in `kube-system` may be crash-looping, pending, or not ready. Nodes may show `NetworkUnavailable`.\n- Traffic to raw ClusterIPs or pod IPs still works, which is a strong hint the problem is name resolution, not the network path itself.",
+        "score": 0.7467038703508316,
+        "kind": "runbook"
+      },
+      {
+        "title": "Node NotReady",
+        "source": "node-not-ready.md",
+        "section": "Fixes",
+        "text": "## Fixes\n\n- Restart the kubelet and the container runtime on that node once you know they are stuck, and fix disk or memory pressure first if that is what they are reporting.\n- Restore node networking and API connectivity; a node in `Unknown` will not recover until heartbeats resume.\n- If the machine is gone, delete the node object (after confirming it will not come back) so evicted pods can reschedule:\n\n  ```bash\n  kubectl drain <node> --ignore-daemonsets --delete-emptydir-data\n  kubectl delete node <node>\n  ```\n\n- For kind or local clusters, restarting the kind node container often brings the kubelet back: `docker restart <kind-node-container>`.\n- After the node is `Ready` again, uncordon it if it was cordoned and watch that pods become Ready.",
+        "score": 0.7452236200042455,
+        "kind": "runbook"
+      }
+    ],
+    "knowledge_unavailable": false,
+    "anomaly": {
+      "namespace": "kc-ho-17",
+      "name": "feed-sync-fb5647cb6-tp2w2",
+      "score": 0.9819,
+      "is_anomaly": true,
+      "threshold": 0.013067,
+      "metric_anomaly": true,
+      "detectors": [
+        "isolation_forest"
+      ],
+      "lifecycle_signals": [],
+      "contributing_features": [
+        {
+          "name": "mem_last_mib",
+          "value": 0.375,
+          "zscore": -4.964509024701464,
+          "direction": "low"
+        },
+        {
+          "name": "mem_mean_mib",
+          "value": 0.7317708333333334,
+          "zscore": -4.945127570522879,
+          "direction": "low"
+        },
+        {
+          "name": "mem_slope_mib_per_min",
+          "value": -1.2169642857142857,
+          "zscore": -4.930423494300071,
+          "direction": "low"
+        },
+        {
+          "name": "mem_to_limit_ratio",
+          "value": 0.005859375,
+          "zscore": -2.7168562255525974,
+          "direction": "low"
+        },
+        {
+          "name": "cpu_mean",
+          "value": 0.00036192746020881865,
+          "zscore": -2.638372612889474,
+          "direction": "low"
+        }
+      ],
+      "series": [
+        {
+          "ts": 1795090465.0,
+          "cpu": 0.0,
+          "memory_mib": 2.504,
+          "mem_to_limit_ratio": 0.0,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1795090480.0,
+          "cpu": 0.0002,
+          "memory_mib": 0.379,
+          "mem_to_limit_ratio": 0.0059,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1795090495.0,
+          "cpu": 0.0003,
+          "memory_mib": 0.379,
+          "mem_to_limit_ratio": 0.0059,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1795090510.0,
+          "cpu": 0.0004,
+          "memory_mib": 0.375,
+          "mem_to_limit_ratio": 0.0059,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1795090525.0,
+          "cpu": 0.0006,
+          "memory_mib": 0.379,
+          "mem_to_limit_ratio": 0.0059,
+          "restarts": 0.0
+        },
+        {
+          "ts": 1795090540.0,
+          "cpu": 0.0006,
+          "memory_mib": 0.375,
+          "mem_to_limit_ratio": 0.0059,
+          "restarts": 0.0
+        }
+      ],
+      "warning": null
+    },
+    "anomaly_unavailable": false,
+    "usage": {
+      "containers": [
+        {
+          "name": "feed-sync",
+          "cpu_cores": 0.0003,
+          "cpu_limit_cores": null,
+          "cpu_request_cores": 0.01,
+          "cpu_throttled_ratio": null,
+          "memory_mib": 0.4,
+          "memory_limit_mib": 64.0
+        }
+      ],
+      "window": "5m"
+    }
+  },
+  "propose_input": {
+    "deployment": {
+      "namespace": "kc-ho-17",
+      "name": "feed-sync",
+      "replicas": 1,
+      "ready": 1,
+      "available": 1,
+      "updated": 1,
+      "generation": 2,
+      "observed_generation": 2,
+      "revision": 2,
+      "previous_revision": 1,
+      "summary": {
+        "replicas": 1,
+        "revision": 2,
+        "template": {
+          "annotations": {},
+          "containers": [
+            {
+              "name": "feed-sync",
+              "image": "busybox:1.36",
+              "command": [
+                "sh",
+                "-c",
+                "echo \"$(date -Iseconds) INFO feed-sync $RELEASE started\"; n=0; while true; do n=$((n+1)); echo \"$(date -Iseconds) WARN partner-api timeout after 2000ms (attempt 1/3), retrying\"; echo \"$(date -Iseconds) WARN partner-api 503 Service Unavailable (attempt 2/3), retrying\"; echo \"$(date -Iseconds) INFO partner-api ok on attempt 3, synced page $n (200 items)\"; sleep 4; done"
+              ],
+              "args": null
+            }
+          ]
+        }
+      },
+      "previous_summary": {
+        "annotations": {},
+        "containers": [
+          {
+            "name": "feed-sync",
+            "image": "busybox:1.36",
+            "command": [
+              "sh",
+              "-c",
+              "echo \"$(date -Iseconds) INFO feed-sync $RELEASE started\"; n=0; while true; do n=$((n+1)); echo \"$(date -Iseconds) WARN partner-api timeout after 2000ms (attempt 1/3), retrying\"; echo \"$(date -Iseconds) WARN partner-api 503 Service Unavailable (attempt 2/3), retrying\"; echo \"$(date -Iseconds) INFO partner-api ok on attempt 3, synced page $n (200 items)\"; sleep 4; done"
+            ],
+            "args": null
+          }
+        ]
+      },
+      "template_diff": [
+        "~ spec.containers[feed-sync].env[RELEASE].value: \"r41\" -> \"r42\""
+      ],
+      "template_refs": {}
+    },
+    "pod_state": {
+      "namespace": "kc-ho-17",
+      "name": "feed-sync-fb5647cb6-tp2w2",
+      "controller_kind": "ReplicaSet",
+      "controller_name": "feed-sync-fb5647cb6",
+      "deployment": "feed-sync",
+      "crashlooping": false,
+      "restart_count": 0,
+      "reason": null
+    },
+    "signals": []
+  },
+  "notes_before": "PR #33 baseline input: dependency check removed, retrieval re-run against the PR #33 runbooks."
+}

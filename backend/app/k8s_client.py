@@ -15,7 +15,8 @@ from kubernetes.client.models import (
 )
 
 from app.config import Settings, get_settings
-from app.models import ContainerStateSummary, PodEvent, PodLogs, PodSummary
+from app.dependencies import check_dependencies
+from app.models import ContainerStateSummary, DependencyStatus, PodEvent, PodLogs, PodSummary
 from ml.lifecycle import LifecycleEvent, PodLife, RestartObservation, WorkloadSample, workload_of
 
 logger = logging.getLogger(__name__)
@@ -300,6 +301,10 @@ class K8sClient:
             raise K8sUnavailableError(
                 f"Kubernetes API error while reading pod {namespace}/{name}: {exc.reason}"
             ) from exc
+
+    def get_dependencies(self, pod: V1Pod) -> list[DependencyStatus]:
+        """In-cluster Services named in the pod's env and how many of their pods are Ready now."""
+        return check_dependencies(self._ensure_connected(), pod)
 
     def get_pod_logs(self, namespace: str, name: str, pod: V1Pod | None = None) -> PodLogs:
         api = self._ensure_connected()

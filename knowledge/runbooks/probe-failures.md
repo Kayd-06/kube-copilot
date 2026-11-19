@@ -16,6 +16,7 @@ Probes tell Kubernetes whether a container is alive (liveness) and whether it sh
 - The handler is too strict (requires a warm cache or a downstream dependency that is degraded).
 - Timeouts are too low for a slow endpoint, or the probe itself is expensive enough to stall the process.
 - A readiness probe depends on an external system, so a database blip removes every replica from the Service at once.
+- The probe is fine and the app never became ready. For example, it creates its ready file or health endpoint only after a startup check of a dependency that failed. Then the probe failure is a symptom: find out why the app is not ready (logs, dependency status) before you change the probe. If the dependency has recovered since the pod started, see `stale-dependency.md`. A restart fixes it.
 
 ## Diagnosis
 

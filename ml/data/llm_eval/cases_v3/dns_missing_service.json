@@ -1,0 +1,322 @@
+{
+  "schema_version": 3,
+  "id": "dns_missing_service",
+  "title": "Client calls a Service name that does not exist",
+  "labels": {
+    "category": "dependency_connectivity",
+    "expected_actions": [
+      "no_action"
+    ],
+    "expected_runbooks": [
+      "dns-issues.md"
+    ],
+    "difficulty": "medium",
+    "fault": "quotes calls http://pricing-api/quote; there is no pricing-api Service, so DNS lookup fails.",
+    "notes": ""
+  },
+  "namespace": "kc-eval-28",
+  "workload": "quotes",
+  "pod_name": "quotes-76665cd5c4-qhn4k",
+  "captured_at": "2026-11-19T12:14:11+00:00",
+  "cluster": "kind kube-copilot (single node, Kubernetes v1.32.2)",
+  "diagnose_input": {
+    "pod": {
+      "name": "quotes-76665cd5c4-qhn4k",
+      "namespace": "kc-eval-28",
+      "phase": "Running",
+      "reason": "CrashLoopBackOff",
+      "message": "back-off 40s restarting failed container=quotes pod=quotes-76665cd5c4-qhn4k_kc-eval-28(bec7646c-8fe8-4d8c-b209-8d73371fced8)",
+      "restart_count": 3,
+      "ready": false,
+      "created_at": "2026-11-19T12:12:31Z",
+      "node": "kube-copilot-control-plane",
+      "qos_class": "Burstable",
+      "containers": [
+        {
+          "name": "quotes",
+          "ready": false,
+          "restart_count": 3,
+          "state": "waiting",
+          "reason": "CrashLoopBackOff",
+          "message": "back-off 40s restarting failed container=quotes pod=quotes-76665cd5c4-qhn4k_kc-eval-28(bec7646c-8fe8-4d8c-b209-8d73371fced8)",
+          "exit_code": 1,
+          "resources": {
+            "requests": {
+              "cpu": "10m",
+              "memory": "16Mi"
+            },
+            "limits": {
+              "memory": "64Mi"
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "type": "Normal",
+        "reason": "Scheduled",
+        "message": "Successfully assigned kc-eval-28/quotes-76665cd5c4-qhn4k to kube-copilot-control-plane",
+        "count": 1,
+        "first_timestamp": "2026-11-19T12:12:31Z",
+        "last_timestamp": "2026-11-19T12:12:31Z",
+        "source": "default-scheduler"
+      },
+      {
+        "type": "Normal",
+        "reason": "Pulled",
+        "message": "Container image \"curlimages/curl:8.11.1\" already present on machine",
+        "count": 4,
+        "first_timestamp": "2026-11-19T12:12:32Z",
+        "last_timestamp": "2026-11-19T12:13:25Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Created",
+        "message": "Created container: quotes",
+        "count": 4,
+        "first_timestamp": "2026-11-19T12:12:32Z",
+        "last_timestamp": "2026-11-19T12:13:25Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Normal",
+        "reason": "Started",
+        "message": "Started container quotes",
+        "count": 4,
+        "first_timestamp": "2026-11-19T12:12:32Z",
+        "last_timestamp": "2026-11-19T12:13:25Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      },
+      {
+        "type": "Warning",
+        "reason": "BackOff",
+        "message": "Back-off restarting failed container quotes in pod quotes-76665cd5c4-qhn4k_kc-eval-28(bec7646c-8fe8-4d8c-b209-8d73371fced8)",
+        "count": 7,
+        "first_timestamp": "2026-11-19T12:12:39Z",
+        "last_timestamp": "2026-11-19T12:14:08Z",
+        "source": "kubelet/kube-copilot-control-plane"
+      }
+    ],
+    "logs": {
+      "current": "2026-11-19T12:13:25.852998963Z 2026-11-19T12:13:25+00:00 INFO quotes starting, upstream=http://pricing-api/quote\n2026-11-19T12:13:28.858547200Z curl: (28) Resolving timed out after 3000 milliseconds\n2026-11-19T12:13:28.860268847Z 2026-11-19T12:13:28+00:00 ERROR upstream request failed, exiting\n",
+      "previous": "2026-11-19T12:13:25.852998963Z 2026-11-19T12:13:25+00:00 INFO quotes starting, upstream=http://pricing-api/quote\n2026-11-19T12:13:28.858547200Z curl: (28) Resolving timed out after 3000 milliseconds\n2026-11-19T12:13:28.860268847Z 2026-11-19T12:13:28+00:00 ERROR upstream request failed, exiting\n",
+      "container": "quotes"
+    },
+    "retrieval_query": "Running CrashLoopBackOff back-off 40s restarting failed container=quotes pod=quotes-76665cd5c4-qhn4k_kc-eval-28(bec7646c-8fe8-4d8c-b209-8d73371fced8) CrashLoopBackOff back-off 40s restarting failed container=quotes pod=quotes-76665cd5c4-qhn4k_kc-eval-28(bec7646c-8fe8-4d8c-b209-8d73371fced8) exit code 1 Scheduled Successfully assigned kc-eval-28/quotes-76665cd5c4-qhn4k to kube-copilot-control-plane Pulled Container image \"curlimages/curl:8.11.1\" already present on machine Created Created container: quotes Started Started container quotes BackOff Back-off restarting failed container quotes in pod quotes-76665cd5c4-qhn4k_kc-eval-28(bec7646c-8fe8-4d8c-b209-8d73371fced8) 2026-11-19T12:13:25.852998963Z 2026-11-19T12:13:25+00:00 INFO quotes starting, upstream=http://pricing-api/quote 2026-11-19T12:13:28.858547200Z curl: (28) Resolving timed out after 3000 milliseconds 2026-11-19T12:13:28.860268847Z 2026-11-19T12:13:28+00:00 ERROR upstream request failed, exiting 2026-11-19T12:13:25.852998963Z 2026-11-19T12:13:25+00:00 INFO quotes starting, upstream=http://pricing-api/quote 2026-11-19T12:13:28.858547200Z curl: (28) Resolving timed out after 3000 milliseconds 2026-11-19T12:13:28.860268847Z 2026-11-19T12:13:28+00:00 ERROR upstream request failed, exiting",
+    "retrieved": [
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Symptoms",
+        "text": "## Symptoms\n\n- `kubectl get pods` shows `STATUS` as `CrashLoopBackOff` or `Error` with a climbing restart count.\n- The pod phase may still be `Running` because a container is mid-backoff, not because the app is healthy.\n- Current logs are often empty or just a short \"waiting\" message. The useful signal is usually in the **previous** container logs (`kubectl logs --previous`).\n- Events include `BackOff`, `Failed`, or `Unhealthy` from the kubelet.",
+        "score": 0.8015557400407698,
+        "kind": "runbook"
+      },
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "CrashLoopBackOff",
+        "text": "# CrashLoopBackOff\n\nA pod is in `CrashLoopBackOff` when Kubernetes has started the container repeatedly and it keeps exiting. The kubelet backs off between restarts, so the pod can sit in this state for a long time while the application itself only lives for a few seconds at a time.",
+        "score": 0.7767928927488619,
+        "kind": "runbook"
+      },
+      {
+        "title": "CPU throttling",
+        "source": "cpu-throttling.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Read the requests and limits:\n\n   ```bash\n   kubectl get pod <pod> -n <ns> -o jsonpath='{.spec.containers[*].resources}'\n   ```\n\n2. Compare usage with the limit:\n\n   ```bash\n   kubectl top pod <pod> -n <ns> --containers\n   ```\n\n3. Check throttling in Prometheus:\n\n   ```promql\n   sum by (container) (rate(container_cpu_cfs_throttled_periods_total{namespace=\"<ns>\", pod=\"<pod>\"}[5m]))\n     / sum by (container) (rate(container_cpu_cfs_periods_total{namespace=\"<ns>\", pod=\"<pod>\"}[5m]))\n   ```\n\n4. If a rollout changed the resources, compare revisions with `kubectl rollout history deploy/<name> -n <ns> --revision=<n>`.",
+        "score": 0.7750574784613622,
+        "kind": "runbook"
+      },
+      {
+        "title": "CrashLoopBackOff",
+        "source": "crashloopbackoff.md",
+        "section": "Diagnosis",
+        "text": "## Diagnosis\n\n1. Read the last termination reason and exit code:\n\n   ```bash\n   kubectl describe pod <pod> -n <ns>\n   kubectl get pod <pod> -n <ns> -o jsonpath='{range .status.containerStatuses[*]}{.name}{\" \"}{.state}{\" \"}{.lastState.terminated}{\"\\n\"}{end}'\n   ```\n\n2. Always fetch previous logs if `restartCount > 0`:\n\n   ```bash\n   kubectl logs <pod> -n <ns> --previous --tail=200\n   kubectl logs <pod> -n <ns> --tail=200\n   ```\n\n3. Confirm the command that actually ran (`command` / `args` in the pod spec) and whether the image entrypoint expects different arguments.\n4. If logs mention a missing file, env var, or connection refused, inspect the related ConfigMap, Secret, and Service.",
+        "score": 0.7695386993465172,
+        "kind": "runbook"
+      },
+      {
+        "title": "CPU throttling",
+        "source": "cpu-throttling.md",
+        "section": "Fixes",
+        "text": "## Fixes\n\n- Raise the CPU `limit` (or remove it and rely on `requests` for scheduling) to a value measured from real usage plus headroom.\n- If a recent rollout lowered the limit and the pod is now throttled, the rollout caused a regression, even though the pod is `Running` and `Ready` with no restarts. Roll back to the previous revision, which restores the limit, then fix the manifest. \"No crash\" does not mean \"no incident\": slower work is the failure.\n- Scale out (more replicas) when the work can be spread across pods; this does not make a single slow request faster.\n- Size runtime thread pools to the cgroup quota (`GOMAXPROCS`, `-XX:ActiveProcessorCount`, worker counts).\n- Raise probe `timeoutSeconds` if probes fail only because the container is throttled.",
+        "score": 0.7684933212410652,
+        "kind": "runbook"
+      }
+    ],
+    "knowledge_unavailable": false,
+    "anomaly": {
+      "namespace": "kc-eval-28",
+      "name": "quotes-76665cd5c4-qhn4k",
+      "score": 0.9956,
+      "is_anomaly": true,
+      "threshold": 0.013067,
+      "metric_anomaly": true,
+      "detectors": [
+        "isolation_forest",
+        "lifecycle"
+      ],
+      "lifecycle_signals": [
+        {
+          "kind": "container_restarted",
+          "at": "2026-11-19T12:13:28Z",
+          "workload": "quotes",
+          "pod": "quotes-76665cd5c4-qhn4k",
+          "detail": "+1 (Error)"
+        },
+        {
+          "kind": "event:BackOff",
+          "at": "2026-11-19T12:14:08Z",
+          "workload": "quotes",
+          "pod": "quotes-76665cd5c4-qhn4k",
+          "detail": "Back-off restarting failed container quotes in pod quotes-76665cd5c4-qhn4k_kc-eval-28(bec7646c-8fe8-4d8c-b209-8d73371fce"
+        }
+      ],
+      "contributing_features": [
+        {
+          "name": "restart_rate_per_min",
+          "value": 1.3333333333333333,
+          "zscore": 21.976900802101856,
+          "direction": "high"
+        },
+        {
+          "name": "restart_last",
+          "value": 3.0,
+          "zscore": 11.43625171309188,
+          "direction": "high"
+        },
+        {
+          "name": "restart_delta",
+          "value": 1.0,
+          "zscore": 5.869799439039182,
+          "direction": "high"
+        },
+        {
+          "name": "mem_mean_mib",
+          "value": 2.2421875,
+          "zscore": -4.840377418978114,
+          "direction": "low"
+        },
+        {
+          "name": "mem_last_mib",
+          "value": 2.2421875,
+          "zscore": -4.835167583522596,
+          "direction": "low"
+        }
+      ],
+      "series": [
+        {
+          "ts": 1795090406.0,
+          "cpu": 0.0,
+          "memory_mib": 2.242,
+          "mem_to_limit_ratio": 0.035,
+          "restarts": 2.0
+        },
+        {
+          "ts": 1795090421.0,
+          "cpu": 0.0,
+          "memory_mib": 2.242,
+          "mem_to_limit_ratio": 0.035,
+          "restarts": 3.0
+        },
+        {
+          "ts": 1795090436.0,
+          "cpu": 0.0,
+          "memory_mib": 2.242,
+          "mem_to_limit_ratio": 0.035,
+          "restarts": 3.0
+        },
+        {
+          "ts": 1795090451.0,
+          "cpu": 0.0,
+          "memory_mib": 2.242,
+          "mem_to_limit_ratio": 0.035,
+          "restarts": 3.0
+        }
+      ],
+      "warning": null
+    },
+    "anomaly_unavailable": false,
+    "usage": {
+      "containers": [
+        {
+          "name": "quotes",
+          "cpu_cores": null,
+          "cpu_limit_cores": null,
+          "cpu_request_cores": 0.01,
+          "cpu_throttled_ratio": null,
+          "memory_mib": 2.2,
+          "memory_limit_mib": 64.0
+        }
+      ],
+      "window": "5m"
+    },
+    "dependencies": [
+      {
+        "source": "env UPSTREAM",
+        "target": "http://pricing-api/quote",
+        "namespace": "kc-eval-28",
+        "service": "pricing-api",
+        "exists": false,
+        "backing_pods": null,
+        "ready_pods": null,
+        "ready_since": null,
+        "port_mismatch": null,
+        "note": "no Service named pricing-api in namespace kc-eval-28; the name will not resolve"
+      }
+    ]
+  },
+  "propose_input": {
+    "deployment": {
+      "namespace": "kc-eval-28",
+      "name": "quotes",
+      "replicas": 1,
+      "ready": 0,
+      "available": 0,
+      "updated": 1,
+      "generation": 1,
+      "observed_generation": 1,
+      "revision": 1,
+      "previous_revision": null,
+      "summary": {
+        "replicas": 1,
+        "revision": 1,
+        "template": {
+          "annotations": {},
+          "containers": [
+            {
+              "name": "quotes",
+              "image": "curlimages/curl:8.11.1",
+              "command": [
+                "sh",
+                "-c",
+                "echo \"$(date -Iseconds) INFO quotes starting, upstream=$UPSTREAM\"; while true; do curl -fsS -m 3 -o /dev/null \"$UPSTREAM\" || { echo \"$(date -Iseconds) ERROR upstream request failed, exiting\"; exit 1; }; echo \"$(date -Iseconds) INFO upstream ok\"; sleep 5; done"
+              ],
+              "args": null
+            }
+          ]
+        }
+      },
+      "previous_summary": null,
+      "template_diff": null,
+      "template_refs": {}
+    },
+    "pod_state": {
+      "namespace": "kc-eval-28",
+      "name": "quotes-76665cd5c4-qhn4k",
+      "controller_kind": "ReplicaSet",
+      "controller_name": "quotes-76665cd5c4",
+      "deployment": "quotes",
+      "crashlooping": true,
+      "restart_count": 3,
+      "reason": "CrashLoopBackOff"
+    },
+    "signals": [
+      "container_restarted pod=quotes-76665cd5c4-qhn4k +1 (Error)",
+      "event:BackOff pod=quotes-76665cd5c4-qhn4k Back-off restarting failed container quotes in pod quotes-76665cd5c4-qhn4k_kc-eval-28(bec7646c-8fe8-4d8c-b209-8d73371fce"
+    ]
+  }
+}

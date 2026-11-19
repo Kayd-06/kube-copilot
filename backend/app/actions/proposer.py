@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -13,8 +14,10 @@ from app.actions.models import ActionRequest
 from app.actions.policy import DeploymentState, PolicyConfig
 from app.config import Settings, get_settings
 from app.llm_explainer import LLMError
+from app.dependencies import dependency_lines
+from app.llm_explainer import THROTTLED_HIGH
 from app.logcompact import compact_logs
-from app.models import PodEvent, PodLogs, PodSummary
+from app.models import DependencyStatus, PodEvent, PodLogs, PodSummary, PodUsage
 
 logger = logging.getLogger(__name__)
 
@@ -97,15 +100,70 @@ Rules:
   or env var), rolling back will not help: the cause is outside the template
   (a ConfigMap/Secret changed or deleted after the rollout, a killed pod, a
   dependency). Do not roll back in that case.
+- A rollout that lowered a CPU or memory limit (or request) caused the
+  incident when the pod now shows the matching pressure: CPU throttled in a
+  large share of periods (see "Resource usage"; roughly 25% or more), OOM kills,
+  or work that got slower. This holds even when the pod is Running and Ready and
+  nothing crashes. Being Ready is not proof that a resource change was harmless.
+  Prefer rollback_deployment to restore the previous resources.
+- Dependencies: "Dependencies" says whether each in-cluster Service the pod's
+  env points at is serving now. If a dependency is down or missing now, neither
+  a rollback nor a restart of this workload helps: call no_action and say which
+  dependency to restore.
 - restart_deployment and delete_pod do not fix a deterministic bug in the
   current revision; do not propose them for that. They do help when a pod is
-  stuck on state that a fresh pod would not have (for example it only checked
-  a dependency at startup and that dependency has recovered).
+  stuck on state that a fresh pod would not have. A typical case: the pod logged
+  that a dependency failed at startup, the dependency is serving now (for example
+  it recovered after the pod started), and the pod has stayed not-Ready since
+  without restarting. Restart it; do not change its probe.
 - A healthy pod, or a workload that already replaced a killed pod, needs no action.
 - If nothing allowed would help, call no_action and explain what a human should change.
 """
 
 LOG_BUDGET_CHARS = 1500
+_CPU = re.compile(r"^(\d+(?:\.\d+)?)(m?)$")
+_MEM_UNITS = {"Ki": 2**10, "Mi": 2**20, "Gi": 2**30, "Ti": 2**40, "K": 1e3, "M": 1e6, "G": 1e9, "T": 1e12, "": 1}
+_MEM = re.compile(r"^(\d+(?:\.\d+)?)(Ki|Mi|Gi|Ti|K|M|G|T|)$")
+_RES_DIFF = re.compile(r'resources\.(limits|requests)\.(cpu|memory): "([^"]+)" -> "([^"]+)"')
+
+
+def _quantity(kind: str, value: str) -> float | None:
+    if kind == "cpu":
+        m = _CPU.match(value)
+        return float(m.group(1)) / (1000 if m.group(2) else 1) if m else None
+    m = _MEM.match(value)
+    return float(m.group(1)) * _MEM_UNITS[m.group(2)] if m else None
+
+
+def annotate_diff(line: str) -> str:
+    """Say plainly when a rollout lowered or raised a resource, e.g. '(lowered to 6% of the previous value)'."""
+    m = _RES_DIFF.search(line)
+    if not m:
+        return line
+    before, after = _quantity(m.group(2), m.group(3)), _quantity(m.group(2), m.group(4))
+    if not before or after is None or before == after:
+        return line
+    ratio = after / before
+    word = "LOWERED" if ratio < 1 else "raised"
+    return f"{line}  ({word} {m.group(2)} {m.group(1)[:-1]} to {100 * ratio:.0f}% of the previous value)"
+
+
+def usage_lines(usage: PodUsage | None) -> list[str]:
+    out = []
+    for c in (usage.containers if usage else []):
+        bits = []
+        if c.cpu_cores is not None:
+            bits.append(f"cpu {c.cpu_cores:.3f} cores" + (f" of a {c.cpu_limit_cores:.3f}-core limit"
+                                                          if c.cpu_limit_cores else ""))
+        if c.cpu_throttled_ratio is not None:
+            high = " HIGH" if c.cpu_throttled_ratio >= THROTTLED_HIGH else ""
+            bits.append(f"CPU-throttled in {100 * c.cpu_throttled_ratio:.0f}% of CFS periods{high}")
+        if c.memory_mib is not None:
+            bits.append(f"memory {c.memory_mib:.1f} MiB" + (f" of {c.memory_limit_mib:.0f} MiB limit"
+                                                            if c.memory_limit_mib else ""))
+        if bits:
+            out.append(f"- {c.name}: " + "; ".join(bits))
+    return out
 
 
 @dataclass
@@ -124,6 +182,8 @@ def build_context(
     logs: PodLogs,
     deployment: DeploymentState | None,
     signals: list[str] | None = None,
+    usage: PodUsage | None = None,
+    dependencies: list[DependencyStatus] | None = None,
 ) -> str:
     def tail(text: str | None) -> str:
         return compact_logs((text or "").strip(), LOG_BUDGET_CHARS) or "(empty)"
@@ -173,10 +233,16 @@ def build_context(
             parts += [
                 f"## Changes in the latest rollout (pod template, revision {deployment.previous_revision} -> "
                 f"{deployment.revision}; ~ changed, + added, - removed)",
-                "\n".join(deployment.template_diff) or "(no pod-template differences)",
+                "\n".join(annotate_diff(line) for line in deployment.template_diff) or "(no pod-template differences)",
             ]
     else:
         parts.append("## Owning Deployment\n(none: the pod is not managed by a Deployment)")
+    use = usage_lines(usage)
+    if use:
+        parts += [f"## Resource usage (Prometheus, last {usage.window})", "\n".join(use)]
+    deps = dependency_lines(dependencies, pod.created_at, pod.restart_count)
+    if deps:
+        parts += ["## Dependencies", "\n".join(deps[1:])]
     if signals:
         parts += ["## Disruption signals (Kubernetes events/lifecycle)", "\n".join(f"- {s}" for s in signals[-15:])]
     return "\n\n".join(parts)
