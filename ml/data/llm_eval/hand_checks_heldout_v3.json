@@ -1,0 +1,117 @@
+{
+  "_about": "Verdicts for the PR #34 code on heldout_v3 (12 held-out incidents + 5 rollback traps), written by reading every full-context diagnosis against the injected fault (cases_heldout.py) with the same rubric as hand_checks_heldout.json; traps use ml/data/llm_eval/trap_rubric.md (committed before any model run). Not produced by the regex matcher or by a model.",
+  "openai/gpt-oss-120b": {
+    "ho_cm_key_first": {
+      "correct": true
+    },
+    "ho_cpu_limit_rollout": {
+      "correct": true
+    },
+    "ho_crash_flag_rollout": {
+      "correct": true
+    },
+    "ho_dns_proxy_first": {
+      "correct": true
+    },
+    "ho_env_dburl_rollout": {
+      "correct": true
+    },
+    "ho_healthy_mailer": {
+      "correct": true
+    },
+    "ho_img_quay_rollout": {
+      "correct": true,
+      "note": "Blames DNS for failing to resolve quay.io; the evidence is a registry DNS failure (no registry egress on the box's kind node), same convention as before."
+    },
+    "ho_mem_request_rollout": {
+      "correct": true
+    },
+    "ho_oom_render_first": {
+      "correct": true
+    },
+    "ho_pod_kill_two": {
+      "correct": false,
+      "note": "Attributes the pod replacements to 'a recent rollout or external disruption' and leads with the rollout; there was no rollout. Regression vs PR #33 (right there). Regex counted it right."
+    },
+    "ho_readiness_http_rollout": {
+      "correct": true
+    },
+    "ho_secret_volume_rollout": {
+      "correct": true
+    },
+    "ho_trap_configmap_reload": {
+      "correct": true
+    },
+    "ho_trap_dependency_down": {
+      "correct": true,
+      "note": "Ledger dependency unavailable -> correct."
+    },
+    "ho_trap_healthy_retry_logs": {
+      "correct": true,
+      "note": "Borderline, counted right: says the pod itself is healthy and the WARN lines are retries that succeed, but frames the root cause as partner-api flakiness and suggests investigating it. Under a stricter 'root cause must say nothing is wrong' reading this is wrong."
+    },
+    "ho_trap_node_cordoned": {
+      "correct": true
+    },
+    "ho_trap_secret_deleted": {
+      "correct": true
+    }
+  },
+  "openai/gpt-oss-20b": {
+    "ho_cm_key_first": {
+      "correct": true,
+      "note": "ConfigMap lacks key RATE_LIMIT -> correct; regex has no 'does not contain'."
+    },
+    "ho_cpu_limit_rollout": {
+      "correct": true
+    },
+    "ho_crash_flag_rollout": {
+      "correct": true
+    },
+    "ho_dns_proxy_first": {
+      "correct": true
+    },
+    "ho_env_dburl_rollout": {
+      "correct": true
+    },
+    "ho_healthy_mailer": {
+      "correct": true
+    },
+    "ho_img_quay_rollout": {
+      "correct": true,
+      "note": "Blames DNS for failing to resolve quay.io; the evidence is a registry DNS failure (no registry egress on the box's kind node), same convention as before."
+    },
+    "ho_mem_request_rollout": {
+      "correct": true
+    },
+    "ho_oom_render_first": {
+      "correct": true
+    },
+    "ho_pod_kill_two": {
+      "correct": true,
+      "note": "External disruption, pods killed and replaced -> correct (also lists a rolling update among possibilities in the summary)."
+    },
+    "ho_readiness_http_rollout": {
+      "correct": true
+    },
+    "ho_secret_volume_rollout": {
+      "correct": true
+    },
+    "ho_trap_configmap_reload": {
+      "correct": true
+    },
+    "ho_trap_dependency_down": {
+      "correct": true
+    },
+    "ho_trap_healthy_retry_logs": {
+      "correct": true,
+      "note": "Borderline, counted right: says the pod itself is healthy and the WARN lines are retries that succeed, but frames the root cause as partner-api flakiness and suggests investigating it. Under a stricter 'root cause must say nothing is wrong' reading this is wrong."
+    },
+    "ho_trap_node_cordoned": {
+      "correct": true
+    },
+    "ho_trap_secret_deleted": {
+      "correct": true
+    }
+  }
+}
