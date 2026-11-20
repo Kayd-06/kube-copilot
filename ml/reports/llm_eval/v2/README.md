@@ -1,98 +1,165 @@
 # LLM eval after the fixes (v2 + held-out)
 
 This compares the PR #31 baseline (`../README.md`, fixtures `cases/`) with the
-fixed prompts and context from PR #32 (fixtures `cases_v2/` and `heldout/`).
-Runs were on Groq's free tier on 2026-11-14 (UTC). Labels were not changed.
+prompts and context from PR #32 (fixtures `cases_v2/` and `heldout/`). All
+runs used Groq's free tier, one run per model, with the same temperature,
+labels and scoring code. Every Diagnose answer below was also checked by hand
+against the injected fault, using the same rubric as v1.
 
-> **Status: partial.** The v2 re-runs on the original 38 cases ran out of Groq's
-> daily token quota (200K tokens/day/model, refilling at about 10K/hour)
-> mid-run. When this was written, **gpt-oss-20b had finished all 38 diagnoses
-> and 6 of 38 proposals, and gpt-oss-120b had finished 21 of 38 diagnoses and no
-> proposals.** The processes were left running with `--wait-daily` and write
-> `openai_gpt-oss-*.json/.md` here when they finish or give up. Finish them
-> with `make eval EVAL_ARGS="--resume --wait-daily 8"` (and
-> `LLM_MODEL=openai/gpt-oss-20b`). The v2 numbers below come from the per-call
-> lines the runner printed (`partial_logs/`). They are **regex-matcher
-> verdicts only and not hand-checked yet**, because the diagnosis texts are only
-> written when a run ends.
-
-## Held-out set (12 new incidents, complete, hand-checked)
-
-These incidents were written and labelled from the injected fault and
-committed before capture, and captured after the prompt changes were frozen,
-so this is the least biased number in the PR. Only `gpt-oss-120b` was run on
-it (quota). There is **no "before" number on the held-out set**: the old-code
-baseline (recipe in `ml/data/llm_eval/README.md`) was prepared but
-not run for lack of quota.
-
-| `openai/gpt-oss-120b`, held-out | Result |
-|---|---|
-| Root cause, hand-checked | **12/12** |
-| Root cause, regex matcher | 10/12 (the two misses are phrasing: "does not contain the key", "Mis-configured DATABASE_URL") |
-| Remediation acceptable | **11/12** |
-| Rollout cases where rollback is right | 6/7 |
-| JSON/schema valid | 12/12 |
-| kubectl commands naming a resource not in the context | 0 |
-| Proposals blocked by policy / aimed at the wrong object | 0 / 0 |
-| Request errors | 0 |
-| Diagnose p50 / p95 | 1.72 s / 2.01 s |
-| Tokens (prompt + completion), both tasks | 52,253 + 10,566 |
-
-With 12 cases, the 95% Wilson interval for 12/12 is about 76–100%, and for
-11/12 it is about 65–99%.
-
-The one remediation miss is `ho_cpu_limit_rollout`. The agent saw the diff
-(`limits.cpu: "250m" -> "15m"`) but answered `no_action`, because the pod is
-Running and Ready with no restarts. Diagnose itself named CPU throttling
-correctly.
-
-## Original 38 cases: v1 to v2 (partial, regex only)
-
-Regex verdicts on the cases each v2 run finished, against the v1 run on
-the **same cases**. In v1 the regex matcher never credited a wrong answer,
-but it missed 3–4 right answers per model on phrasing. So a v2 "wrong" can be a
-right answer the matcher missed, and the hand check is still pending.
-
-| | v1 regex | v1 hand-checked | v2 regex |
-|---|---|---|---|
-| gpt-oss-20b, Diagnose, all 38 | 27/38 | 31/38 | **33/38** |
-| gpt-oss-120b, Diagnose, first 21 (alphabetical) | 15/21 | 17/21 | **19/21** |
-| gpt-oss-20b, remediation, first 6 | 5/6 | – | 6/6 |
-| gpt-oss-120b, remediation | – | – | not run yet (quota) |
-
-Per failure mode (regex, v1 to v2):
-
-| Failure mode from PR #31 | gpt-oss-20b | gpt-oss-120b |
+| Run | Report | Hand checks |
 |---|---|---|
-| Pod kills (Diagnose) | 0/3 to **3/3** | pending |
-| CPU throttling (Diagnose) | 0/1 to **1/1** | 0/1 to **1/1** |
-| Healthy pods (Diagnose) | v1 regex 1/4 (hand 2/4) to v2 regex 2/4 | v1 regex 2/4 (hand 2/4) to v2 regex **3/4** (`healthy_after_rollout` fixed, `healthy_noisy_logs` still wrong) |
-| Prompt over 8K TPM (413 on `liveness_path_rollout`) | error to answered, regex-correct | error to answered, regex-correct |
-| Rollout cases (remediation) | `config_port_rollout`: `no_action` to `rollback_deployment` (1 of 7 v1 misses re-run so far) | pending |
+| v1, original 38 | `../openai_gpt-oss-*.json` | `ml/data/llm_eval/hand_checks.json` |
+| v2, original 38 | `openai_gpt-oss-*.json` (here) | `ml/data/llm_eval/hand_checks_v2.json` |
+| Old code, held-out 12 | `../heldout_before/` | `ml/data/llm_eval/hand_checks_heldout_before.json` |
+| New code, held-out 12 | `../heldout/` | `ml/data/llm_eval/hand_checks_heldout.json` |
 
-20b Diagnose regressions by regex that still need a hand check:
-`healthy_web` and `healthy_job_completed` (v1 hand: right), plus
-`stale_dependency`, `config_port_rollout` and `crash_traceback_first` (v1 hand:
-right, regex: wrong in both runs). 120b's `healthy_noisy_logs` (routine retry
-warnings) is still wrong.
+The tables come from `ml/llm_eval/compare.py` (`make eval-compare-all`).
+
+## Which number to trust
+
+The v2 prompts (evidence-weighting rules for Diagnose, rollout-diff rules for
+the proposer) were **written after reading the v1 failures on the original 38
+cases**, so the v2 scores on those 38 are optimistic. The **held-out set is
+the fair number.** Its 12 incidents were written and labelled from the
+injected fault before capture, and captured after the prompts were frozen.
+Its "before" is the real old code (PR #31 merge, `cc30707`) run on the same
+incidents (see `../heldout_before/README.md`).
+
+With 12 cases, the 95% Wilson interval for 12/12 is about 76–100%, for 11/12
+about 65–99%, and for 7/12 about 32–81%. On 38 cases the intervals are about
+±10–15 points. These are directional numbers from one run each.
+
+## Held-out set (12 incidents): old code vs new code
+
+| | 120b before | 120b after | 20b before | 20b after |
+|---|---|---|---|---|
+| Root cause, hand-checked | 10/12 | **12/12** | 10/12 | **12/12** |
+| Root cause, regex matcher | 9/12 | 10/12 | 8/12 | 9/12 |
+| Remediation acceptable | 7/12 | **11/12** | 7/12 | **11/12** |
+| Rollout cases where rollback is right | 2/7 | 6/7 | 2/7 | 6/7 |
+| Model-free baseline: roll back whenever a previous revision exists | 12/12 | 12/12 | 12/12 | 12/12 |
+| Pod kill (Diagnose) | 0/1 | 1/1 | 0/1 | 1/1 |
+| CPU throttling (Diagnose) | 0/1 | 1/1 | 0/1 | 1/1 |
+| Healthy pod (Diagnose) | 1/1 | 1/1 | 1/1 | 1/1 |
+| JSON/schema valid | 12/12 | 12/12 | 12/12 | 12/12 |
+| kubectl commands naming a resource not in the context | 0 | 0 | 0 | 0 |
+| Proposals blocked by policy / aimed at the wrong object | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 |
+| Request errors | 0 | 0 | 0 | 0 |
+| Diagnose latency p50 / p95 | 1.79 / 2.53 s | 1.72 / 2.01 s | 1.14 / 1.96 s | 1.14 / 1.85 s |
+
+- **Diagnose:** both models with the old code missed the same two incidents.
+  `ho_cpu_limit_rollout` was called an idle upstream or an anomaly false
+  positive, because the old context has no limits or usage. `ho_pod_kill_two`
+  was blamed on a memory trend instead of the pod replacement. The new code
+  gets both right.
+- **Remediation:** with the old code, both models refused 4 rollbacks whose
+  change was not in the image or command (`ho_env_dburl_rollout`,
+  `ho_mem_request_rollout`, `ho_readiness_http_rollout`,
+  `ho_secret_volume_rollout`). In each case they said the revisions were
+  identical. This is the same blind spot as in v1, now confirmed on unseen
+  incidents. The new code rolls back all four.
+- **Remaining miss (both models, new code):** `ho_cpu_limit_rollout`. The
+  agent sees the diff (`limits.cpu: "250m" -> "15m"`) but answers `no_action`,
+  because the pod is Running and Ready with no restarts. Diagnose names CPU
+  throttling correctly, so only the proposer misses it.
+- **The held-out remediation number does not beat a trivial rule.** Every
+  held-out incident with a previous revision should be rolled back, so "roll
+  back whenever a previous revision exists" scores 12/12 there. The held-out
+  set has no trap cases where rolling back would be wrong. Those are only in
+  the original 38: there the rule scores 33/38, and v2 scores 37/38 and 38/38.
+  A future held-out batch needs rollout traps to test this fairly.
+- gpt-oss-20b's proposer needed the `tool_choice=auto` retry on 2 of 12
+  calls (`ho_cm_key_first`, `ho_dns_proxy_first`), and 120b needed none.
+
+## Original 38 cases: v1 vs v2 (prompts tuned on these)
+
+| | 120b v1 | 120b v2 | 20b v1 | 20b v2 |
+|---|---|---|---|---|
+| Root cause, hand-checked | 30/38 | **36/38** | 31/38 | **37/38** |
+| Root cause, regex matcher | 27/38 | 35/38 | 27/38 | 33/38 |
+| Remediation acceptable | 30/38 | **37/38** | 29/38 | **38/38** |
+| Rollout cases where rollback is right | 4/11 | **11/11** | 4/11 | **11/11** |
+| Previous revision exists, rollback would not help (no rollback proposed) | 4/4 | 4/4 | 4/4 | 4/4 |
+| Model-free baseline: roll back whenever a previous revision exists | 33/38 | 33/38 | 33/38 | 33/38 |
+| Pod kills (Diagnose) | 0/3 | 3/3 | 0/3 | 3/3 |
+| Healthy pods (Diagnose) | 2/4 | 3/4 | 2/4 | 4/4 |
+| CPU throttling (Diagnose) | 0/1 | 1/1 | 0/1 | 1/1 |
+| JSON/schema valid | 97.4% | 100% | 97.4% | 100% |
+| Diagnoses with a kubectl resource not in the context | 0% | 0% | 0% | 5.3% (2/38) |
+| Request errors | 1 | 0 | 2 | 0 |
+| Diagnose latency p50 / p95 | 1.77 / 3.42 s | 1.66 / 2.57 s | 1.32 / 2.26 s | 1.09 / 1.61 s |
+| Prompt + completion tokens, both tasks | 144K + 33K | 164K + 33K | 143K + 40K | 164K + 44K |
+
+### The 7 previously refused rollbacks
+
+In v1 both models declined these 7 rollouts, because the agent only saw image
+and command, and the change was elsewhere in the pod template:
+`config_port_rollout`, `liveness_path_rollout`, `missing_cm_envfrom_rollout`,
+`missing_secret_key_rollout`, `oom_limit_rollout`,
+`pending_nodeselector_rollout` and `readiness_exec_rollout`.
+
+**In v2, all 7 are correct for both models (7/7 and 7/7).** The 4 cases where a
+previous revision exists but rolling back would not help (`cm_deleted_after_rollout`,
+`cm_edited_after_rollout`, `pod_kill_after_rollout`, `healthy_after_rollout`)
+still get no rollback (4/4), so the diff rules did not make the agent roll
+back blindly. On the held-out set, the same fix took rollout cases from 2/7 to
+6/7 for both models.
+
+### gpt-oss-20b's healthy-pod changes: not a regression
+
+By regex, 20b went from right to wrong on `healthy_web` and
+`healthy_job_completed`. By hand, both answers are correct: "False positive
+from the anomaly detection model" with a summary saying the pod is healthy,
+and "None – the pod finished as intended" with a summary saying the Job
+succeeded with exit 0. The matcher has no pattern for these phrasings. 20b's
+healthy pods are 4/4 by hand in v2 (2/4 in v1). The regex column above is
+lower for 20b than for 120b for this reason.
+
+### Remaining failures (original 38, by hand)
+
+- `stale_dependency` (both models): blames the readiness probe definition
+  (`/tmp/ready` never created) instead of the upstream that was down at
+  startup. 120b was wrong on this in v1 too. **For 20b this is a real
+  regression**, because v1 named the unreachable upstream. 120b's proposer
+  also returns no action here, which is its one remediation miss.
+- `healthy_noisy_logs` (120b): still treats routine retry warnings as an
+  upstream outage. 20b now gets it right.
+- 20b's Diagnose referenced two names not in the context in kubectl commands:
+  `debug-pod` (a scratch pod it suggests creating) and the name of the
+  already-deleted previous pod in `pod_kill_single`. Neither command would
+  touch a wrong object, but the hallucination check counts them, and v1 had
+  none.
+- 20b's proposer needed the `tool_choice=auto` retry on 5 of 38 calls. All
+  of them still produced an acceptable answer.
 
 ## What changed between v1 and v2 inputs
 
-- **Prompts:** the Diagnose system prompt now has evidence-weighting rules
+- **Prompts:** the Diagnose system prompt has evidence-weighting rules
   (lifecycle signals are factual, the anomaly score is weak and needs
   corroboration, CPU throttling, routine warnings). The proposer prompt has
-  rollout-diff rules. These were **written after reading the v1 failures on
-  these 38 cases**, so v2 scores on the original set are optimistic. The
-  held-out set exists for that reason.
-- **Context:** structured lifecycle section, container requests/limits,
-  Prometheus usage/throttling, compacted logs, and a full pod-template diff for
-  the proposer.
+  rollout-diff rules.
+- **Context:** structured lifecycle section, container requests and limits,
+  Prometheus usage and throttling, compacted logs, and a full pod-template diff
+  for the proposer. Prompts are about 13% larger (164K vs 144K prompt tokens
+  for the same 76 calls).
 - **Fixtures:** 16 cases re-captured (same scenarios and labels), 22 unchanged.
   See `ml/data/llm_eval/README.md`.
-- **Scoring:** unchanged (same regexes and remediation rule).
+- **Scoring:** unchanged (same regexes and remediation rule). The regex
+  matcher still misses some correct phrasings and has never credited a wrong
+  answer, which is why the hand-checked rows are the headline.
 
-## Not run
+## Caveats
 
-- The old-code baseline on the held-out set, and gpt-oss-20b on the held-out set.
-- The rest of the v2 runs listed above, and the v2 hand checks
-  (`ml/data/llm_eval/hand_checks_v2.json` does not exist yet).
+- The held-out set has no rollback-trap cases (see above), so its
+  remediation score says the fix finds rollbacks. It does not show that the
+  agent avoids wrong ones.
+- The prompts were tuned on the original 38, so treat the held-out numbers as
+  the honest estimate and the 38-case numbers as an upper bound.
+- One run per model, temperature as configured, on a single-node kind
+  cluster. The image-pull cases fail on registry DNS because the kind node has
+  no registry egress. Naming that as the reason is counted as correct.
+- Hand checks are one person's judgment using the written rubric. The notes
+  in the JSON files explain every non-obvious verdict.
+- The v2 runs on the 38 cases hit Groq's daily token quota and were
+  continued with `--resume --wait-daily`, so they span about 19 hours. Pacing and quota waits are
+  excluded from latency.

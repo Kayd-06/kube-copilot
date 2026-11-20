@@ -426,14 +426,36 @@ container limits, Prometheus CPU throttling and memory vs limits, and a
 and there is a CPU throttling runbook. Results
 ([details](ml/reports/llm_eval/v2/README.md)):
 
-- **Held-out set** (12 new incidents written and captured after the prompts
-  were frozen, `gpt-oss-120b`): root cause **12/12** hand-checked, remediation
-  **11/12**, 0 request errors. There is no "before" run on this set.
-- **Original 38, re-run (partial, regex only, the free-tier daily quota ran
-  out):** gpt-oss-20b Diagnose 27/38 to 33/38 by regex, with pod kills 0/3 to
-  3/3. gpt-oss-120b 15/21 to 19/21 on the 21 cases finished. The 413 is gone.
-  The prompts were changed after seeing failures on this set, so these numbers
-  are optimistic.
+**Held-out set** (12 new incidents written and captured after the prompts
+were frozen, old code from PR #31 vs new code, one run each):
+
+| | 120b before | 120b after | 20b before | 20b after |
+|---|---|---|---|---|
+| Root cause (hand-checked) | 10/12 | **12/12** | 10/12 | **12/12** |
+| Remediation acceptable | 7/12 | **11/12** | 7/12 | **11/12** |
+| Rollouts where rollback is right | 2/7 | 6/7 | 2/7 | 6/7 |
+
+The old code again refused 4 rollbacks it couldn't see, with "revisions are
+identical". It also missed the CPU limit and the pod kill. The one remaining
+miss after the fix is a CPU-limit rollout that the agent leaves alone because
+the pod is still Ready. The held-out set has no rollback traps, so a "roll
+back whenever a previous revision exists" rule also scores 12/12 there.
+
+**Original 38, re-run** (the prompts were changed after seeing failures on
+this set, so these are optimistic):
+
+| | 120b v1 | 120b v2 | 20b v1 | 20b v2 |
+|---|---|---|---|---|
+| Root cause (hand-checked) | 30/38 | 36/38 | 31/38 | 37/38 |
+| Root cause (regex) | 27/38 | 35/38 | 27/38 | 33/38 |
+| Remediation acceptable | 30/38 | 37/38 | 29/38 | 38/38 |
+| Rollouts where rollback is right | 4/11 | 11/11 | 4/11 | 11/11 |
+| Traps where rollback would not help | 4/4 | 4/4 | 4/4 | 4/4 |
+
+All 7 previously refused rollbacks are now correct for both models, pod kills
+went from 0/3 to 3/3, and the 413 is gone. Still wrong: `stale_dependency`
+(both models blame the readiness probe, a real regression for 20b) and
+`healthy_noisy_logs` on 120b.
 
 ```bash
 make eval                                  # LLM_MODEL=... to pick a model; needs LLM_API_KEY or GROQ_API_KEY
@@ -442,7 +464,7 @@ make eval-dry-run                          # no API calls: fixtures, prompt size
 make eval-judge RESULTS=ml/reports/llm_eval/openai_gpt-oss-120b.json   # optional LLM judge vs hand checks
 make eval-capture                          # re-create the incidents on kind (about 10 min)
 make eval-heldout                          # the 12 held-out incidents
-make eval-compare                          # before/after table from saved reports + hand checks
+make eval-compare-all                      # before/after tables (both models, 38 + held-out)
 ```
 
 CI runs only offline tests: fixture schema, labels, leak checks, scorers.
