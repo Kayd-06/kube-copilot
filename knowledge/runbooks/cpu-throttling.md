@@ -43,7 +43,7 @@ The container hits its CPU `limit` and the kernel's CFS quota pauses it for the 
 ## Fixes
 
 - Raise the CPU `limit` (or remove it and rely on `requests` for scheduling) to a value measured from real usage plus headroom.
-- If a recent rollout lowered the limit, roll back to the previous revision, then fix the manifest.
+- If a recent rollout lowered the limit and the pod is now throttled, the rollout caused a regression, even though the pod is `Running` and `Ready` with no restarts. Roll back to the previous revision, which restores the limit, then fix the manifest. "No crash" does not mean "no incident": slower work is the failure.
 - Scale out (more replicas) when the work can be spread across pods; this does not make a single slow request faster.
 - Size runtime thread pools to the cgroup quota (`GOMAXPROCS`, `-XX:ActiveProcessorCount`, worker counts).
 - Raise probe `timeoutSeconds` if probes fail only because the container is throttled.

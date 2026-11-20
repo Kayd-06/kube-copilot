@@ -441,6 +441,27 @@ miss after the fix is a CPU-limit rollout that the agent leaves alone because
 the pod is still Ready. The held-out set has no rollback traps, so a "roll
 back whenever a previous revision exists" rule also scores 12/12 there.
 
+**PR #34 fixes and rollback traps** ([details](ml/reports/llm_eval/v3/README.md)).
+This adds a dependency check (do the Services in the pod's env exist, are they
+Ready, did they recover after the pod started), a health summary computed from
+Kubernetes state, and throttling plus annotated resource diffs for the
+proposer. The held-out set gained 5 rollback traps. Results on held-out 17,
+PR #33 → PR #34, one run each:
+
+| | 120b before | 120b after | 20b before | 20b after |
+|---|---|---|---|---|
+| Root cause (hand-checked) | 16/17 | 16/17 | 15/17 | **17/17** |
+| Remediation acceptable | 16/17 | 16/17 | 15/17 | **16/17** |
+| Traps: rollback avoided | 5/5 | 5/5 | 5/5 | 5/5 |
+| "Roll back if a previous revision exists" baseline | 12/17 | 12/17 | 12/17 | 12/17 |
+
+- The CPU-limit rollout is now rolled back by both models.
+- There are three new regressions: a Secret-mount rollout and a pod-kill
+  diagnosis on 120b, and an image rollout on 20b.
+- The original-38 re-run is partial because of the daily quota. There are no
+  Diagnose regressions on the cases it covered. `stale_dependency` is not
+  measured yet.
+
 **Original 38, re-run** (the prompts were changed after seeing failures on
 this set, so these are optimistic):
 

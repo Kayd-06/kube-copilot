@@ -49,6 +49,23 @@ class PodUsage(BaseModel):
     window: str = "5m"
 
 
+class DependencyStatus(BaseModel):
+    """An in-cluster Service the pod's env points at, checked when the evidence is collected."""
+
+    source: str  # e.g. "env UPSTREAM"
+    target: str  # the value as written, e.g. "http://deps-api/"
+    namespace: str
+    service: str
+    exists: bool
+    backing_pods: int | None = None
+    ready_pods: int | None = None
+    # Most recent time one of the Ready backing pods became Ready.
+    ready_since: datetime | None = None
+    # Set when a Service targetPort is not a port the backing pods declare.
+    port_mismatch: str | None = None
+    note: str | None = None
+
+
 class PodEvent(BaseModel):
     type: str
     reason: str
@@ -163,6 +180,7 @@ class DiagnoseResponse(BaseModel):
     anomaly: AnomalyScore | None = None
     anomaly_unavailable: bool = False
     usage: PodUsage | None = None
+    dependencies: list[DependencyStatus] = Field(default_factory=list)
 
 
 class HealthResponse(BaseModel):

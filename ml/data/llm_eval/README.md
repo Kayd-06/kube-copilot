@@ -11,6 +11,48 @@ every time. There are three directories:
 | `cases_v2/` (schema 2) | The same 38 incidents. 16 were re-captured to get the new context fields, and the other 22 are byte-identical copies of v1 | The "after" results in `ml/reports/llm_eval/v2/` (default for `make eval`) |
 | `heldout/` (schema 2) | 12 new incidents written and captured after the prompt changes were frozen | `ml/reports/llm_eval/heldout/` (`make eval-heldout`) |
 
+### v3 (PR #34): dependency check, rollback traps
+
+| Directory | What it is | Used for |
+|---|---|---|
+| `cases_v3/` (schema 3) | The 38 incidents. 3 were re-captured (`stale_dependency`, `svc_port_mismatch`, `dns_missing_service`), the other 35 are v2 copies | `ml/reports/llm_eval/v3/` (default for `make eval`) |
+| `heldout_v3/` (schema 3) | The 12 held-out incidents plus **5 rollback traps**. `ho_dns_proxy_first` and the 5 traps were captured for v3, the other 11 are copies | `ml/reports/llm_eval/heldout_v3/` (`make eval-heldout`) |
+| `traps_before/` | The 5 traps as the PR #33 code sees them: no dependency field, retrieval re-run against the PR #33 runbooks | `ml/reports/llm_eval/traps_before/` |
+
+Schema 3 adds `diagnose_input.dependencies`. These are the in-cluster
+Services named by literal env values in the pod (URL or `host:port`), each
+with whether it exists, how many backing pods are Ready, when they became
+Ready, and whether the Service `targetPort` matches a port the pods declare.
+The check only reads the captured pod's own env. For the copied fixtures
+that env names no Service, so they got `dependencies: []`, the value the
+check would return (`test_v3_dependency_field_matches_the_scenarios`).
+
+Retrieval was **re-run for every v3 fixture** against the current runbooks
+(`python -m ml.llm_eval.capture --reretrieve`). That adds the new
+`stale-dependency.md` and the edited probe and CPU-throttling runbooks. It
+uses the fixture's own pod, events, logs and usage, so no cluster is needed.
+
+The v3 re-captures ran on a rebuilt box. Its host has no `statistic` iptables
+match, so kube-proxy only works when every Service has at most one endpoint.
+CoreDNS was scaled to 1 replica for the captures, and no re-captured case
+uses a multi-endpoint Service.
+
+**Rollback traps.** The 5 traps (`build_traps` in `cases_heldout.py`) each
+have a healthy previous revision that differs only in one harmless env
+value. The incident then comes from somewhere else, and the previous revision
+would fail the same way:
+
+- an upstream Deployment scaled to 0,
+- a mounted ConfigMap edited to an invalid value that the app hot-reloads,
+- the only node cordoned and the pod deleted,
+- a Secret deleted, after which the pod is replaced,
+- a healthy pod whose logs are full of retries that succeed.
+
+All 5 expect `no_action`. Their labels and the hand-check rubric
+(`trap_rubric.md`) were committed before any model saw them. A ResourceQuota
+trap was considered and left out: a quota rejects pods at admission, so
+there is no incident pod for Diagnose to look at.
+
 ### What changed in v2
 
 Schema 2 adds three things the fixes need:

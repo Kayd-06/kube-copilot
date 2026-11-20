@@ -1,0 +1,1759 @@
+{
+  "model": "openai/gpt-oss-120b",
+  "base_url": "https://api.groq.com/openai/v1",
+  "status": "partial",
+  "stopped_reason": "daily quota exhausted after 30 of 76 calls: LLM request failed: Error code: 429 - Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m5m2wscaegns4ra3dyn7txqr` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 197822, Requested 4658. Please try again in 17m51.359999999s. Need more tokens? Upgrade to De",
+  "started_at": "2026-11-19T12:55:28+00:00",
+  "finished_at": "2026-11-19T13:27:42+00:00",
+  "variants": [
+    "full"
+  ],
+  "tasks": [
+    "diagnose",
+    "propose"
+  ],
+  "dataset": {
+    "cases": 38,
+    "by_category": {
+      "missing_config": 5,
+      "app_crash": 4,
+      "healthy": 4,
+      "probe_failure": 4,
+      "bad_config_value": 3,
+      "dependency_connectivity": 3,
+      "image_pull": 3,
+      "oom_killed": 3,
+      "unschedulable": 3,
+      "pod_disruption": 3,
+      "pvc_pending": 2,
+      "cpu_throttling": 1
+    },
+    "by_difficulty": {
+      "easy": 17,
+      "hard": 11,
+      "medium": 10
+    },
+    "by_expected_action": {
+      "no_action": 26,
+      "rollback_deployment": 11,
+      "restart_deployment": 1
+    },
+    "with_lifecycle_signals": 29,
+    "with_previous_revision": 15
+  },
+  "baselines": {
+    "cases": 38,
+    "category_reason_lookup_accuracy": 55.3,
+    "remediation_always_no_action_accuracy": 68.4,
+    "remediation_rollback_if_previous_revision_accuracy": 86.8,
+    "retrieval": {
+      "cases_with_expected_runbook": 29,
+      "hit_at_k": 86.2,
+      "hit_at_1": 72.4,
+      "mrr": 0.758,
+      "misses": [
+        "dns_missing_service",
+        "liveness_path_rollout",
+        "readiness_port_first",
+        "stale_dependency"
+      ]
+    }
+  },
+  "pacing": {
+    "tpm": 7000,
+    "waited_s": 1387,
+    "retries": 0,
+    "daily_quota_waited_s": 0
+  },
+  "fixtures_dir": "ml/data/llm_eval/cases_v3",
+  "runs": [],
+  "summary": {
+    "diagnose/full": {
+      "cases": 30,
+      "errors": 0,
+      "latency_p50_s": 1.94,
+      "latency_p95_s": 3.88,
+      "prompt_tokens": 91674,
+      "completion_tokens": 18130,
+      "cost_usd": 0.0246,
+      "category_correct": 29,
+      "category_accuracy": 96.7,
+      "category_accuracy_ci95": [
+        83.3,
+        99.4
+      ],
+      "schema_valid": 100.0,
+      "hallucination_rate": 0.0,
+      "placeholder_rate": 26.7,
+      "mean_confidence_correct": 0.913,
+      "mean_confidence_wrong": 0.73
+    },
+    "ablations": {},
+    "by_category": {
+      "app_crash": {
+        "diagnose_n": 4,
+        "diagnose_ok": 4
+      },
+      "bad_config_value": {
+        "diagnose_n": 3,
+        "diagnose_ok": 3
+      },
+      "cpu_throttling": {
+        "diagnose_n": 1,
+        "diagnose_ok": 1
+      },
+      "dependency_connectivity": {
+        "diagnose_n": 1,
+        "diagnose_ok": 1
+      },
+      "healthy": {
+        "diagnose_n": 4,
+        "diagnose_ok": 3
+      },
+      "image_pull": {
+        "diagnose_n": 3,
+        "diagnose_ok": 3
+      },
+      "missing_config": {
+        "diagnose_n": 5,
+        "diagnose_ok": 5
+      },
+      "oom_killed": {
+        "diagnose_n": 3,
+        "diagnose_ok": 3
+      },
+      "pod_disruption": {
+        "diagnose_n": 1,
+        "diagnose_ok": 1
+      },
+      "probe_failure": {
+        "diagnose_n": 2,
+        "diagnose_ok": 2
+      },
+      "unschedulable": {
+        "diagnose_n": 3,
+        "diagnose_ok": 3
+      }
+    },
+    "by_difficulty": {
+      "easy": {
+        "diagnose_n": 15,
+        "diagnose_ok": 15
+      },
+      "hard": {
+        "diagnose_n": 9,
+        "diagnose_ok": 8
+      },
+      "medium": {
+        "diagnose_n": 6,
+        "diagnose_ok": 6
+      }
+    }
+  },
+  "labels": {
+    "cm_deleted_after_rollout": {
+      "category": "missing_config",
+      "expected_actions": [
+        "no_action"
+      ],
+      "expected_runbooks": [
+        "create-container-config-error.md"
+      ],
+      "difficulty": "hard",
+      "fault": "Both revisions use ConfigMap pricing-config. After a healthy rollout someone deleted it; the new replica from a scale-up fails with CreateContainerConfigError. Rolling back would not help.",
+      "notes": "Previous revision exists, so 'rollback whenever you can' is wrong here."
+    },
+    "cm_edited_after_rollout": {
+      "category": "bad_config_value",
+      "expected_actions": [
+        "no_action"
+      ],
+      "expected_runbooks": [
+        "crashloopbackoff.md"
+      ],
+      "difficulty": "hard",
+      "fault": "Both revisions read tax-config. After a healthy rollout LOG_LEVEL was edited to 'verbose'; the new replica from a scale-up exits 1. Rolling back would not help; the ConfigMap must be fixed.",
+      "notes": ""
+    },
+    "config_loglevel_first": {
+      "category": "bad_config_value",
+      "expected_actions": [
+        "no_action"
+      ],
+      "expected_runbooks": [
+        "crashloopbackoff.md"
+      ],
+      "difficulty": "easy",
+      "fault": "ConfigMap notifier-config sets LOG_LEVEL=verbose; the app only accepts debug/info/warn/error and exits 1.",
+      "notes": ""
+    },
+    "config_port_rollout": {
+      "category": "bad_config_value",
+      "expected_actions": [
+        "rollback_deployment"
+      ],
+      "expected_runbooks": [
+        "crashloopbackoff.md"
+      ],
+      "difficulty": "easy",
+      "fault": "Deployment updated with env PORT=eighty; the app validates PORT and exits 2.",
+      "notes": ""
+    },
+    "cpu_throttle_first": {
+      "category": "cpu_throttling",
+      "expected_actions": [
+        "no_action",
+        "scale_deployment"
+      ],
+      "expected_runbooks": [],
+      "difficulty": "hard",
+      "fault": "CPU-bound worker with limits.cpu=20m; it is throttled and each batch takes many seconds.",
+      "notes": "Nothing fails; only metrics and slow batch times show it. No runbook covers throttling."
+    },
+    "crash_bad_command_rollout": {
+      "category": "app_crash",
+      "expected_actions": [
+        "rollback_deployment"
+      ],
+      "expected_runbooks": [
+        "create-container-error.md",
+        "crashloopbackoff.md"
+      ],
+      "difficulty": "easy",
+      "fault": "Deployment updated to run /app/server, which does not exist in the image (exec fails).",
+      "notes": ""
+    },
+    "crash_panic_rollout": {
+      "category": "app_crash",
+      "expected_actions": [
+        "rollback_deployment"
+      ],
+      "expected_runbooks": [
+        "crashloopbackoff.md"
+      ],
+      "difficulty": "easy",
+      "fault": "Deployment updated to v2.0.0 whose process panics (nil pointer) and exits 2.",
+      "notes": ""
+    },
+    "crash_traceback_first": {
+      "category": "app_crash",
+      "expected_actions": [
+        "no_action"
+      ],
+      "expected_runbooks": [
+        "crashloopbackoff.md"
+      ],
+      "difficulty": "easy",
+      "fault": "Revision 1 of the worker raises KeyError on a job type and exits 1 (a code bug).",
+      "notes": ""
+    },
+    "dns_missing_service": {
+      "category": "dependency_connectivity",
+      "expected_actions": [
+        "no_action"
+      ],
+      "expected_runbooks": [
+        "dns-issues.md"
+      ],
+      "difficulty": "medium",
+      "fault": "quotes calls http://pricing-api/quote; there is no pricing-api Service, so DNS lookup fails.",
+      "notes": ""
+    },
+    "healthy_after_rollout": {
+      "category": "healthy",
+      "expected_actions": [
+        "no_action"
+      ],
+      "expected_runbooks": [],
+      "difficulty": "medium",
+      "fault": "No fault: a routine rollout (env change) completed and the new pod is healthy.",
+      "notes": ""
+    },
+    "healthy_job_completed": {
+      "category": "healthy",
+      "expected_actions": [
+        "no_action"
+      ],
+      "expected_runbooks": [],
+      "difficulty": "medium",
+      "fault": "No fault; a one-off Job ran to completion (exit 0).",
+      "notes": ""
+    },
+    "healthy_noisy_logs": {
+      "category": "healthy",
+      "expected_actions": [
+        "no_action"
+      ],
+      "expected_runbooks": [],
+      "difficulty": "hard",
+      "fault": "No fault injected; the worker logs benign retry/cache warnings.",
+      "notes": ""
+    },
+    "healthy_web": {
+      "category": "healthy",
+      "expected_actions": [
+        "no_action"
+      ],
+      "expected_runbooks": [],
+      "difficulty": "easy",
+      "fault": "No fault injected.",
+      "notes": ""
+    },
+    "img_private_rollout": {
+      "category": "image_pull",
+      "expected_actions": [
+        "rollback_deployment"
+      ],
+      "expected_runbooks": [
+        "imagepullbackoff.md"
+      ],
+      "difficulty": "medium",
+      "fault": "Deployment updated to ghcr.io/acme-payments/billing-api:3.1.0, a repository that does not exist publicly.",
+      "notes": ""
+    },
+    "img_registry_first": {
+      "category": "image_pull",
+      "expected_actions": [
+        "no_action"
+      ],
+      "expected_runbooks": [
+        "imagepullbackoff.md"
+      ],
+      "difficulty": "easy",
+      "fault": "Image registry.example.invalid/ledger/api:2.4.1 on revision 1; the registry host does not exist.",
+      "notes": ""
+    },
+    "img_tag_rollout": {
+      "category": "image_pull",
+      "expected_actions": [
+        "rollback_deployment"
+      ],
+      "expected_runbooks": [
+        "imagepullbackoff.md"
+      ],
+      "difficulty": "easy",
+      "fault": "Deployment updated from nginx:1.27-alpine to the non-existent tag nginx:1.27-alpine-typo.",
+      "notes": ""
+    },
+    "init_migration_first": {
+      "category": "app_crash",
+      "expected_actions": [
+        "no_action"
+      ],
+      "expected_runbooks": [
+        "crashloopbackoff.md"
+      ],
+      "difficulty": "hard",
+      "fault": "Revision 1 has an init container running a migration that fails ('relation already exists') and exits 1.",
+      "notes": "Diagnose fetches main-container logs only, so the migration error is not in the context."
+    },
+    "liveness_path_rollout": {
+      "category": "probe_failure",
+      "expected_actions": [
+        "rollback_deployment"
+      ],
+      "expected_runbooks": [
+        "probe-failures.md"
+      ],
+      "difficulty": "easy",
+      "fault": "Deployment updated with livenessProbe GET /healthz:80; nginx returns 404 so the kubelet keeps restarting it.",
+      "notes": ""
+    },
+    "liveness_slow_start_first": {
+      "category": "probe_failure",
+      "expected_actions": [
+        "no_action"
+      ],
+      "expected_runbooks": [
+        "probe-failures.md"
+      ],
+      "difficulty": "hard",
+      "fault": "App needs ~40s to start listening; livenessProbe has initialDelaySeconds=5, period 5, failureThreshold 2.",
+      "notes": "Looks like a crash loop; the container never logs an error."
+    },
+    "missing_cm_envfrom_rollout": {
+      "category": "missing_config",
+      "expected_actions": [
+        "rollback_deployment"
+      ],
+      "expected_runbooks": [
+        "create-container-config-error.md"
+      ],
+      "difficulty": "easy",
+      "fault": "Deployment updated with envFrom ConfigMap cart-feature-flags, which does not exist.",
+      "notes": ""
+    },
+    "missing_cm_volume_first": {
+      "category": "missing_config",
+      "expected_actions": [
+        "no_action"
+      ],
+      "expected_runbooks": [
+        "failed-mount.md",
+        "create-container-config-error.md"
+      ],
+      "difficulty": "medium",
+      "fault": "Revision 1 mounts ConfigMap search-synonyms as a volume; it does not exist, so the pod is stuck creating.",
+      "notes": ""
+    },
+    "missing_secret_first": {
+      "category": "missing_config",
+      "expected_actions": [
+        "no_action"
+      ],
+      "expected_runbooks": [
+        "create-container-config-error.md"
+      ],
+      "difficulty": "easy",
+      "fault": "Revision 1 reads DB_PASSWORD from Secret orders-db-credentials, which does not exist.",
+      "notes": ""
+    },
+    "missing_secret_key_rollout": {
+      "category": "missing_config",
+      "expected_actions": [
+        "rollback_deployment"
+      ],
+      "expected_runbooks": [
+        "create-container-config-error.md"
+      ],
+      "difficulty": "medium",
+      "fault": "Secret ledger-api has key api-token; the new revision asks for api_token.",
+      "notes": ""
+    },
+    "oom_first": {
+      "category": "oom_killed",
+      "expected_actions": [
+        "no_action"
+      ],
+      "expected_runbooks": [
+        "oomkilled.md"
+      ],
+      "difficulty": "easy",
+      "fault": "Revision 1 loads ~300MB into memory with a 48Mi limit and is OOMKilled.",
+      "notes": ""
+    },
+    "oom_leak_first": {
+      "category": "oom_killed",
+      "expected_actions": [
+        "no_action"
+      ],
+      "expected_runbooks": [
+        "oomkilled.md",
+        "memory-leak.md"
+      ],
+      "difficulty": "hard",
+      "fault": "Revision 1 appends 1MB per batch to an in-memory buffer that is never freed; 64Mi limit.",
+      "notes": "Logs only say 'processed batch N'; the OOM is in status/events."
+    },
+    "oom_limit_rollout": {
+      "category": "oom_killed",
+      "expected_actions": [
+        "rollback_deployment"
+      ],
+      "expected_runbooks": [
+        "oomkilled.md"
+      ],
+      "difficulty": "easy",
+      "fault": "Deployment updated from a 512Mi to a 64Mi memory limit; the app needs ~160MB to warm its cache.",
+      "notes": ""
+    },
+    "pending_antiaffinity_first": {
+      "category": "unschedulable",
+      "expected_actions": [
+        "no_action",
+        "scale_deployment"
+      ],
+      "expected_runbooks": [
+        "pending-unschedulable.md"
+      ],
+      "difficulty": "hard",
+      "fault": "2 replicas with required pod anti-affinity on hostname, but the cluster has one node: one pod stays Pending.",
+      "notes": "Scaling to 1 replica also clears the Pending pod."
+    },
+    "pending_cpu_first": {
+      "category": "unschedulable",
+      "expected_actions": [
+        "no_action"
+      ],
+      "expected_runbooks": [
+        "pending-unschedulable.md"
+      ],
+      "difficulty": "easy",
+      "fault": "Revision 1 requests cpu: 64; no node can fit it.",
+      "notes": ""
+    },
+    "pending_nodeselector_rollout": {
+      "category": "unschedulable",
+      "expected_actions": [
+        "rollback_deployment"
+      ],
+      "expected_runbooks": [
+        "pending-unschedulable.md"
+      ],
+      "difficulty": "easy",
+      "fault": "Deployment updated with nodeSelector disktype=ssd; no node has that label.",
+      "notes": ""
+    },
+    "pod_kill_after_rollout": {
+      "category": "pod_disruption",
+      "expected_actions": [
+        "no_action"
+      ],
+      "expected_runbooks": [],
+      "difficulty": "hard",
+      "fault": "Healthy rollout of shipping (2 replicas), then Chaos Mesh killed one pod; the ReplicaSet replaced it.",
+      "notes": ""
+    },
+    "pod_kill_repeated": {
+      "category": "pod_disruption",
+      "expected_actions": [
+        "no_action"
+      ],
+      "expected_runbooks": [],
+      "difficulty": "medium",
+      "fault": "Chaos Mesh PodChaos pod-kill three times, 30s apart, on catalog-api (2 replicas).",
+      "notes": ""
+    },
+    "pod_kill_single": {
+      "category": "pod_disruption",
+      "expected_actions": [
+        "no_action"
+      ],
+      "expected_runbooks": [],
+      "difficulty": "medium",
+      "fault": "Chaos Mesh PodChaos pod-kill on one of 2 replicas of search; the ReplicaSet replaced it.",
+      "notes": "Target is the healthy replacement pod; only lifecycle signals show the kill."
+    },
+    "pvc_missing_first": {
+      "category": "pvc_pending",
+      "expected_actions": [
+        "no_action"
+      ],
+      "expected_runbooks": [
+        "pvc-pending.md"
+      ],
+      "difficulty": "medium",
+      "fault": "Deployment mounts PVC exports-data, which does not exist.",
+      "notes": ""
+    },
+    "pvc_storageclass_first": {
+      "category": "pvc_pending",
+      "expected_actions": [
+        "no_action"
+      ],
+      "expected_runbooks": [
+        "pvc-pending.md"
+      ],
+      "difficulty": "easy",
+      "fault": "PVC uploads-data uses storageClassName fast-ssd, which does not exist; the pod stays Pending.",
+      "notes": ""
+    },
+    "readiness_exec_rollout": {
+      "category": "probe_failure",
+      "expected_actions": [
+        "rollback_deployment"
+      ],
+      "expected_runbooks": [
+        "probe-failures.md"
+      ],
+      "difficulty": "medium",
+      "fault": "Deployment updated with readinessProbe `cat /tmp/ready`; the app never creates the file.",
+      "notes": ""
+    },
+    "readiness_port_first": {
+      "category": "probe_failure",
+      "expected_actions": [
+        "no_action"
+      ],
+      "expected_runbooks": [
+        "probe-failures.md"
+      ],
+      "difficulty": "easy",
+      "fault": "Revision 1 has a TCP readiness probe on 8081; nginx listens on 80, so the pod never becomes Ready.",
+      "notes": ""
+    },
+    "stale_dependency": {
+      "category": "dependency_connectivity",
+      "expected_actions": [
+        "restart_deployment",
+        "delete_pod"
+      ],
+      "expected_runbooks": [
+        "probe-failures.md"
+      ],
+      "difficulty": "hard",
+      "fault": "web started while its upstream deps-api had 0 replicas and only checks it at startup; deps-api is back now, but web stays not-Ready until it is restarted.",
+      "notes": "A restart (new pod) fixes it. delete_pod is also a fix but policy only allows it for crashlooping pods."
+    },
+    "svc_port_mismatch": {
+      "category": "dependency_connectivity",
+      "expected_actions": [
+        "no_action"
+      ],
+      "expected_runbooks": [],
+      "difficulty": "hard",
+      "fault": "Service inventory maps port 80 to targetPort 8080, but the inventory pods listen on 80; storefront exits on connection refused.",
+      "notes": "The Service spec is not in the context; only the client's curl error is."
+    }
+  },
+  "records": [
+    {
+      "case": "cm_deleted_after_rollout",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 1.77,
+      "prompt_tokens": 2416,
+      "completion_tokens": 489,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The pod pricing-6c79ccf64-w7xpp is stuck in Pending with a CreateContainerConfigError because the ConfigMap \"pricing-config\" referenced in its spec does not exist in the namespace. No container has started, so there are no application logs. This matches the runbook for missing ConfigMaps.",
+        "likely_root_cause": "Missing ConfigMap \"pricing-config\" referenced by the pod spec, causing kubelet to reject container creation.",
+        "suggested_fix": "Create the required ConfigMap (or correct the name/namespace in the pod spec) and then restart the workload so the pod can be recreated with the proper configuration. Verify the ConfigMap contents and ensure it is in the same namespace as the pod.",
+        "kubectl_commands": [
+          "kubectl describe pod pricing-6c79ccf64-w7xpp -n kc-eval-32",
+          "kubectl get configmap pricing-config -n kc-eval-32",
+          "kubectl create configmap pricing-config --from-file=path/to/data -n kc-eval-32",
+          "kubectl rollout restart deployment/pricing -n kc-eval-32",
+          "kubectl get pod -l app=pricing -n kc-eval-32 --watch"
+        ],
+        "confidence": 0.95
+      },
+      "category": {
+        "correct": true,
+        "predicted": "missing_config",
+        "also_matched": [
+          "missing_config"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 8,
+        "unknown_refs": [],
+        "placeholders": [],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "cm_edited_after_rollout",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 1.744,
+      "prompt_tokens": 2940,
+      "completion_tokens": 703,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The pod tax-6546d5658-txvsg is stuck in a CrashLoopBackOff: its single container exits with code\u202f1, has restarted 4 times and never becomes Ready. The current logs end with a fatal error \u201cunknown log level \\\"verbose\\\" (valid: debug, info, warn, error)\u201d, indicating the process aborts due to an invalid log\u2011level configuration.",
+        "likely_root_cause": "Invalid log\u2011level argument (or env var) passed to the container\u2019s command, causing the process to exit with code\u202f1 on every start.",
+        "suggested_fix": "Update the pod spec (or the Deployment) to use a supported log level (debug, info, warn, or error) or remove the offending flag. Then roll out the corrected version and verify that the container stays running and becomes Ready.",
+        "kubectl_commands": [
+          "kubectl describe pod tax-6546d5658-txvsg -n kc-eval-33",
+          "kubectl logs tax-6546d5658-txvsg -n kc-eval-33 --previous --tail=100",
+          "kubectl get deployment -n kc-eval-33 -o yaml | grep -A5 tax",
+          "kubectl edit deployment <deployment-name> -n kc-eval-33  # adjust command/args or env var for log level",
+          "kubectl rollout restart deployment/<deployment-name> -n kc-eval-33",
+          "kubectl rollout status deployment/<deployment-name> -n kc-eval-33"
+        ],
+        "confidence": 0.9
+      },
+      "category": {
+        "correct": true,
+        "predicted": "bad_config_value",
+        "also_matched": [
+          "app_crash",
+          "bad_config_value"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 8,
+        "unknown_refs": [],
+        "placeholders": [
+          "<deployment-name>",
+          "<deployment-name>",
+          "<deployment-name>"
+        ],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "config_loglevel_first",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 1.784,
+      "prompt_tokens": 2772,
+      "completion_tokens": 634,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The notifier pod is stuck in a CrashLoopBackOff: its single container repeatedly exits with code\u202f1, triggering BackOff events and four restarts. The current logs show a fatal error about an unknown log level \"verbose\", indicating the process fails immediately on start.",
+        "likely_root_cause": "The container\u2019s start command (or env var) supplies an invalid log level \"verbose\", which the application does not recognize, causing it to exit with code\u202f1 and enter CrashLoopBackOff.",
+        "suggested_fix": "Update the pod spec (Deployment/StatefulSet) to use a supported log level (e.g., \"info\" or \"debug\") or remove the invalid flag. Then roll out the corrected configuration and verify that the container stays running without restarts.",
+        "kubectl_commands": [
+          "kubectl describe pod notifier-ff78b54fb-9mnnw -n kc-eval-09",
+          "kubectl get pod notifier-ff78b54fb-9mnnw -n kc-eval-09 -o yaml",
+          "kubectl logs notifier-ff78b54fb-9mnnw -n kc-eval-09 --previous --tail=200",
+          "kubectl logs notifier-ff78b54fb-9mnnw -n kc-eval-09 --tail=200",
+          "kubectl edit deployment <deployment-name> -n kc-eval-09  # adjust command/args or env var for log level"
+        ],
+        "confidence": 0.9
+      },
+      "category": {
+        "correct": true,
+        "predicted": "app_crash",
+        "also_matched": [
+          "app_crash",
+          "bad_config_value"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 9,
+        "unknown_refs": [],
+        "placeholders": [
+          "<deployment-name>"
+        ],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "config_port_rollout",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 2.174,
+      "prompt_tokens": 2941,
+      "completion_tokens": 667,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The payments pod is stuck in CrashLoopBackOff: the container exits immediately with exit code 2 after logging a fatal error that the PORT environment variable is set to the non\u2011numeric string \"eighty\". The pod has restarted three times and never becomes Ready.",
+        "likely_root_cause": "Invalid value for the PORT environment variable (non\u2011integer) causing the container to exit on start\u2011up.",
+        "suggested_fix": "Correct the PORT env var to a valid integer (e.g., 8080) in the Deployment/ConfigMap/Secret that provides it, then roll out the change (kubectl rollout restart or apply updated manifest). Verify the container starts successfully after the fix.",
+        "kubectl_commands": [
+          "kubectl describe pod payments-6d7bd7849-rldhh -n kc-eval-08",
+          "kubectl logs payments-6d7bd7849-rldhh -n kc-eval-08 --previous --tail=100",
+          "kubectl get deployment payments -n kc-eval-08 -o yaml",
+          "kubectl edit deployment payments -n kc-eval-08",
+          "kubectl set env deployment/payments PORT=8080 -n kc-eval-08",
+          "kubectl rollout restart deployment/payments -n kc-eval-08"
+        ],
+        "confidence": 0.93
+      },
+      "category": {
+        "correct": true,
+        "predicted": "bad_config_value",
+        "also_matched": [
+          "bad_config_value"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 12,
+        "unknown_refs": [],
+        "placeholders": [],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "cpu_throttle_first",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 1.431,
+      "prompt_tokens": 2762,
+      "completion_tokens": 538,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The pod is Running and Ready with no restarts, but its container is being CPU\u2011throttled in 99% of CFS periods. This throttling slows batch processing (e.g., batch 73 took 2\u202fs vs 1\u202fs earlier) even though overall CPU usage appears below the hard limit.",
+        "likely_root_cause": "The container\u2019s CPU limit (20\u202fm) is too low for the workload\u2019s bursty demand, causing extreme CPU throttling and degraded performance.",
+        "suggested_fix": "Raise the CPU limit (or remove it) to a value that covers the observed peak usage plus headroom (e.g., 50\u202fm or higher). Update the Deployment manifest and rollout the change, then verify that throttling drops. If the app spawns many threads, also tune the runtime\u2019s thread\u2011pool size to the cgroup quota or increase probe timeoutSeconds if probes are failing.",
+        "kubectl_commands": [
+          "kubectl get pod thumbnailer-777cb64948-vrj8v -n kc-eval-21 -o yaml",
+          "kubectl top pod thumbnailer-777cb64948-vrj8v -n kc-eval-21 --containers",
+          "kubectl describe pod thumbnailer-777cb64948-vrj8v -n kc-eval-21",
+          "kubectl edit deployment thumbnailer -n kc-eval-21",
+          "kubectl rollout restart deployment thumbnailer -n kc-eval-21",
+          "kubectl get pod thumbnailer-777cb64948-vrj8v -n kc-eval-21 -w"
+        ],
+        "confidence": 0.92
+      },
+      "category": {
+        "correct": true,
+        "predicted": "cpu_throttling",
+        "also_matched": [
+          "cpu_throttling"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 12,
+        "unknown_refs": [],
+        "placeholders": [],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "crash_bad_command_rollout",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 1.609,
+      "prompt_tokens": 2830,
+      "completion_tokens": 613,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The pod api-7bff56b497-8j4wn is in CrashLoopBackOff with three restarts. The container fails to start because the runtime cannot find the executable \"/app/server\" inside the busybox image, causing an OCI runtime create failure. No logs are available because the process never launches.",
+        "likely_root_cause": "Container command points to a non\u2011existent binary (/app/server) in the busybox:1.36 image, resulting in an OCI runtime create error and immediate container exit (exit code 128).",
+        "suggested_fix": "Update the pod spec (or the Deployment/StatefulSet that creates it) to use the correct image that contains /app/server, or change the command/args to a valid executable present in the busybox image. After correcting the image or command, redeploy the workload so new pods start successfully.",
+        "kubectl_commands": [
+          "kubectl describe pod api-7bff56b497-8j4wn -n kc-eval-04",
+          "kubectl get pod api-7bff56b497-8j4wn -n kc-eval-04 -o yaml",
+          "kubectl logs api-7bff56b497-8j4wn -n kc-eval-04 --previous --tail=200",
+          "kubectl edit deployment <deployment-name> -n kc-eval-04  # replace with the actual deployment that owns the pod"
+        ],
+        "confidence": 0.95
+      },
+      "category": {
+        "correct": true,
+        "predicted": "app_crash",
+        "also_matched": [
+          "app_crash"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 7,
+        "unknown_refs": [],
+        "placeholders": [
+          "<deployment-name>"
+        ],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "crash_panic_rollout",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 39.761,
+      "prompt_tokens": 3436,
+      "completion_tokens": 439,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The gateway container repeatedly crashes on start with a segmentation fault (nil pointer dereference) and enters CrashLoopBackOff. The pod never becomes Ready and has restarted three times.",
+        "likely_root_cause": "Application code panics at startup (nil pointer in Router.Register), causing the container to exit with code 2 and trigger CrashLoopBackOff.",
+        "suggested_fix": "Fix the application bug that leaves the Router nil (add proper initialization or nil\u2011check), rebuild the image and redeploy. As a short\u2011term mitigation you can roll back to a previous image version that did not have the bug or patch the ConfigMap/Secret that may be missing required data, then restart the pod.",
+        "kubectl_commands": [
+          "kubectl describe pod gateway-866f58ddf4-pg77n -n kc-eval-06",
+          "kubectl logs gateway-866f58ddf4-pg77n -n kc-eval-06 --previous --tail=200",
+          "kubectl get pod gateway-866f58ddf4-pg77n -n kc-eval-06 -o jsonpath='{.spec.containers[*].resources}'",
+          "kubectl get configmap -n kc-eval-06",
+          "kubectl get secret -n kc-eval-06"
+        ],
+        "confidence": 0.92
+      },
+      "category": {
+        "correct": true,
+        "predicted": "app_crash",
+        "also_matched": [
+          "app_crash"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 8,
+        "unknown_refs": [],
+        "placeholders": [],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "crash_traceback_first",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 3.131,
+      "prompt_tokens": 2942,
+      "completion_tokens": 541,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The jobs-worker pod is repeatedly crashing with exit code 1, entering a BackOff state. Logs show a KeyError for the job type 'invoice.v2', causing the container to terminate and restart four times. No resource limits or external dependencies appear to be the issue.",
+        "likely_root_cause": "Application code raises an unhandled KeyError because the job type 'invoice.v2' is not present in the HANDLERS map, causing the container to exit immediately.",
+        "suggested_fix": "Update the worker code to handle the 'invoice.v2' job type (add a handler or guard the lookup with a default). Rebuild the container image and roll out the new version, or adjust the job producer to stop sending unknown job types. After fixing, redeploy and verify that the restart count stops increasing.",
+        "kubectl_commands": [
+          "kubectl describe pod jobs-worker-6fff85d484-28sqw -n kc-eval-05",
+          "kubectl get events -n kc-eval-05 --field-selector involvedObject.name=jobs-worker-6fff85d484-28sqw",
+          "kubectl logs jobs-worker-6fff85d484-28sqw -n kc-eval-05 --tail=200",
+          "kubectl logs jobs-worker-6fff85d484-28sqw -n kc-eval-05 --previous --tail=200",
+          "kubectl get deployment -n kc-eval-05 -o yaml | grep -A5 jobs-worker"
+        ],
+        "confidence": 0.85
+      },
+      "category": {
+        "correct": true,
+        "predicted": "app_crash",
+        "also_matched": [
+          "app_crash"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 9,
+        "unknown_refs": [],
+        "placeholders": [],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "dns_missing_service",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 1.878,
+      "prompt_tokens": 3289,
+      "completion_tokens": 471,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The quotes container repeatedly crashes (exit code 1) because it cannot resolve the upstream URL http://pricing-api/quote. The Service pricing\u2011api does not exist in the namespace, so DNS lookup times out and the container exits, leading to CrashLoopBackOff with three restarts.",
+        "likely_root_cause": "Missing in\u2011cluster Service named pricing\u2011api (dependency) causing DNS resolution failure and container exit.",
+        "suggested_fix": "Create or correct the Service pricing\u2011api in namespace kc-eval-28 (or update the UPSTREAM env var to point to an existing service). Verify DNS resolution, then redeploy or restart the quotes pod so it can reach the upstream service. Consider adding retry logic or a graceful shutdown on upstream failure to avoid immediate exit.",
+        "kubectl_commands": [
+          "kubectl describe pod quotes-76665cd5c4-qhn4k -n kc-eval-28",
+          "kubectl logs quotes-76665cd5c4-qhn4k -n kc-eval-28 --previous --tail=200",
+          "kubectl get svc -n kc-eval-28",
+          "kubectl get endpoints -n kc-eval-28",
+          "kubectl create service clusterip pricing-api --tcp=80:80 -n kc-eval-28",
+          "kubectl rollout restart deployment quotes -n kc-eval-28"
+        ],
+        "confidence": 0.92
+      },
+      "category": {
+        "correct": true,
+        "predicted": "dependency_connectivity",
+        "also_matched": [
+          "dependency_connectivity"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 9,
+        "unknown_refs": [],
+        "placeholders": [],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "healthy_after_rollout",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 2.523,
+      "prompt_tokens": 3849,
+      "completion_tokens": 403,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The pod kc-eval-35/accounts-78cdd7ff6d-ltpsz is running and ready with no restarts, no warning events, and normal resource usage. Its logs show a successful nginx start\u2011up. The anomaly detector flagged it, but all Kubernetes signals indicate the pod is healthy.",
+        "likely_root_cause": "False\u2011positive anomaly detection; the pod is operating normally.",
+        "suggested_fix": "No remediation is required for the pod itself. You can acknowledge the alert, continue monitoring, and if desired adjust the anomaly model thresholds to reduce noise. Optionally verify the pod\u2019s health with standard kubectl commands.",
+        "kubectl_commands": [
+          "kubectl describe pod accounts-78cdd7ff6d-ltpsz -n kc-eval-35",
+          "kubectl get pod accounts-78cdd7ff6d-ltpsz -n kc-eval-35 -o yaml",
+          "kubectl logs accounts-78cdd7ff6d-ltpsz -n kc-eval-35",
+          "kubectl top pod accounts-78cdd7ff6d-ltpsz -n kc-eval-35 --containers",
+          "kubectl get events -n kc-eval-35 --field-selector involvedObject.name=accounts-78cdd7ff6d-ltpsz"
+        ],
+        "confidence": 0.95
+      },
+      "category": {
+        "correct": true,
+        "predicted": "healthy",
+        "also_matched": [
+          "healthy"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 10,
+        "unknown_refs": [],
+        "placeholders": [],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "healthy_job_completed",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 1.457,
+      "prompt_tokens": 2617,
+      "completion_tokens": 518,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The pod nightly-report-d862w in namespace kc-eval-34 has completed successfully (phase Succeeded) with an exit code 0 and no restarts. Logs show it generated the nightly report and exited cleanly. No warning events, resource issues, or disruption signals were observed.",
+        "likely_root_cause": "No failure \u2013 the pod finished its intended one\u2011shot workload as designed.",
+        "suggested_fix": "No remediation is required; the job ran to completion. If this pod is part of a recurring CronJob, verify the CronJob schedule and monitor future runs. Optionally, clean up completed pods if they are no longer needed.",
+        "kubectl_commands": [
+          "kubectl describe pod nightly-report-d862w -n kc-eval-34",
+          "kubectl logs nightly-report-d862w -n kc-eval-34",
+          "kubectl get pod nightly-report-d862w -n kc-eval-34 -o yaml",
+          "kubectl get job -n kc-eval-34 --selector=job-name=nightly-report-d862w",
+          "kubectl get cronjob -n kc-eval-34"
+        ],
+        "confidence": 0.96
+      },
+      "category": {
+        "correct": true,
+        "predicted": "healthy",
+        "also_matched": [
+          "healthy"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 8,
+        "unknown_refs": [],
+        "placeholders": [],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "healthy_noisy_logs",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 1.917,
+      "prompt_tokens": 3910,
+      "completion_tokens": 573,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The pod sync-659bbf857b-j5fhs is Running and Ready with no restarts or warning events. Its logs show repeated upstream timeouts that are retried successfully, and a low cache hit ratio, but the pod remains healthy according to Kubernetes state and metrics.",
+        "likely_root_cause": "Intermittent timeouts when contacting an upstream dependency, causing the pod to emit WARN messages and low cache hit ratio, but not preventing it from completing its sync work.",
+        "suggested_fix": "Investigate the upstream service for latency or availability issues (e.g., check its pods, service endpoints, and recent events). Consider increasing the timeout/retry settings in the sync container or improving cache configuration. If the upstream issue persists, address it at the source rather than changing the sync pod itself.",
+        "kubectl_commands": [
+          "kubectl describe pod sync-659bbf857b-j5fhs -n kc-eval-33",
+          "kubectl logs sync-659bbf857b-j5fhs -n kc-eval-33 -c sync --tail=100",
+          "kubectl get pod sync-659bbf857b-j5fhs -n kc-eval-33 -o jsonpath='{.spec.containers[*].resources}'",
+          "kubectl top pod sync-659bbf857b-j5fhs -n kc-eval-33 --containers",
+          "kubectl get endpoints <upstream-service-name> -n <upstream-namespace>",
+          "kubectl describe service <upstream-service-name> -n <upstream-namespace>"
+        ],
+        "confidence": 0.73
+      },
+      "category": {
+        "correct": false,
+        "predicted": "dependency_connectivity",
+        "also_matched": [
+          "dependency_connectivity"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 8,
+        "unknown_refs": [],
+        "placeholders": [
+          "<upstream-namespace>",
+          "<upstream-service-name>",
+          "<upstream-namespace>",
+          "<upstream-service-name>"
+        ],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "healthy_web",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 1.382,
+      "prompt_tokens": 3797,
+      "completion_tokens": 398,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The pod kc-eval-32/landing-84547c58c8-5vcpm is in Running phase, Ready, with no restarts and no warning events. Logs show a normal nginx startup and the health summary marks it as healthy. The anomaly detector flag is weak evidence and not corroborated by any other signal.",
+        "likely_root_cause": "False\u2011positive anomaly detection; the pod is healthy.",
+        "suggested_fix": "No remediation needed for the pod itself. If you want to reduce noise from the anomaly detector, consider adjusting its thresholds or adding a suppression rule for pods without resource limits. Continue to monitor the pod with standard kubectl commands.",
+        "kubectl_commands": [
+          "kubectl get pod landing-84547c58c8-5vcpm -n kc-eval-32",
+          "kubectl describe pod landing-84547c58c8-5vcpm -n kc-eval-32",
+          "kubectl logs landing-84547c58c8-5vcpm -n kc-eval-32 -c landing",
+          "kubectl top pod landing-84547c58c8-5vcpm -n kc-eval-32 --containers"
+        ],
+        "confidence": 0.92
+      },
+      "category": {
+        "correct": true,
+        "predicted": "healthy",
+        "also_matched": [
+          "healthy"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 8,
+        "unknown_refs": [],
+        "placeholders": [],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "img_private_rollout",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 2.162,
+      "prompt_tokens": 3116,
+      "completion_tokens": 737,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The pod billing-5fd4c87df-lrrl8 is stuck in Pending with ErrImagePull and ImagePullBackOff because the node cannot resolve the registry host ghcr.io (DNS lookup failure). No container has started, so there are no application logs.",
+        "likely_root_cause": "DNS resolution failure to ghcr.io from the node (CoreDNS or node /etc/resolv.conf misconfiguration), preventing the image from being pulled.",
+        "suggested_fix": "1. Verify CoreDNS pods are healthy and their logs for errors. 2. Test DNS resolution from a pod on the same node (e.g., busybox nslookup ghcr.io). 3. If DNS is broken, restart CoreDNS or fix the ConfigMap (e.g., correct upstream nameservers). 4. Ensure the node\u2019s /etc/resolv.conf points to the cluster DNS service. 5. Once DNS works, delete the pending pod so it can be recreated (kubectl delete pod ...) or let the Deployment recreate it.",
+        "kubectl_commands": [
+          "kubectl describe pod billing-5fd4c87df-lrrl8 -n kc-eval-03",
+          "kubectl get events -n kc-eval-03 --field-selector involvedObject.name=billing-5fd4c87df-lrrl8",
+          "kubectl get pods -n kube-system -l k8s-app=kube-dns -o wide",
+          "kubectl logs -n kube-system -l k8s-app=kube-dns --tail=100",
+          "kubectl run dns-test --rm -i --tty --image=busybox --restart=Never -- nslookup ghcr.io",
+          "kubectl delete pod billing-5fd4c87df-lrrl8 -n kc-eval-03"
+        ],
+        "confidence": 0.92
+      },
+      "category": {
+        "correct": true,
+        "predicted": "dependency_connectivity",
+        "also_matched": [
+          "dependency_connectivity",
+          "image_pull"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 8,
+        "unknown_refs": [],
+        "placeholders": [],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "img_registry_first",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 3.068,
+      "prompt_tokens": 2996,
+      "completion_tokens": 648,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The pod ledger-7996b86ff5-fjjtq is stuck in Pending because the kubelet cannot pull the container image. All pull attempts fail with ErrImagePull and ImagePullBackOff, and the event message shows a DNS lookup failure for the registry host (registry.example.invalid).",
+        "likely_root_cause": "DNS resolution failure for the image registry (registry.example.invalid) prevents the node from reaching the registry, causing ErrImagePull/ImagePullBackOff.",
+        "suggested_fix": "1. Verify that the registry hostname resolves from the node (or from a debug pod) and that CoreDNS is functioning correctly.\n2. If the hostname is wrong, correct the image reference in the Deployment/Pod spec.\n3. If the registry is private, ensure appropriate imagePullSecrets are present.\n4. Fix any CoreDNS or node network issues (e.g., restart CoreDNS, check /etc/resolv.conf, ensure network policies allow DNS/registry traffic).\n5. After fixing DNS or the image reference, redeploy or delete the pod so it can be recreated and pull the image successfully.",
+        "kubectl_commands": [
+          "kubectl describe pod ledger-7996b86ff5-fjjtq -n kc-eval-02",
+          "kubectl get events -n kc-eval-02 --field-selector involvedObject.name=ledger-7996b86ff5-fjjtq",
+          "kubectl get pod ledger-7996b86ff5-fjjtq -n kc-eval-02 -o jsonpath='{.spec.containers[*].image}'",
+          "kubectl get pods -n kube-system -l k8s-app=kube-dns -o wide",
+          "kubectl logs -n kube-system -l k8s-app=kube-dns --tail=20",
+          "kubectl run dns-test --rm -i --tty --image=busybox --restart=Never -- nslookup registry.example.invalid"
+        ],
+        "confidence": 0.92
+      },
+      "category": {
+        "correct": true,
+        "predicted": "dependency_connectivity",
+        "also_matched": [
+          "dependency_connectivity",
+          "image_pull"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 8,
+        "unknown_refs": [],
+        "placeholders": [],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "img_tag_rollout",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 2.009,
+      "prompt_tokens": 3086,
+      "completion_tokens": 821,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The pod is stuck in Pending with an ErrImagePull/ImagePullBackOff because the node cannot resolve the Docker Hub registry DNS (registry-1.docker.io) while trying to pull the image \"nginx:1.27-alpine-typo\". No containers have started, so there are no application logs.",
+        "likely_root_cause": "DNS resolution failure to Docker Hub from the node (cluster DNS issue), preventing the image pull; the image tag also appears to be a typo, but the immediate blocker is the DNS lookup error.",
+        "suggested_fix": "1. Verify that the cluster DNS (CoreDNS) pods are running and healthy.\\n2. From a node or a debug pod, test DNS resolution (e.g., `nslookup registry-1.docker.io`).\\n3. Fix any CoreDNS configuration or node /etc/resolv.conf problems so the registry can be reached.\\n4. Once DNS works, confirm the image reference is correct; if the tag is indeed a typo, update the Deployment/Pod spec to a valid image tag and roll out the change.",
+        "kubectl_commands": [
+          "kubectl describe pod checkout-6866774fbf-jsrz4 -n kc-eval-01",
+          "kubectl get events -n kc-eval-01 --field-selector involvedObject.name=checkout-6866774fbf-jsrz4",
+          "kubectl get pod checkout-6866774fbf-jsrz4 -n kc-eval-01 -o jsonpath='{.spec.containers[*].image}'",
+          "kubectl get pods -n kube-system -l k8s-app=kube-dns -o wide",
+          "kubectl logs -n kube-system -l k8s-app=kube-dns --tail=20",
+          "kubectl run dns-test --rm -i --tty --image=busybox --restart=Never -- nslookup registry-1.docker.io"
+        ],
+        "confidence": 0.92
+      },
+      "category": {
+        "correct": true,
+        "predicted": "dependency_connectivity",
+        "also_matched": [
+          "dependency_connectivity",
+          "image_pull"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 8,
+        "unknown_refs": [],
+        "placeholders": [],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "init_migration_first",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 2.399,
+      "prompt_tokens": 2523,
+      "completion_tokens": 861,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The pod is stuck in Pending with a CrashLoopBackOff on the run-migrations container. The container starts, exits immediately, and the kubelet is backing off before retrying, so the pod never becomes Ready. No logs are currently available, and no restarts have occurred yet.",
+        "likely_root_cause": "The run-migrations container crashes on start (non\u2011zero exit code), likely due to a runtime error such as missing configuration, secret, or inability to connect to its database, causing the CrashLoopBackOff back\u2011off loop.",
+        "suggested_fix": "1. Retrieve the current container logs to see the exact error (kubectl logs -c run-migrations). 2. If the container exits quickly, check the previous logs (kubectl logs -c run-migrations --previous) after a retry. 3. Describe the pod to view the exit code and any event details (kubectl describe pod). 4. Verify that all required ConfigMaps, Secrets, and environment variables for the migration are present and correct. 5. Test the migration command locally or in an interactive shell (kubectl run --rm -i --tty busybox --image=busybox -- /bin/sh) to reproduce the failure. 6. Fix the underlying issue (e.g., provide missing DB credentials, correct command syntax) and then restart the pod (kubectl rollout restart deployment/<name> -n kc-eval-07 or delete the pod).",
+        "kubectl_commands": [
+          "kubectl describe pod orders-797c8655f9-768cj -n kc-eval-07",
+          "kubectl logs orders-797c8655f9-768cj -c run-migrations -n kc-eval-07",
+          "kubectl logs orders-797c8655f9-768cj -c run-migrations --previous -n kc-eval-07",
+          "kubectl get events -n kc-eval-07 --field-selector involvedObject.name=orders-797c8655f9-768cj",
+          "kubectl rollout restart deployment/orders -n kc-eval-07"
+        ],
+        "confidence": 0.73
+      },
+      "category": {
+        "correct": true,
+        "predicted": "app_crash",
+        "also_matched": [
+          "app_crash",
+          "dependency_connectivity",
+          "missing_config"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 10,
+        "unknown_refs": [],
+        "placeholders": [],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "liveness_path_rollout",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 3.961,
+      "prompt_tokens": 5431,
+      "completion_tokens": 877,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The frontend pod is repeatedly crashing and entering CrashLoopBackOff. Each restart is triggered by a failing liveness probe that requests /healthz, which the nginx image does not serve (log shows \"open() \\\"/usr/share/nginx/html/healthz\\\" failed\"). The container exits cleanly (exit code 0) after the probe kills it, leading to repeated restarts.",
+        "likely_root_cause": "Liveness probe misconfiguration \u2013 the probe checks /healthz which does not exist in the nginx:1.27\u2011alpine image, causing the container to be killed on every probe failure.",
+        "suggested_fix": "Update the liveness probe to use a valid endpoint (e.g., '/' or a custom health endpoint) or add a healthz file/handler to the image. After correcting the probe, redeploy the workload (kubectl rollout restart) and verify that restarts stop. If a quick fix is needed, temporarily disable the liveness probe.",
+        "kubectl_commands": [
+          "kubectl describe pod frontend-77c46c5546-xxg5n -n kc-eval-17",
+          "kubectl get pod frontend-77c46c5546-xxg5n -n kc-eval-17 -o yaml | grep -A5 livenessProbe",
+          "kubectl logs frontend-77c46c5546-xxg5n -n kc-eval-17 --previous --tail=200",
+          "kubectl edit deployment frontend -n kc-eval-17",
+          "kubectl rollout status deployment/frontend -n kc-eval-17"
+        ],
+        "confidence": 0.92
+      },
+      "category": {
+        "correct": true,
+        "predicted": "probe_failure",
+        "also_matched": [
+          "pod_disruption",
+          "probe_failure"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 10,
+        "unknown_refs": [],
+        "placeholders": [],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "liveness_slow_start_first",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 1.953,
+      "prompt_tokens": 3051,
+      "completion_tokens": 802,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The analytics container repeatedly crashes with exit code 137 after its liveness probe fails (connection refused). The probe kills the container during its ~40\u202fs cache\u2011warming startup, causing BackOff restarts; the pod remains Running but unhealthy due to frequent restarts.",
+        "likely_root_cause": "Liveness probe is too aggressive for the container's startup time, causing the kubelet to kill the process before it begins listening on port\u202f80.",
+        "suggested_fix": "Adjust the liveness probe (increase initialDelaySeconds, periodSeconds, or failureThreshold) or add a startupProbe that allows the 40\u202fs warm\u2011up. Alternatively, modify the container to start listening earlier. After changes, rollout the deployment and verify that restart count stops increasing.",
+        "kubectl_commands": [
+          "kubectl describe pod analytics-6f7f774bb-7jlld -n kc-eval-19",
+          "kubectl get pod analytics-6f7f774bb-7jlld -n kc-eval-19 -o yaml | grep -A5 livenessProbe",
+          "kubectl edit deployment <deployment-name> -n kc-eval-19   # adjust liveness/startup probe settings",
+          "kubectl rollout status deployment/<deployment-name> -n kc-eval-19",
+          "kubectl logs analytics-6f7f774bb-7jlld -n kc-eval-19 --previous --tail=100"
+        ],
+        "confidence": 0.86
+      },
+      "category": {
+        "correct": true,
+        "predicted": "probe_failure",
+        "also_matched": [
+          "pod_disruption",
+          "probe_failure"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 8,
+        "unknown_refs": [],
+        "placeholders": [
+          "<deployment-name>",
+          "<deployment-name>"
+        ],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "missing_cm_envfrom_rollout",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 2.083,
+      "prompt_tokens": 2309,
+      "completion_tokens": 539,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The pod kc-eval-10/cart-88b9868d6-9gv65 is stuck in Pending because the container cannot be created. The kubelet reports a CreateContainerConfigError with the message that ConfigMap \"cart-feature-flags\" is not found. No restarts or logs are available because the container never starts.",
+        "likely_root_cause": "Missing ConfigMap \"cart-feature-flags\" referenced by the pod spec (or wrong namespace/name).",
+        "suggested_fix": "Create the required ConfigMap in the same namespace (kc-eval-10) with the expected name, or modify the pod/deployment spec to reference an existing ConfigMap. After the ConfigMap exists, delete the pending pod or let the ReplicaSet recreate it so it can start normally.",
+        "kubectl_commands": [
+          "kubectl describe pod cart-88b9868d6-9gv65 -n kc-eval-10",
+          "kubectl get configmap cart-feature-flags -n kc-eval-10",
+          "kubectl create configmap cart-feature-flags --from-literal=example_key=example_value -n kc-eval-10",
+          "kubectl rollout restart deployment/cart -n kc-eval-10",
+          "kubectl get pod -l app=cart -n kc-eval-10"
+        ],
+        "confidence": 0.95
+      },
+      "category": {
+        "correct": true,
+        "predicted": "missing_config",
+        "also_matched": [
+          "missing_config"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 8,
+        "unknown_refs": [],
+        "placeholders": [],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "missing_cm_volume_first",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 2.076,
+      "prompt_tokens": 2166,
+      "completion_tokens": 623,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The pod\u202fkc-eval-12/search-indexer-7ff4979587-2npvr is stuck in Pending with state ContainerCreating because the kubelet cannot mount the volume \"synonyms\" \u2013 the referenced ConfigMap \"search-synonyms\" does not exist. No container has started, so logs are unavailable.",
+        "likely_root_cause": "Missing ConfigMap \"search-synonyms\" referenced by the pod\u2019s volume, causing a FailedMount event and preventing the container from being created.",
+        "suggested_fix": "Create the ConfigMap \"search-synonyms\" (or correct the volume reference) in the kc-eval-12 namespace, then let the pod be recreated (or delete the pod so the Deployment creates a new one). Verify the ConfigMap contents match what the application expects. If the ConfigMap name is wrong, update the Deployment/Pod spec accordingly and roll out the change.",
+        "kubectl_commands": [
+          "kubectl describe pod search-indexer-7ff4979587-2npvr -n kc-eval-12",
+          "kubectl get pod search-indexer-7ff4979587-2npvr -n kc-eval-12 -o yaml",
+          "kubectl get configmap search-synonyms -n kc-eval-12",
+          "kubectl create configmap search-synonyms --from-file=path/to/synonyms.yaml -n kc-eval-12",
+          "kubectl edit deployment search-indexer -n kc-eval-12",
+          "kubectl delete pod search-indexer-7ff4979587-2npvr -n kc-eval-12"
+        ],
+        "confidence": 0.95
+      },
+      "category": {
+        "correct": true,
+        "predicted": "missing_config",
+        "also_matched": [
+          "missing_config"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 11,
+        "unknown_refs": [],
+        "placeholders": [],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "missing_secret_first",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 1.574,
+      "prompt_tokens": 2273,
+      "completion_tokens": 515,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The pod reports-86db87d97b-r2zzb is stuck in Pending with a CreateContainerConfigError because the secret \"orders-db-credentials\" referenced in its spec does not exist in the kc-eval-11 namespace. No container has started, so there are no application logs.",
+        "likely_root_cause": "Missing secret \"orders-db-credentials\" referenced by the pod spec.",
+        "suggested_fix": "Create the required secret (or correct the secret name in the pod/deployment spec) in the kc-eval-11 namespace, then restart the pod or rollout the deployment so the container can be created.",
+        "kubectl_commands": [
+          "kubectl get pod reports-86db87d97b-r2zzb -n kc-eval-11 -o yaml",
+          "kubectl describe pod reports-86db87d97b-r2zzb -n kc-eval-11",
+          "kubectl get secret orders-db-credentials -n kc-eval-11",
+          "kubectl create secret generic orders-db-credentials --from-literal=username=<user> --from-literal=password=<pass> -n kc-eval-11",
+          "kubectl rollout restart deployment/reports -n kc-eval-11"
+        ],
+        "confidence": 0.95
+      },
+      "category": {
+        "correct": true,
+        "predicted": "missing_config",
+        "also_matched": [
+          "missing_config"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 9,
+        "unknown_refs": [],
+        "placeholders": [],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "missing_secret_key_rollout",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 1.415,
+      "prompt_tokens": 2546,
+      "completion_tokens": 543,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The pod is stuck in Pending with a CreateContainerConfigError because the container configuration references a secret key that does not exist. The kubelet reports \"couldn't find key api_token in Secret kc-eval-13/ledger-api\", and no container has started.",
+        "likely_root_cause": "The Secret \"ledger-api\" in namespace \"kc-eval-13\" is missing the required key \"api_token\" (or the secret itself is absent), causing the pod to fail during container creation.",
+        "suggested_fix": "1. Verify the secret exists and contains the \"api_token\" key. 2. If the key is missing, add it (or recreate the secret) with the correct value. 3. If the secret is missing entirely, create it with the needed key. 4. After fixing the secret, delete the pending pod (or let the Deployment recreate it) so it can start normally.",
+        "kubectl_commands": [
+          "kubectl describe pod ledger-api-566fd46c6c-t5nwd -n kc-eval-13",
+          "kubectl get secret ledger-api -n kc-eval-13 -o yaml",
+          "kubectl get secret ledger-api -n kc-eval-13 -o jsonpath='{.data}'",
+          "kubectl edit deployment ledger-api -n kc-eval-13  # if you need to adjust env/volumes",
+          "kubectl delete pod ledger-api-566fd46c6c-t5nwd -n kc-eval-13  # optional, forces a new pod"
+        ],
+        "confidence": 0.96
+      },
+      "category": {
+        "correct": true,
+        "predicted": "missing_config",
+        "also_matched": [
+          "missing_config"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 10,
+        "unknown_refs": [],
+        "placeholders": [],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "oom_first",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 1.854,
+      "prompt_tokens": 2817,
+      "completion_tokens": 616,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The catalog pod is repeatedly OOM\u2011killed (exit code 137) and now sits in CrashLoopBackOff, so it never becomes Ready. The container logs stop right after it starts loading the product catalog, indicating the process runs out of memory during that phase.",
+        "likely_root_cause": "The container exceeds its configured memory limit, triggering an OOM kill and subsequent CrashLoopBackOff.",
+        "suggested_fix": "1. Inspect the pod's current memory request/limit (kubectl get pod -o yaml). 2. Increase the memory limit (and optionally the request) to a value that accommodates the catalog load, e.g. add a higher limit in the Deployment/StatefulSet spec. 3. If the workload cannot be made to fit, consider reducing the in\u2011memory catalog size or splitting it across multiple pods. 4. After updating the manifest, rollout the change (kubectl rollout restart) and verify the pod becomes Ready.",
+        "kubectl_commands": [
+          "kubectl -n kc-eval-14 describe pod catalog-844dc6cf48-nzj6s",
+          "kubectl -n kc-eval-14 logs catalog-844dc6cf48-nzj6s -c catalog --previous",
+          "kubectl -n kc-eval-14 get pod catalog-844dc6cf48-nzj6s -o yaml | grep -i memory -A3",
+          "kubectl -n kc-eval-14 edit deployment <deployment-name>  # add/raise memory limits",
+          "kubectl -n kc-eval-14 rollout restart deployment <deployment-name>",
+          "kubectl -n kc-eval-14 top pod catalog-844dc6cf48-nzj6s"
+        ],
+        "confidence": 0.92
+      },
+      "category": {
+        "correct": true,
+        "predicted": "oom_killed",
+        "also_matched": [
+          "app_crash",
+          "oom_killed",
+          "pod_disruption"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 10,
+        "unknown_refs": [],
+        "placeholders": [
+          "<deployment-name>",
+          "<deployment-name>"
+        ],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "oom_leak_first",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 1.8,
+      "prompt_tokens": 5054,
+      "completion_tokens": 577,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The ingest container was killed with reason OOMKilled (exit code 137) and has restarted once. It is now running and processing batches, but the previous termination indicates it exceeded its memory allocation or the node ran out of memory.",
+        "likely_root_cause": "The container exceeded its memory limit (or was killed by node memory pressure), triggering an OOM kill.",
+        "suggested_fix": "1. Inspect the pod's memory requests and limits; if limits are set too low, raise them to accommodate the workload's peak usage. 2. If no limits are set, add appropriate memory requests/limits to prevent node\u2011wide OOM pressure. 3. Check node memory pressure (kubectl describe node) and consider scaling the node or moving the pod to a node with more memory. 4. Monitor memory usage (kubectl top pod) after the change to verify the issue is resolved.",
+        "kubectl_commands": [
+          "kubectl describe pod ingest-757b775ff4-bw5h9 -n kc-eval-16",
+          "kubectl get pod ingest-757b775ff4-bw5h9 -n kc-eval-16 -o jsonpath='{.spec.containers[*].resources}'",
+          "kubectl top pod ingest-757b775ff4-bw5h9 -n kc-eval-16 --containers",
+          "kubectl logs ingest-757b775ff4-bw5h9 -n kc-eval-16 --previous --tail=200",
+          "kubectl describe node kube-copilot-control-plane"
+        ],
+        "confidence": 0.85
+      },
+      "category": {
+        "correct": true,
+        "predicted": "pod_disruption",
+        "also_matched": [
+          "oom_killed",
+          "pod_disruption"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 9,
+        "unknown_refs": [],
+        "placeholders": [],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "oom_limit_rollout",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 3.782,
+      "prompt_tokens": 2691,
+      "completion_tokens": 685,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The recommender pod repeatedly crashes with OOMKilled (exit code 137) and is stuck in a CrashLoopBackOff, causing it to never become Ready. The container\u2019s memory limit is 64Mi, which is being exceeded, leading to four restarts and a warning event.",
+        "likely_root_cause": "The container exceeds its 64Mi memory limit, triggering OOMKilled and subsequent BackOff restarts.",
+        "suggested_fix": "Increase the memory request and limit for the recommender container (e.g., request 128Mi, limit 256Mi) or reduce the container\u2019s memory usage. After adjusting the resources, redeploy the pod and monitor memory consumption to ensure it stays below the new limit. If the workload cannot be tuned, consider scaling the pod or moving it to a node with more memory.",
+        "kubectl_commands": [
+          "kubectl describe pod recommender-9c6bc97d8-t9jv6 -n kc-eval-15",
+          "kubectl logs recommender-9c6bc97d8-t9jv6 -n kc-eval-15 --previous --tail=200",
+          "kubectl top pod recommender-9c6bc97d8-t9jv6 -n kc-eval-15",
+          "kubectl get pod recommender-9c6bc97d8-t9jv6 -n kc-eval-15 -o yaml | grep -A5 resources",
+          "kubectl edit deployment recommender -n kc-eval-15"
+        ],
+        "confidence": 0.9
+      },
+      "category": {
+        "correct": true,
+        "predicted": "pod_disruption",
+        "also_matched": [
+          "oom_killed",
+          "pod_disruption"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 10,
+        "unknown_refs": [],
+        "placeholders": [],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "pending_antiaffinity_first",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 1.333,
+      "prompt_tokens": 2357,
+      "completion_tokens": 486,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The pod kc-eval-24/session-cache-674c7cfb64-wqq9s is stuck in Pending because the scheduler cannot find a node that satisfies its pod anti\u2011affinity rule. The only node in the cluster is excluded, so the pod never gets scheduled and no containers are created.",
+        "likely_root_cause": "Strict pod anti\u2011affinity rule that excludes the sole available node, making the pod unschedulable.",
+        "suggested_fix": "Review and relax the pod anti\u2011affinity configuration (or add another node that satisfies it). If the rule is required, add a second node with appropriate labels so the pod can be placed. After adjusting the spec, redeploy the workload.",
+        "kubectl_commands": [
+          "kubectl describe pod kc-eval-24/session-cache-674c7cfb64-wqq9s -n kc-eval-24",
+          "kubectl get pod kc-eval-24/session-cache-674c7cfb64-wqq9s -n kc-eval-24 -o yaml",
+          "kubectl get nodes -o wide",
+          "kubectl describe node <node-name>",
+          "kubectl edit deployment session-cache -n kc-eval-24",
+          "# or patch the anti\u2011affinity directly"
+        ],
+        "confidence": 0.92
+      },
+      "category": {
+        "correct": true,
+        "predicted": "unschedulable",
+        "also_matched": [
+          "unschedulable"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 4,
+        "unknown_refs": [],
+        "placeholders": [
+          "<node-name>"
+        ],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "pending_cpu_first",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 2.656,
+      "prompt_tokens": 2412,
+      "completion_tokens": 563,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The pod kc-eval-22/trainer-5b7459cb7f-mmpkb is stuck in Pending with a Unschedulable reason. The scheduler reports \"Insufficient cpu\" on the only node and no preemption victims were found, so the pod cannot be placed.",
+        "likely_root_cause": "The pod\u2019s CPU request (or limit) is higher than the allocatable CPU on every node, leaving no node with enough free CPU to schedule it.",
+        "suggested_fix": "1. Inspect the pod\u2019s CPU requests/limits and compare them to node allocatable CPU. 2. If the request is too high, lower it or remove the limit so the scheduler can place the pod. 3. Alternatively, add more node capacity (scale the cluster) or free CPU on existing nodes by evicting/downsizing other workloads. 4. After adjusting, redeploy or let the scheduler retry.",
+        "kubectl_commands": [
+          "kubectl describe pod trainer-5b7459cb7f-mmpkb -n kc-eval-22",
+          "kubectl get pod trainer-5b7459cb7f-mmpkb -n kc-eval-22 -o jsonpath='{.spec.containers[*].resources.requests}'",
+          "kubectl get nodes -o custom-columns=NAME:.metadata.name,CPU:.status.allocatable.cpu,MEM:.status.allocatable.memory"
+        ],
+        "confidence": 0.93
+      },
+      "category": {
+        "correct": true,
+        "predicted": "cpu_throttling",
+        "also_matched": [
+          "cpu_throttling",
+          "unschedulable"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 4,
+        "unknown_refs": [],
+        "placeholders": [],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "pending_nodeselector_rollout",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 1.608,
+      "prompt_tokens": 2361,
+      "completion_tokens": 446,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The pod kc-eval-23/stock-dd96975bd-wscxk is stuck in Pending because the scheduler cannot find a node that satisfies its node affinity/selector. No containers have started and there is a single Warning event indicating the affinity mismatch.",
+        "likely_root_cause": "Node affinity/selector defined in the pod spec does not match any node\u2019s labels, making the pod unschedulable.",
+        "suggested_fix": "1. Inspect the pod\u2019s nodeAffinity and nodeSelector fields and compare them with the labels on existing nodes. 2. Either adjust the pod\u2019s affinity/selector to match an available node, add the required labels to a node, or remove the overly\u2011strict rules. 3. If the affinity is intentional, provision a new node with the required labels. 4. After fixing, delete the pending pod (or let the Deployment recreate it) so it can be scheduled.",
+        "kubectl_commands": [
+          "kubectl describe pod stock-dd96975bd-wscxk -n kc-eval-23",
+          "kubectl get events -n kc-eval-23 --field-selector reason=FailedScheduling",
+          "kubectl get nodes --show-labels",
+          "kubectl describe node <node-name>",
+          "kubectl edit deployment <deployment-name> -n kc-eval-23",
+          "kubectl delete pod stock-dd96975bd-wscxk -n kc-eval-23"
+        ],
+        "confidence": 0.95
+      },
+      "category": {
+        "correct": true,
+        "predicted": "unschedulable",
+        "also_matched": [
+          "unschedulable"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 6,
+        "unknown_refs": [],
+        "placeholders": [
+          "<node-name>",
+          "<deployment-name>"
+        ],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "pod_kill_after_rollout",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 2.868,
+      "prompt_tokens": 3984,
+      "completion_tokens": 804,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The shipping pod is running, ready, and has no restarts or warning events. However, workload lifecycle signals show that a previous pod was killed and replaced, indicating a recent pod disruption. No resource limits, throttling, or log errors are present in the current pod.",
+        "likely_root_cause": "An external disruption (e.g., manual delete, node drain, or controller\u2011initiated rollout) killed the previous shipping pod, causing the Deployment to create this replacement pod.",
+        "suggested_fix": "Investigate the cause of the Killing event: check events for the killed pod, examine node conditions at the time, and review recent Deployment or ReplicaSet changes. If the kill was intentional (e.g., a rollout), ensure it follows the expected process. If unexpected, address the source (e.g., stop manual deletions, adjust node maintenance, or add a PodDisruptionBudget). No remediation is needed for the current pod as it is healthy.",
+        "kubectl_commands": [
+          "kubectl describe pod shipping-69b687644d-b97db -n kc-eval-34",
+          "kubectl get events -n kc-eval-34 --field-selector involvedObject.name=shipping-69b687644d-b97db",
+          "kubectl get pod -n kc-eval-34 -l app=shipping --show-labels",
+          "kubectl describe deployment shipping -n kc-eval-34",
+          "kubectl rollout history deployment/shipping -n kc-eval-34",
+          "kubectl describe node kube-copilot-control-plane",
+          "kubectl get pdb -n kc-eval-34"
+        ],
+        "confidence": 0.85
+      },
+      "category": {
+        "correct": true,
+        "predicted": "pod_disruption",
+        "also_matched": [
+          "pod_disruption"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 11,
+        "unknown_refs": [],
+        "placeholders": [],
+        "hallucinated": false
+      }
+    }
+  ]
+}

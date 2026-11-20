@@ -1,0 +1,1420 @@
+{
+  "model": "openai/gpt-oss-20b",
+  "base_url": "https://api.groq.com/openai/v1",
+  "status": "complete",
+  "stopped_reason": null,
+  "started_at": "2026-11-19T12:23:07+00:00",
+  "finished_at": "2026-11-19T12:54:21+00:00",
+  "variants": [
+    "full"
+  ],
+  "tasks": [
+    "diagnose",
+    "propose"
+  ],
+  "dataset": {
+    "cases": 17,
+    "by_category": {
+      "missing_config": 3,
+      "dependency_connectivity": 2,
+      "bad_config_value": 2,
+      "healthy": 2,
+      "unschedulable": 2,
+      "cpu_throttling": 1,
+      "app_crash": 1,
+      "image_pull": 1,
+      "oom_killed": 1,
+      "pod_disruption": 1,
+      "probe_failure": 1
+    },
+    "by_difficulty": {
+      "medium": 8,
+      "easy": 5,
+      "hard": 4
+    },
+    "by_expected_action": {
+      "no_action": 10,
+      "rollback_deployment": 7
+    },
+    "with_lifecycle_signals": 12,
+    "with_previous_revision": 12
+  },
+  "baselines": {
+    "cases": 17,
+    "category_reason_lookup_accuracy": 52.9,
+    "remediation_always_no_action_accuracy": 58.8,
+    "remediation_rollback_if_previous_revision_accuracy": 70.6,
+    "retrieval": {
+      "cases_with_expected_runbook": 13,
+      "hit_at_k": 92.3,
+      "hit_at_1": 76.9,
+      "mrr": 0.821,
+      "misses": [
+        "ho_dns_proxy_first"
+      ]
+    }
+  },
+  "pacing": {
+    "tpm": 7000,
+    "waited_s": 1146,
+    "retries": 1,
+    "daily_quota_waited_s": 0
+  },
+  "fixtures_dir": "ml/data/llm_eval/heldout_v3",
+  "runs": [],
+  "summary": {
+    "diagnose/full": {
+      "cases": 17,
+      "errors": 0,
+      "latency_p50_s": 1.17,
+      "latency_p95_s": 1.97,
+      "prompt_tokens": 51207,
+      "completion_tokens": 10413,
+      "cost_usd": 0.007,
+      "category_correct": 14,
+      "category_accuracy": 82.4,
+      "category_accuracy_ci95": [
+        59.0,
+        93.8
+      ],
+      "schema_valid": 100.0,
+      "hallucination_rate": 0.0,
+      "placeholder_rate": 17.6,
+      "mean_confidence_correct": 0.929,
+      "mean_confidence_wrong": 0.917
+    },
+    "propose/full": {
+      "cases": 17,
+      "errors": 0,
+      "latency_p50_s": 0.72,
+      "latency_p95_s": 1.14,
+      "prompt_tokens": 34066,
+      "completion_tokens": 4845,
+      "cost_usd": 0.004,
+      "remediation_correct": 16,
+      "remediation_accuracy": 94.1,
+      "remediation_accuracy_ci95": [
+        73.0,
+        99.0
+      ],
+      "target_errors": 0,
+      "policy_blocked_proposals": 0,
+      "proposals": 6,
+      "no_action_rate": 64.7
+    },
+    "ablations": {},
+    "by_category": {
+      "app_crash": {
+        "diagnose_n": 1,
+        "diagnose_ok": 1,
+        "propose_n": 1,
+        "propose_ok": 1
+      },
+      "bad_config_value": {
+        "diagnose_n": 2,
+        "diagnose_ok": 2,
+        "propose_n": 2,
+        "propose_ok": 2
+      },
+      "cpu_throttling": {
+        "diagnose_n": 1,
+        "diagnose_ok": 1,
+        "propose_n": 1,
+        "propose_ok": 1
+      },
+      "dependency_connectivity": {
+        "diagnose_n": 2,
+        "diagnose_ok": 2,
+        "propose_n": 2,
+        "propose_ok": 2
+      },
+      "healthy": {
+        "diagnose_n": 2,
+        "diagnose_ok": 1,
+        "propose_n": 2,
+        "propose_ok": 2
+      },
+      "image_pull": {
+        "diagnose_n": 1,
+        "diagnose_ok": 0,
+        "propose_n": 1,
+        "propose_ok": 0
+      },
+      "missing_config": {
+        "diagnose_n": 3,
+        "diagnose_ok": 2,
+        "propose_n": 3,
+        "propose_ok": 3
+      },
+      "oom_killed": {
+        "diagnose_n": 1,
+        "diagnose_ok": 1,
+        "propose_n": 1,
+        "propose_ok": 1
+      },
+      "pod_disruption": {
+        "diagnose_n": 1,
+        "diagnose_ok": 1,
+        "propose_n": 1,
+        "propose_ok": 1
+      },
+      "probe_failure": {
+        "diagnose_n": 1,
+        "diagnose_ok": 1,
+        "propose_n": 1,
+        "propose_ok": 1
+      },
+      "unschedulable": {
+        "diagnose_n": 2,
+        "diagnose_ok": 2,
+        "propose_n": 2,
+        "propose_ok": 2
+      }
+    },
+    "by_difficulty": {
+      "easy": {
+        "diagnose_n": 5,
+        "diagnose_ok": 3,
+        "propose_n": 5,
+        "propose_ok": 4
+      },
+      "hard": {
+        "diagnose_n": 4,
+        "diagnose_ok": 3,
+        "propose_n": 4,
+        "propose_ok": 4
+      },
+      "medium": {
+        "diagnose_n": 8,
+        "diagnose_ok": 8,
+        "propose_n": 8,
+        "propose_ok": 8
+      }
+    }
+  },
+  "labels": {
+    "ho_cm_key_first": {
+      "category": "missing_config",
+      "expected_actions": [
+        "no_action"
+      ],
+      "expected_runbooks": [
+        "create-container-config-error.md"
+      ],
+      "difficulty": "easy",
+      "fault": "Revision 1 reads RATE_LIMIT from ConfigMap gateway-limits, which exists but has no RATE_LIMIT key.",
+      "notes": ""
+    },
+    "ho_cpu_limit_rollout": {
+      "category": "cpu_throttling",
+      "expected_actions": [
+        "rollback_deployment"
+      ],
+      "expected_runbooks": [],
+      "difficulty": "hard",
+      "fault": "Deployment updated from a 250m to a 15m CPU limit; the CPU-bound encoder is throttled and slows down.",
+      "notes": "Nothing fails; only throttling metrics, the limit and slower segments show it."
+    },
+    "ho_crash_flag_rollout": {
+      "category": "app_crash",
+      "expected_actions": [
+        "rollback_deployment"
+      ],
+      "expected_runbooks": [
+        "crashloopbackoff.md"
+      ],
+      "difficulty": "easy",
+      "fault": "Deployment updated to a command that exits 64 with 'unknown flag: --worker-threads'.",
+      "notes": ""
+    },
+    "ho_dns_proxy_first": {
+      "category": "dependency_connectivity",
+      "expected_actions": [
+        "no_action"
+      ],
+      "expected_runbooks": [
+        "dns-issues.md"
+      ],
+      "difficulty": "medium",
+      "fault": "settlement calls http://ledger-db-proxy:6432/; no such Service exists, so the DNS lookup fails and it exits 1.",
+      "notes": ""
+    },
+    "ho_env_dburl_rollout": {
+      "category": "bad_config_value",
+      "expected_actions": [
+        "rollback_deployment"
+      ],
+      "expected_runbooks": [
+        "crashloopbackoff.md"
+      ],
+      "difficulty": "easy",
+      "fault": "Deployment updated with DATABASE_URL missing the ':' after the scheme; the app validates it and exits 1.",
+      "notes": ""
+    },
+    "ho_healthy_mailer": {
+      "category": "healthy",
+      "expected_actions": [
+        "no_action"
+      ],
+      "expected_runbooks": [],
+      "difficulty": "medium",
+      "fault": "No fault injected; a quiet worker with a 200m CPU limit it barely uses.",
+      "notes": ""
+    },
+    "ho_img_quay_rollout": {
+      "category": "image_pull",
+      "expected_actions": [
+        "rollback_deployment"
+      ],
+      "expected_runbooks": [
+        "imagepullbackoff.md"
+      ],
+      "difficulty": "easy",
+      "fault": "Deployment updated from busybox to quay.io/acme-billing/invoice:7.2.0, which does not exist.",
+      "notes": ""
+    },
+    "ho_mem_request_rollout": {
+      "category": "unschedulable",
+      "expected_actions": [
+        "rollback_deployment"
+      ],
+      "expected_runbooks": [
+        "pending-unschedulable.md"
+      ],
+      "difficulty": "medium",
+      "fault": "Deployment updated to request 512Gi memory; no node fits it, so the new pod stays Pending.",
+      "notes": ""
+    },
+    "ho_oom_render_first": {
+      "category": "oom_killed",
+      "expected_actions": [
+        "no_action"
+      ],
+      "expected_runbooks": [
+        "oomkilled.md"
+      ],
+      "difficulty": "easy",
+      "fault": "Revision 1 builds a ~120MB string in memory with a 48Mi limit and is OOMKilled.",
+      "notes": ""
+    },
+    "ho_pod_kill_two": {
+      "category": "pod_disruption",
+      "expected_actions": [
+        "no_action"
+      ],
+      "expected_runbooks": [],
+      "difficulty": "medium",
+      "fault": "Chaos Mesh PodChaos pod-kill twice on media (3 replicas); the ReplicaSet replaced both pods.",
+      "notes": ""
+    },
+    "ho_readiness_http_rollout": {
+      "category": "probe_failure",
+      "expected_actions": [
+        "rollback_deployment"
+      ],
+      "expected_runbooks": [
+        "probe-failures.md"
+      ],
+      "difficulty": "medium",
+      "fault": "Deployment updated with readinessProbe GET /ready:80; nginx returns 404, so the new pod never becomes Ready.",
+      "notes": ""
+    },
+    "ho_secret_volume_rollout": {
+      "category": "missing_config",
+      "expected_actions": [
+        "rollback_deployment"
+      ],
+      "expected_runbooks": [
+        "failed-mount.md",
+        "create-container-config-error.md"
+      ],
+      "difficulty": "medium",
+      "fault": "Deployment updated to mount Secret auth-tls as a volume; the Secret does not exist, so the pod is stuck creating.",
+      "notes": ""
+    },
+    "ho_trap_configmap_reload": {
+      "category": "bad_config_value",
+      "expected_actions": [
+        "no_action"
+      ],
+      "expected_runbooks": [
+        "crashloopbackoff.md"
+      ],
+      "difficulty": "hard",
+      "fault": "quote-engine rolled out BUILD 881 -> 882 (healthy). Later the mounted ConfigMap quote-engine-conf was edited to max_discount_pct=thirty; the app re-reads the file, rejects it and exits 1 on every start. Both revisions mount the same ConfigMap; the ConfigMap must be fixed.",
+      "notes": "Rollback trap. The ConfigMap is not part of the pod template, so the diff shows only BUILD."
+    },
+    "ho_trap_dependency_down": {
+      "category": "dependency_connectivity",
+      "expected_actions": [
+        "no_action"
+      ],
+      "expected_runbooks": [
+        "crashloopbackoff.md",
+        "dns-issues.md"
+      ],
+      "difficulty": "hard",
+      "fault": "checkout rolled out APP_VERSION 2.3.0 -> 2.3.1 (healthy). Then its upstream Deployment ledger was scaled to 0, so checkout's curl gets connection refused and it crashloops. Both revisions fail the same way; the upstream must be restored.",
+      "notes": "Rollback trap. The only template change is APP_VERSION."
+    },
+    "ho_trap_healthy_retry_logs": {
+      "category": "healthy",
+      "expected_actions": [
+        "no_action"
+      ],
+      "expected_runbooks": [],
+      "difficulty": "hard",
+      "fault": "feed-sync rolled out RELEASE r41 -> r42. Nothing is broken: the pod is Ready with no restarts, and the WARN lines are retries that succeed on the third attempt (written by the workload script).",
+      "notes": "Rollback trap and a noisy-logs check."
+    },
+    "ho_trap_node_cordoned": {
+      "category": "unschedulable",
+      "expected_actions": [
+        "no_action"
+      ],
+      "expected_runbooks": [
+        "pending-unschedulable.md",
+        "node-not-ready.md"
+      ],
+      "difficulty": "medium",
+      "fault": "reports rolled out FEATURE_PDF_EXPORT false -> true (healthy). Then the only node was cordoned and the pod deleted (as a drain would); the replacement stays Pending because the node is unschedulable. A rolled-back pod could not schedule either; the node must be uncordoned or capacity added.",
+      "notes": "Rollback trap. Cordons the cluster's only node: capture alone (--parallel 1)."
+    },
+    "ho_trap_secret_deleted": {
+      "category": "missing_config",
+      "expected_actions": [
+        "no_action"
+      ],
+      "expected_runbooks": [
+        "create-container-config-error.md"
+      ],
+      "difficulty": "medium",
+      "fault": "notifier rolled out TEMPLATE_SET v7 -> v8 (healthy). Then Secret smtp-credentials was deleted and the pod was deleted; the replacement fails with CreateContainerConfigError. The previous revision reads the same Secret; it must be restored.",
+      "notes": "Rollback trap."
+    }
+  },
+  "records": [
+    {
+      "case": "ho_cm_key_first",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 0.963,
+      "prompt_tokens": 2475,
+      "completion_tokens": 410,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The pod kc-ho-11/edge-6f59555749-tw2dz is stuck in Pending because the kubelet cannot create the container due to a missing configuration key. The container\u2019s waiting state shows a CreateContainerConfigError with the message \"couldn't find key RATE_LIMIT in ConfigMap kc-ho-11/gateway-limits\".",
+        "likely_root_cause": "The ConfigMap kc-ho-11/gateway-limits does not contain the required key RATE_LIMIT, preventing the pod from starting.",
+        "suggested_fix": "Add the missing RATE_LIMIT key to the gateway-limits ConfigMap (or update the pod spec to reference an existing key). After updating the ConfigMap, delete the failing pod so the Deployment can recreate it with the correct configuration.",
+        "kubectl_commands": [
+          "kubectl get pod edge-6f59555749-tw2dz -n kc-ho-11 -o yaml",
+          "kubectl describe pod edge-6f59555749-tw2dz -n kc-ho-11",
+          "kubectl get configmap gateway-limits -n kc-ho-11 -o yaml",
+          "kubectl edit configmap gateway-limits -n kc-ho-11"
+        ],
+        "confidence": 0.95
+      },
+      "category": {
+        "correct": false,
+        "predicted": null,
+        "also_matched": []
+      },
+      "hallucination": {
+        "checked_refs": 8,
+        "unknown_refs": [],
+        "placeholders": [],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "ho_cpu_limit_rollout",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 1.342,
+      "prompt_tokens": 2707,
+      "completion_tokens": 647,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The pod is running and ready but is being CPU\u2011throttled for the entire 5\u2011minute window, causing its work to run slowly. The container\u2019s CPU limit (15\u202fm) is too low for its actual load, even though its average usage is only ~49% of that limit.",
+        "likely_root_cause": "CPU limit set too low, causing constant throttling of the encoder container.",
+        "suggested_fix": "Increase the CPU limit (or remove it and rely on the request) to a value that accommodates the container\u2019s peak usage. Verify the change with a rollout and monitor throttling metrics to confirm the issue is resolved. If the limit was lowered by a recent deployment, consider rolling back to the previous revision and adjusting the manifest.",
+        "kubectl_commands": [
+          "kubectl get pod encoder-595b8cc8b-7nwgn -n kc-ho-06 -o jsonpath='{.spec.containers[*].resources}'",
+          "kubectl top pod encoder-595b8cc8b-7nwgn -n kc-ho-06 --containers",
+          "kubectl get deployment encoder -n kc-ho-06 -o yaml | grep -A5 'resources:'",
+          "kubectl rollout history deploy/encoder -n kc-ho-06",
+          "kubectl edit deployment encoder -n kc-ho-06"
+        ],
+        "confidence": 0.9
+      },
+      "category": {
+        "correct": true,
+        "predicted": "cpu_throttling",
+        "also_matched": [
+          "cpu_throttling"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 10,
+        "unknown_refs": [],
+        "placeholders": [],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "ho_crash_flag_rollout",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 2.5,
+      "prompt_tokens": 2800,
+      "completion_tokens": 1555,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The router container is repeatedly crashing with exit code 64 because it receives an unsupported command\u2011line flag. The pod is in a CrashLoopBackOff state with 4 restarts and a BackOff event.",
+        "likely_root_cause": "The pod spec passes the flag \"--worker-threads\" to the router binary, which does not recognize it, causing the container to exit immediately.",
+        "suggested_fix": "Remove or correct the unsupported flag in the container\u2019s command/args. If the flag is required, use a router image/version that supports it. After updating the Deployment/Pod spec, redeploy the pod and verify it becomes Ready.",
+        "kubectl_commands": [
+          "kubectl describe pod router-7478c6cc8c-zrf9h -n kc-ho-02",
+          "kubectl get pod router-7478c6cc8c-zrf9h -n kc-ho-02 -o jsonpath='{.spec.containers[*].command}'",
+          "kubectl get pod router-7478c6cc8c-zrf9h -n kc-ho-02 -o jsonpath='{.spec.containers[*].args}'",
+          "kubectl logs router-7478c6cc8c-zrf9h -n kc-ho-02 --previous",
+          "kubectl edit deployment router -n kc-ho-02"
+        ],
+        "confidence": 0.9
+      },
+      "category": {
+        "correct": true,
+        "predicted": "app_crash",
+        "also_matched": [
+          "app_crash"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 10,
+        "unknown_refs": [],
+        "placeholders": [],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "ho_dns_proxy_first",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 1.129,
+      "prompt_tokens": 3150,
+      "completion_tokens": 523,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The settlement pod is repeatedly crashing with exit code 1 because it cannot resolve the DB proxy host specified in its environment variable. The pod is in a CrashLoopBackOff state, restarting four times, and the dependency service ledger-db-proxy does not exist in the namespace.",
+        "likely_root_cause": "Missing or misconfigured dependency service ledger-db-proxy referenced by DB_PROXY environment variable.",
+        "suggested_fix": "Create a Service named ledger-db-proxy that points to the correct backend, or correct the DB_PROXY environment variable to a reachable address. After the dependency is available, restart the deployment to clear the CrashLoopBackOff.",
+        "kubectl_commands": [
+          "kubectl describe pod settlement-5f56d57785-2wkg6 -n kc-ho-12",
+          "kubectl get events -n kc-ho-12 --field-selector involvedObject.name=settlement-5f56d57785-2wkg6",
+          "kubectl get svc -n kc-ho-12",
+          "kubectl create -f - <<EOF\napiVersion: v1\nkind: Service\nmetadata:\n  name: ledger-db-proxy\n  namespace: kc-ho-12\nspec:\n  selector:\n    app: ledger-db-proxy\n  ports:\n    - protocol: TCP\n      port: 6432\n      targetPort: 6432\nEOF",
+          "kubectl rollout restart deployment/settlement -n kc-ho-12"
+        ],
+        "confidence": 0.9
+      },
+      "category": {
+        "correct": true,
+        "predicted": "bad_config_value",
+        "also_matched": [
+          "bad_config_value",
+          "dependency_connectivity"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 7,
+        "unknown_refs": [],
+        "placeholders": [],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "ho_env_dburl_rollout",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 1.284,
+      "prompt_tokens": 2868,
+      "completion_tokens": 700,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The accounts-api pod is repeatedly crashing with exit code 1 due to an invalid DATABASE_URL environment variable. The container restarts in a CrashLoopBackOff state and never becomes Ready.",
+        "likely_root_cause": "Malformed DATABASE_URL env var (missing scheme separator, e.g. \"postgres//app@db:5432/accounts\" instead of \"postgres://app@db:5432/accounts\").",
+        "suggested_fix": "Correct the DATABASE_URL value in the pod\u2019s environment (likely defined in a Secret or ConfigMap). Verify the Secret/ConfigMap, update it, and roll the Deployment to apply the change. If the value is hard\u2011coded in the image entrypoint, rebuild the image with the proper URL or adjust the command arguments.",
+        "kubectl_commands": [
+          "kubectl describe pod accounts-api-967d8455d-zqrwn -n kc-ho-03",
+          "kubectl logs accounts-api-967d8455d-zqrwn -n kc-ho-03 --previous",
+          "kubectl get pod accounts-api-967d8455d-zqrwn -n kc-ho-03 -o jsonpath='{.spec.containers[*].env}'",
+          "kubectl get secret <secret-name> -n kc-ho-03 -o yaml",
+          "kubectl edit deployment accounts-api -n kc-ho-03"
+        ],
+        "confidence": 0.95
+      },
+      "category": {
+        "correct": true,
+        "predicted": "bad_config_value",
+        "also_matched": [
+          "bad_config_value"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 9,
+        "unknown_refs": [],
+        "placeholders": [
+          "<secret-name>"
+        ],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "ho_healthy_mailer",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 0.838,
+      "prompt_tokens": 3965,
+      "completion_tokens": 414,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The mailer pod is running, ready, and has no restarts or warning events. CPU and memory usage are well below limits and there is no throttling. The anomaly detector flag is a false positive.",
+        "likely_root_cause": "None \u2013 the pod is healthy and functioning correctly.",
+        "suggested_fix": "No remediation needed; ignore the anomaly flag. If you wish to confirm, run the diagnostic commands below.",
+        "kubectl_commands": [
+          "kubectl get pod mailer-7c44b58958-67w5q -n kc-ho-09",
+          "kubectl describe pod mailer-7c44b58958-67w5q -n kc-ho-09",
+          "kubectl get events -n kc-ho-09 --field-selector involvedObject.name=mailer-7c44b58958-67w5q",
+          "kubectl top pod mailer-7c44b58958-67w5q -n kc-ho-09 --containers"
+        ],
+        "confidence": 0.95
+      },
+      "category": {
+        "correct": true,
+        "predicted": "healthy",
+        "also_matched": [
+          "healthy"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 8,
+        "unknown_refs": [],
+        "placeholders": [],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "ho_img_quay_rollout",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 1.25,
+      "prompt_tokens": 3065,
+      "completion_tokens": 589,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The invoice pod is stuck in Pending with an ErrImagePull error because the kubelet cannot resolve the quay.io registry hostname. The node\u2019s DNS resolver (172.18.0.1) is misbehaving, preventing image pull.",
+        "likely_root_cause": "DNS resolution failure for quay.io on the node kube-copilot-control-plane.",
+        "suggested_fix": "Verify cluster DNS is healthy: check CoreDNS pods, ensure the node\u2019s /etc/resolv.conf points to the cluster DNS, and that no network policy blocks outbound DNS. If DNS is down, restart CoreDNS or the kubelet, or temporarily use a different registry or image pull secret that bypasses DNS (e.g., use a local mirror).",
+        "kubectl_commands": [
+          "kubectl describe pod invoice-55cfc95887-8j4gb -n kc-ho-01",
+          "kubectl get events -n kc-ho-01 --field-selector involvedObject.name=invoice-55cfc95887-8j4gb",
+          "kubectl get pods -n kube-system -l k8s-app=kube-dns -o wide",
+          "kubectl describe node kube-copilot-control-plane",
+          "kubectl run -it --rm debug --image=busybox --restart=Never -- nslookup quay.io"
+        ],
+        "confidence": 0.9
+      },
+      "category": {
+        "correct": false,
+        "predicted": "dependency_connectivity",
+        "also_matched": [
+          "dependency_connectivity"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 6,
+        "unknown_refs": [],
+        "placeholders": [],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "ho_mem_request_rollout",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 0.785,
+      "prompt_tokens": 2338,
+      "completion_tokens": 407,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The indexer pod is stuck in the Pending state because the scheduler cannot find any node with sufficient memory to satisfy its request. No containers have started and the pod has no node assigned.",
+        "likely_root_cause": "The pod\u2019s memory request exceeds the allocatable memory on all available nodes.",
+        "suggested_fix": "Reduce the pod\u2019s memory request in its Deployment/StatefulSet, or add/resize nodes to provide more memory. Verify that the new request can be satisfied before re\u2011applying the manifest.",
+        "kubectl_commands": [
+          "kubectl describe pod indexer-7f49764d6b-hlw5h -n kc-ho-05",
+          "kubectl get nodes -o custom-columns=NAME:.metadata.name,ALLOC_CPU:.status.allocatable.cpu,ALLOC_MEM:.status.allocatable.memory",
+          "kubectl get deployment indexer -n kc-ho-05 -o yaml | grep -A5 'resources:'",
+          "kubectl edit deployment indexer -n kc-ho-05"
+        ],
+        "confidence": 0.95
+      },
+      "category": {
+        "correct": true,
+        "predicted": "unschedulable",
+        "also_matched": [
+          "unschedulable"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 6,
+        "unknown_refs": [],
+        "placeholders": [],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "ho_oom_render_first",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 1.167,
+      "prompt_tokens": 2854,
+      "completion_tokens": 675,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The pdf-render container is repeatedly OOMKilled and entering CrashLoopBackOff. The pod is not ready and has restarted three times.",
+        "likely_root_cause": "The container exceeded its memory limit (48Mi) while rendering, causing the kubelet to kill it.",
+        "suggested_fix": "Increase the memory limit for the pdf-render container (e.g., to 128Mi) or reduce its memory usage. Verify the workload\u2019s memory requirements and adjust the Deployment or StatefulSet accordingly.",
+        "kubectl_commands": [
+          "kubectl describe pod pdf-render-77d65fbb5d-8m5fv -n kc-ho-07",
+          "kubectl logs pdf-render-77d65fbb5d-8m5fv -n kc-ho-07 --previous",
+          "kubectl top pod pdf-render-77d65fbb5d-8m5fv -n kc-ho-07",
+          "kubectl edit deployment pdf-render -n kc-ho-07"
+        ],
+        "confidence": 0.9
+      },
+      "category": {
+        "correct": true,
+        "predicted": "oom_killed",
+        "also_matched": [
+          "oom_killed",
+          "pod_disruption"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 8,
+        "unknown_refs": [],
+        "placeholders": [],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "ho_pod_kill_two",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 1.323,
+      "prompt_tokens": 4066,
+      "completion_tokens": 738,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The pod media-854575b7c4-lhz9n is currently Running and Ready with no restarts, but the workload has experienced recent pod killings and replacements. These events indicate an external disruption (e.g., node drain, manual delete, or a rolling update) rather than an internal failure of the pod itself.",
+        "likely_root_cause": "External disruption caused the pod to be killed and replaced by the ReplicaSet; the current pod is healthy but the workload has been restarted.",
+        "suggested_fix": "Investigate the cause of the pod killings: check node conditions, any node drains or maintenance events, and whether a rolling update or deployment change triggered the replacements. If the disruptions are unintended, restore the node or adjust the deployment strategy (e.g., add a PodDisruptionBudget).",
+        "kubectl_commands": [
+          "kubectl get events -n kc-ho-08 --field-selector involvedObject.name=media-854575b7c4-lhz9n",
+          "kubectl describe pod media-854575b7c4-lhz9n -n kc-ho-08",
+          "kubectl describe node kube-copilot-control-plane -n kc-ho-08",
+          "kubectl get pods -n kc-ho-08 -o wide | grep media-854575b7c4",
+          "kubectl get deployment media -n kc-ho-08 -o yaml | grep -i poddisruptionbudget",
+          "kubectl rollout status deployment/media -n kc-ho-08"
+        ],
+        "confidence": 0.9
+      },
+      "category": {
+        "correct": true,
+        "predicted": "pod_disruption",
+        "also_matched": [
+          "healthy",
+          "pod_disruption"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 11,
+        "unknown_refs": [],
+        "placeholders": [],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "ho_readiness_http_rollout",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 1.047,
+      "prompt_tokens": 3931,
+      "completion_tokens": 576,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The pod is running but its readiness probe keeps failing with a 404 because nginx cannot find the /ready file. As a result the pod is not marked Ready and a Warning event is generated.",
+        "likely_root_cause": "Readiness probe is misconfigured or the expected /ready endpoint does not exist in the nginx container.",
+        "suggested_fix": "Verify the readiness probe path and port; if the probe should hit a different endpoint, update the Deployment spec. If the probe is correct, add a /ready file or configure nginx to serve that path. After changes, roll the Deployment or delete the pod to apply the new spec.",
+        "kubectl_commands": [
+          "kubectl describe pod help-center-56f4f7454-h8ph2 -n kc-ho-04",
+          "kubectl get deployment help-center -n kc-ho-04 -o yaml | grep -A5 readinessProbe",
+          "kubectl exec -it help-center-56f4f7454-h8ph2 -n kc-ho-04 -- curl -s -o /dev/null -w \"%{http_code}\" http://localhost:80/ready",
+          "kubectl patch deployment help-center -n kc-ho-04 -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"help-center\",\"readinessProbe\":{\"httpGet\":{\"path\":\"/healthz\",\"port\":80}}]}}}}}'"
+        ],
+        "confidence": 0.95
+      },
+      "category": {
+        "correct": true,
+        "predicted": "probe_failure",
+        "also_matched": [
+          "dependency_connectivity",
+          "probe_failure"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 8,
+        "unknown_refs": [],
+        "placeholders": [],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "ho_secret_volume_rollout",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 1.208,
+      "prompt_tokens": 2213,
+      "completion_tokens": 423,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The pod kc-ho-10/auth-57c8db7dc6-hjbqx is stuck in Pending with the container in ContainerCreating state because the kubelet cannot mount the volume \"tls\" \u2013 the referenced secret \"auth-tls\" does not exist on the cluster. As a result the container never starts and logs are unavailable.",
+        "likely_root_cause": "Missing secret \"auth-tls\" referenced as a volume in the pod spec.",
+        "suggested_fix": "Create the missing secret (or correct the secret name/path in the pod spec). Once the secret is present, the pod will be able to mount the volume and the container will start. If the secret is already present, verify that the pod\u2019s volumeMount and secretName fields match exactly and that the secret is in the same namespace.",
+        "kubectl_commands": [
+          "kubectl get secret auth-tls -n kc-ho-10",
+          "kubectl describe pod auth-57c8db7dc6-hjbqx -n kc-ho-10",
+          "kubectl get events -n kc-ho-10 --field-selector involvedObject.name=auth-57c8db7dc6-hjbqx",
+          "kubectl create secret generic auth-tls --from-file=key=path/to/cert.pem -n kc-ho-10"
+        ],
+        "confidence": 0.95
+      },
+      "category": {
+        "correct": true,
+        "predicted": "missing_config",
+        "also_matched": [
+          "missing_config"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 7,
+        "unknown_refs": [],
+        "placeholders": [],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "ho_trap_configmap_reload",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 0.828,
+      "prompt_tokens": 3051,
+      "completion_tokens": 432,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The quote-engine pod is crashing repeatedly due to a configuration error in /etc/quote/engine.properties. The container exits with code 1, triggers a BackOff, and the pod remains not ready.",
+        "likely_root_cause": "Invalid value for max_discount_pct in the engine.properties config file (set to \"thirty\" instead of an integer 0\u201199).",
+        "suggested_fix": "Correct the max_discount_pct value in the ConfigMap or secret that mounts /etc/quote/engine.properties, then roll the deployment to apply the change. Verify the pod becomes ready and the restart count stops climbing.",
+        "kubectl_commands": [
+          "kubectl describe pod quote-engine-864b6c959f-8hfcx -n kc-ho-14",
+          "kubectl logs quote-engine-864b6c959f-8hfcx -n kc-ho-14 --previous",
+          "kubectl edit configmap <configmap-name> -n kc-ho-14",
+          "kubectl rollout restart deployment <deployment-name> -n kc-ho-14",
+          "kubectl rollout status deploy/<deployment-name> -n kc-ho-14"
+        ],
+        "confidence": 0.95
+      },
+      "category": {
+        "correct": true,
+        "predicted": "bad_config_value",
+        "also_matched": [
+          "bad_config_value"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 7,
+        "unknown_refs": [],
+        "placeholders": [
+          "<configmap-name>",
+          "<deployment-name>",
+          "<deployment-name>"
+        ],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "ho_trap_dependency_down",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 1.834,
+      "prompt_tokens": 3272,
+      "completion_tokens": 551,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The checkout pod is repeatedly crashing (exit code\u202f1) because it cannot connect to the ledger service it depends on. The ledger service has no ready pods, so the dependency is down, causing the application to exit and Kubernetes to back\u2011off and restart the container.",
+        "likely_root_cause": "Dependency ledger service is unavailable (0/0 ready pods).",
+        "suggested_fix": "Bring the ledger service back online (ensure its deployment is running and its pods are ready) or update the checkout deployment to point to a healthy ledger endpoint. Once the dependency is available, delete the failing pod or roll the deployment to stop the CrashLoopBackOff.",
+        "kubectl_commands": [
+          "kubectl describe pod checkout-6b6d48dd9d-bnzzj -n kc-ho-13",
+          "kubectl get events -n kc-ho-13 --field-selector involvedObject.name=checkout-6b6d48dd9d-bnzzj",
+          "kubectl logs checkout-6b6d48dd9d-bnzzj -n kc-ho-13 --previous",
+          "kubectl get pods -n kc-ho-13 -l app=ledger",
+          "kubectl describe svc ledger -n kc-ho-13",
+          "kubectl get deployment ledger -n kc-ho-13",
+          "kubectl rollout status deploy/ledger -n kc-ho-13"
+        ],
+        "confidence": 0.95
+      },
+      "category": {
+        "correct": true,
+        "predicted": "dependency_connectivity",
+        "also_matched": [
+          "dependency_connectivity"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 13,
+        "unknown_refs": [],
+        "placeholders": [],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "ho_trap_healthy_retry_logs",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 1.296,
+      "prompt_tokens": 3805,
+      "completion_tokens": 742,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The pod kc-ho-17/feed-sync-fb5647cb6-tp2w2 is running, ready, and has no restarts or warning events. Logs show repeated partner\u2011api timeouts and 503 responses, but the application retries and eventually succeeds on each page. The pod itself is healthy and not experiencing CPU/memory throttling or disruption.",
+        "likely_root_cause": "Intermittent failures in the external partner\u2011api service causing transient timeouts/503s that the application retries.",
+        "suggested_fix": "Investigate the health and load of the partner\u2011api service. Verify its readiness and liveness probes, check its logs for spikes or outages, and consider adding back\u2011off or circuit\u2011breaker logic in the application if the failures persist. No changes to the feed\u2011sync pod are required unless the partner\u2011api remains unstable.",
+        "kubectl_commands": [
+          "kubectl get pod feed-sync-fb5647cb6-tp2w2 -n kc-ho-17 -o yaml",
+          "kubectl logs feed-sync-fb5647cb6-tp2w2 -n kc-ho-17 -c feed-sync",
+          "kubectl describe pod feed-sync-fb5647cb6-tp2w2 -n kc-ho-17",
+          "kubectl get svc partner-api -n kc-ho-17 -o yaml",
+          "kubectl get endpoints partner-api -n kc-ho-17"
+        ],
+        "confidence": 0.9
+      },
+      "category": {
+        "correct": false,
+        "predicted": null,
+        "also_matched": []
+      },
+      "hallucination": {
+        "checked_refs": 10,
+        "unknown_refs": [],
+        "placeholders": [],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "ho_trap_node_cordoned",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 1.161,
+      "prompt_tokens": 2347,
+      "completion_tokens": 676,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The pod kc-ho-15/reports-5c96759d85-kwp7c is stuck in the Pending state because the scheduler cannot place it on any node. The only candidate node is marked unschedulable (SchedulingDisabled), so the pod is never scheduled.",
+        "likely_root_cause": "The sole node in the cluster is cordoned (unschedulable) or has a taint that the pod does not tolerate, preventing scheduling.",
+        "suggested_fix": "Uncordon the node or add the appropriate toleration/affinity to the pod so it can be scheduled. Verify node conditions and taints before applying the change.",
+        "kubectl_commands": [
+          "kubectl describe pod reports-5c96759d85-kwp7c -n kc-ho-15",
+          "kubectl get nodes -o wide",
+          "kubectl describe node <node-name> -n kc-ho-15",
+          "kubectl get events -n kc-ho-15 --field-selector reason=FailedScheduling",
+          "kubectl uncordon <node-name> -n kc-ho-15"
+        ],
+        "confidence": 0.9
+      },
+      "category": {
+        "correct": true,
+        "predicted": "unschedulable",
+        "also_matched": [
+          "unschedulable"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 5,
+        "unknown_refs": [],
+        "placeholders": [
+          "<node-name>"
+        ],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "ho_trap_secret_deleted",
+      "task": "diagnose",
+      "variant": "full",
+      "latency_s": 0.584,
+      "prompt_tokens": 2300,
+      "completion_tokens": 355,
+      "schema_valid": true,
+      "schema_note": "",
+      "parsed": true,
+      "diagnosis": {
+        "summary": "The pod kc-ho-16/notifier-cf6d89bb-58z48 is stuck in Pending because the kubelet cannot create the container due to a missing secret referenced in the pod spec. The only event is a Failed event with the message \"secret \\\"smtp-credentials\\\" not found\" and the container state is Waiting with reason CreateContainerConfigError.",
+        "likely_root_cause": "The referenced secret \"smtp-credentials\" does not exist in the namespace kc-ho-16, preventing the pod from starting.",
+        "suggested_fix": "Create the missing secret in the kc-ho-16 namespace (or correct the pod spec to reference an existing secret). After the secret is present, delete the failing pod so a new one can be scheduled and start successfully.",
+        "kubectl_commands": [
+          "kubectl get secret smtp-credentials -n kc-ho-16",
+          "kubectl describe pod notifier-cf6d89bb-58z48 -n kc-ho-16",
+          "kubectl delete pod notifier-cf6d89bb-58z48 -n kc-ho-16",
+          "kubectl create secret generic smtp-credentials --from-literal=username='user' --from-literal=password='pass' -n kc-ho-16"
+        ],
+        "confidence": 0.95
+      },
+      "category": {
+        "correct": true,
+        "predicted": "missing_config",
+        "also_matched": [
+          "missing_config"
+        ]
+      },
+      "hallucination": {
+        "checked_refs": 7,
+        "unknown_refs": [],
+        "placeholders": [],
+        "hallucinated": false
+      }
+    },
+    {
+      "case": "ho_cm_key_first",
+      "task": "propose",
+      "variant": "full",
+      "latency_s": 0.561,
+      "prompt_tokens": 1608,
+      "completion_tokens": 186,
+      "proposals": [],
+      "note": "The ConfigMap \"gateway-limits\" in namespace \"kc-ho-11\" is missing the required key \"RATE_LIMIT\". The pod cannot start until this key is added to the ConfigMap. No deployment change will resolve the issue.",
+      "remediation": {
+        "primary": "no_action",
+        "correct": true,
+        "all_expected": true,
+        "target_errors": []
+      },
+      "policy_violations": [],
+      "policy_blocked": 0,
+      "retried_without_required_tool": false
+    },
+    {
+      "case": "ho_cpu_limit_rollout",
+      "task": "propose",
+      "variant": "full",
+      "latency_s": 0.999,
+      "prompt_tokens": 1967,
+      "completion_tokens": 503,
+      "proposals": [
+        {
+          "kind": "rollback_deployment",
+          "params": {
+            "name": "encoder",
+            "namespace": "kc-ho-06"
+          },
+          "rationale": "The recent rollout lowered the CPU limit and request, causing the pod to be CPU\u2011throttled and work slower. Rolling back restores the previous resource settings and resolves the performance issue."
+        }
+      ],
+      "note": "",
+      "remediation": {
+        "primary": "rollback_deployment",
+        "correct": true,
+        "all_expected": true,
+        "target_errors": []
+      },
+      "policy_violations": [
+        []
+      ],
+      "policy_blocked": 0,
+      "retried_without_required_tool": false
+    },
+    {
+      "case": "ho_crash_flag_rollout",
+      "task": "propose",
+      "variant": "full",
+      "latency_s": 0.822,
+      "prompt_tokens": 2048,
+      "completion_tokens": 285,
+      "proposals": [
+        {
+          "kind": "rollback_deployment",
+          "params": {
+            "name": "router",
+            "namespace": "kc-ho-02"
+          },
+          "rationale": "The latest rollout changed the container command to a non\u2011functional script that exits with error 64. Rolling back restores the previous working command."
+        }
+      ],
+      "note": "",
+      "remediation": {
+        "primary": "rollback_deployment",
+        "correct": true,
+        "all_expected": true,
+        "target_errors": []
+      },
+      "policy_violations": [
+        []
+      ],
+      "policy_blocked": 0,
+      "retried_without_required_tool": false
+    },
+    {
+      "case": "ho_dns_proxy_first",
+      "task": "propose",
+      "variant": "full",
+      "latency_s": 0.557,
+      "prompt_tokens": 1917,
+      "completion_tokens": 180,
+      "proposals": [],
+      "note": "The pod fails because the environment variable DB_PROXY points to a Service named ledger-db-proxy that does not exist in namespace kc-ho-12. Restoring the missing Service or correcting the DB_PROXY value is required; neither rollback nor restart will resolve the issue.",
+      "remediation": {
+        "primary": "no_action",
+        "correct": true,
+        "all_expected": true,
+        "target_errors": []
+      },
+      "policy_violations": [],
+      "policy_blocked": 0,
+      "retried_without_required_tool": false
+    },
+    {
+      "case": "ho_env_dburl_rollout",
+      "task": "propose",
+      "variant": "full",
+      "latency_s": 0.702,
+      "prompt_tokens": 2133,
+      "completion_tokens": 166,
+      "proposals": [
+        {
+          "kind": "rollback_deployment",
+          "params": {
+            "name": "accounts-api",
+            "namespace": "kc-ho-03"
+          },
+          "rationale": "The latest rollout introduced a malformed DATABASE_URL env value (missing colon after postgres), causing the application to exit with an error. Rolling back restores the correct env value and resolves the crash."
+        }
+      ],
+      "note": "",
+      "remediation": {
+        "primary": "rollback_deployment",
+        "correct": true,
+        "all_expected": true,
+        "target_errors": []
+      },
+      "policy_violations": [
+        []
+      ],
+      "policy_blocked": 0,
+      "retried_without_required_tool": false
+    },
+    {
+      "case": "ho_healthy_mailer",
+      "task": "propose",
+      "variant": "full",
+      "latency_s": 0.405,
+      "prompt_tokens": 2209,
+      "completion_tokens": 150,
+      "proposals": [],
+      "note": "The mailer pod is healthy, running, and ready with no errors or resource pressure. No remediation is required.",
+      "remediation": {
+        "primary": "no_action",
+        "correct": true,
+        "all_expected": true,
+        "target_errors": []
+      },
+      "policy_violations": [],
+      "policy_blocked": 0,
+      "retried_without_required_tool": false
+    },
+    {
+      "case": "ho_img_quay_rollout",
+      "task": "propose",
+      "variant": "full",
+      "latency_s": 1.025,
+      "prompt_tokens": 2231,
+      "completion_tokens": 349,
+      "proposals": [],
+      "note": "The pod cannot pull the image from quay.io due to a DNS lookup failure (server misbehaving). This is an external dependency issue; rolling back or restarting the deployment will not resolve the image pull error. The cluster\u2019s DNS or connectivity to quay.io must be restored.",
+      "remediation": {
+        "primary": "no_action",
+        "correct": false,
+        "all_expected": false,
+        "target_errors": []
+      },
+      "policy_violations": [],
+      "policy_blocked": 0,
+      "retried_without_required_tool": false
+    },
+    {
+      "case": "ho_mem_request_rollout",
+      "task": "propose",
+      "variant": "full",
+      "latency_s": 0.725,
+      "prompt_tokens": 1709,
+      "completion_tokens": 357,
+      "proposals": [
+        {
+          "kind": "rollback_deployment",
+          "params": {
+            "name": "indexer",
+            "namespace": "kc-ho-05"
+          },
+          "rationale": "The latest rollout increased the memory request from 16Mi to 512Gi, causing the pod to be unschedulable due to insufficient node memory. Rolling back restores the previous memory request, allowing the pod to schedule successfully."
+        }
+      ],
+      "note": "",
+      "remediation": {
+        "primary": "rollback_deployment",
+        "correct": true,
+        "all_expected": true,
+        "target_errors": []
+      },
+      "policy_violations": [
+        []
+      ],
+      "policy_blocked": 0,
+      "retried_without_required_tool": false
+    },
+    {
+      "case": "ho_oom_render_first",
+      "task": "propose",
+      "variant": "full",
+      "latency_s": 0.808,
+      "prompt_tokens": 1855,
+      "completion_tokens": 363,
+      "proposals": [],
+      "note": "The pod is OOMKilled because the container generates 120\u202fMiB of data while the Deployment limits memory to 48\u202fMiB. No rollback or restart will resolve the resource mismatch; the Deployment\u2019s resource limits must be increased or the workload\u2019s memory usage reduced. A human must adjust the Deployment\u2019s memory limit or modify the application to use less memory.",
+      "remediation": {
+        "primary": "no_action",
+        "correct": true,
+        "all_expected": true,
+        "target_errors": []
+      },
+      "policy_violations": [],
+      "policy_blocked": 0,
+      "retried_without_required_tool": false
+    },
+    {
+      "case": "ho_pod_kill_two",
+      "task": "propose",
+      "variant": "full",
+      "latency_s": 0.812,
+      "prompt_tokens": 2225,
+      "completion_tokens": 441,
+      "proposals": [],
+      "note": "Pod is healthy, running, ready, no errors, no resource pressure, no dependency issues. No action needed.",
+      "remediation": {
+        "primary": "no_action",
+        "correct": true,
+        "all_expected": true,
+        "target_errors": []
+      },
+      "policy_violations": [],
+      "policy_blocked": 0,
+      "retried_without_required_tool": false
+    },
+    {
+      "case": "ho_readiness_http_rollout",
+      "task": "propose",
+      "variant": "full",
+      "latency_s": 1.11,
+      "prompt_tokens": 2232,
+      "completion_tokens": 324,
+      "proposals": [
+        {
+          "kind": "rollback_deployment",
+          "params": {
+            "name": "help-center",
+            "namespace": "kc-ho-04"
+          },
+          "rationale": "The latest rollout added a readiness probe that checks /ready, which does not exist in the nginx image, causing the pod to be Unready. Rolling back restores the previous template without the probe, allowing the pod to become Ready."
+        }
+      ],
+      "note": "",
+      "remediation": {
+        "primary": "rollback_deployment",
+        "correct": true,
+        "all_expected": true,
+        "target_errors": []
+      },
+      "policy_violations": [
+        []
+      ],
+      "policy_blocked": 0,
+      "retried_without_required_tool": false
+    },
+    {
+      "case": "ho_secret_volume_rollout",
+      "task": "propose",
+      "variant": "full",
+      "latency_s": 0.52,
+      "prompt_tokens": 1737,
+      "completion_tokens": 301,
+      "proposals": [
+        {
+          "kind": "rollback_deployment",
+          "params": {
+            "name": "auth",
+            "namespace": "kc-ho-10"
+          },
+          "rationale": "The latest rollout added a volumeMount that references the secret \"auth-tls\", which does not exist in the cluster. Rolling back to the previous revision removes this reference and restores the pod to a running state."
+        }
+      ],
+      "note": "",
+      "remediation": {
+        "primary": "rollback_deployment",
+        "correct": true,
+        "all_expected": true,
+        "target_errors": []
+      },
+      "policy_violations": [
+        []
+      ],
+      "policy_blocked": 0,
+      "retried_without_required_tool": false
+    },
+    {
+      "case": "ho_trap_configmap_reload",
+      "task": "propose",
+      "variant": "full",
+      "latency_s": 0.547,
+      "prompt_tokens": 2175,
+      "completion_tokens": 274,
+      "proposals": [],
+      "note": "The pod fails because the ConfigMap quote-engine-conf contains an invalid value for max_discount_pct (\"thirty\"), which is not an integer 0-99. The deployment template has not changed in a way that would fix this. A human must correct the ConfigMap value to a valid integer.",
+      "remediation": {
+        "primary": "no_action",
+        "correct": true,
+        "all_expected": true,
+        "target_errors": []
+      },
+      "policy_violations": [],
+      "policy_blocked": 0,
+      "retried_without_required_tool": false
+    },
+    {
+      "case": "ho_trap_dependency_down",
+      "task": "propose",
+      "variant": "full",
+      "latency_s": 0.848,
+      "prompt_tokens": 2199,
+      "completion_tokens": 155,
+      "proposals": [],
+      "note": "The checkout pod cannot reach its dependency ledger service, which has no ready backing pods. Restoring the ledger service is required; rolling back or restarting the checkout deployment will not resolve the issue.",
+      "remediation": {
+        "primary": "no_action",
+        "correct": true,
+        "all_expected": true,
+        "target_errors": []
+      },
+      "policy_violations": [],
+      "policy_blocked": 0,
+      "retried_without_required_tool": false
+    },
+    {
+      "case": "ho_trap_healthy_retry_logs",
+      "task": "propose",
+      "variant": "full",
+      "latency_s": 0.517,
+      "prompt_tokens": 2387,
+      "completion_tokens": 202,
+      "proposals": [],
+      "note": "The pod is running, ready, and not experiencing any errors or resource pressure. The warnings about partner\u2011api timeouts are transient and the pod continues to sync successfully. No change to the deployment or pod is required.",
+      "remediation": {
+        "primary": "no_action",
+        "correct": true,
+        "all_expected": true,
+        "target_errors": []
+      },
+      "policy_violations": [],
+      "policy_blocked": 0,
+      "retried_without_required_tool": false
+    },
+    {
+      "case": "ho_trap_node_cordoned",
+      "task": "propose",
+      "variant": "full",
+      "latency_s": 1.244,
+      "prompt_tokens": 1665,
+      "completion_tokens": 356,
+      "proposals": [],
+      "note": "The pod cannot be scheduled because the only node in the cluster is marked unschedulable (e.g., drained or tainted). This is unrelated to the Deployment\u2019s pod template, so no Deployment change will resolve the issue. A human should investigate the node status or add a schedulable node.",
+      "remediation": {
+        "primary": "no_action",
+        "correct": true,
+        "all_expected": true,
+        "target_errors": []
+      },
+      "policy_violations": [],
+      "policy_blocked": 0,
+      "retried_without_required_tool": false
+    },
+    {
+      "case": "ho_trap_secret_deleted",
+      "task": "propose",
+      "variant": "full",
+      "latency_s": 0.49,
+      "prompt_tokens": 1769,
+      "completion_tokens": 253,
+      "proposals": [],
+      "note": "The pod cannot start because the referenced secret \"smtp-credentials\" is missing. Restoring the secret will resolve the issue; no deployment changes are needed.",
+      "remediation": {
+        "primary": "no_action",
+        "correct": true,
+        "all_expected": true,
+        "target_errors": []
+      },
+      "policy_violations": [],
+      "policy_blocked": 0,
+      "retried_without_required_tool": false
+    }
+  ]
+}

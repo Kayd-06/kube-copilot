@@ -229,6 +229,7 @@ class Case:
     hook: str | None = None  # special injection handled by capture.py
     post: list[list[str]] = field(default_factory=list)  # kubectl args run after a healthy rollout
     notes: str = ""
+    cleanup: list[list[str]] = field(default_factory=list)  # kubectl args always run after capture (cluster-wide undo)
 
     def labels(self) -> dict[str, Any]:
         return {

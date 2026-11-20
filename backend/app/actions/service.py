@@ -151,11 +151,36 @@ class ActionService:
         deployment = self.cluster.deployment_state(namespace, deployment_name) if deployment_name else None
         scope = IncidentScope(namespace=namespace, pod=pod_name, deployment=deployment_name)
 
-        result = self.proposer.propose(build_context(pod, events, logs, deployment, self._signals(namespace, deployment_name)), policy)
+        context = build_context(
+            pod, events, logs, deployment, self._signals(namespace, deployment_name),
+            usage=self._usage(namespace, pod_name), dependencies=self._dependencies(raw_pod),
+        )
+        result = self.proposer.propose(context, policy)
         records = [self._record_proposal(req, scope, source="llm") for req in result.requests]
         if not records:
             self.store.audit("no_action_proposed", "llm", None, namespace=namespace, pod=pod_name, note=result.note)
         return ProposeResponse(actions=records, note=result.note, kill_switch=policy.kill_switch)
+
+    def _usage(self, namespace: str, pod_name: str):
+        """Resource usage and throttling, so a resource regression on a Ready pod is visible. Never raises."""
+        if self.prometheus is None:
+            return None
+        try:
+            usage = self.prometheus.pod_usage(namespace, pod_name)
+            return usage if usage.containers else None
+        except Exception as exc:  # noqa: BLE001 — context, never required
+            logger.info("Resource usage unavailable: %s", exc)
+            return None
+
+    def _dependencies(self, raw_pod) -> list:
+        getter = getattr(self.k8s, "get_dependencies", None)
+        if getter is None:
+            return []
+        try:
+            return getter(raw_pod)
+        except Exception as exc:  # noqa: BLE001
+            logger.info("Dependency check unavailable: %s", exc)
+            return []
 
     def _signals(self, namespace: str, workload: str | None, since: float | None = None) -> list[str]:
         if self.lifecycle is None or workload is None:

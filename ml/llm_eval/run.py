@@ -30,7 +30,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from ml.llm_eval.fixtures import FIXTURE_DIR, Fixture, load_all
+from ml.llm_eval.fixtures import FIXTURE_DIR_V3, Fixture, load_all
 from ml.llm_eval.scoring import (
     reason_lookup_category,
     schema_check,
@@ -41,8 +41,8 @@ from ml.llm_eval.scoring import (
 )
 from ml.llm_eval.taxonomy import CATEGORIES
 
-# v1 reports (PR #31) live in reports/llm_eval/ and are kept for comparison; new runs on cases_v2 go to v2/.
-REPORT_DIR = Path(__file__).resolve().parents[1] / "reports" / "llm_eval" / "v2"
+# v1 reports (PR #31) live in reports/llm_eval/, v2 (PR #33) in v2/; new runs on cases_v3 go to v3/.
+REPORT_DIR = Path(__file__).resolve().parents[1] / "reports" / "llm_eval" / "v3"
 VARIANTS = ("full", "no_rag", "no_signals")
 # USD per 1M tokens (input, output), Groq list prices from console.groq.com/docs/models, checked 2026-11-13.
 PRICES = {"openai/gpt-oss-120b": (0.15, 0.60), "openai/gpt-oss-20b": (0.075, 0.30)}
@@ -123,7 +123,7 @@ def diagnose_inputs(fx: Fixture, variant: str):
     anomaly = fx.anomaly
     if variant == "no_signals" and anomaly is not None:
         anomaly = anomaly.model_copy(update={"lifecycle_signals": []})
-    return fx.pod, fx.events, fx.logs, retrieved, anomaly, fx.usage
+    return fx.pod, fx.events, fx.logs, retrieved, anomaly, fx.usage, fx.dependencies
 
 
 def propose_signals(fx: Fixture, variant: str) -> list[str]:
@@ -144,12 +144,12 @@ def runs_variant(fx: Fixture, task: str, variant: str) -> bool:
 def run_diagnose(fx: Fixture, variant: str, explainer, pacer: Pacer) -> dict[str, Any]:
     from app.llm_explainer import SYSTEM_PROMPT, build_user_prompt
 
-    pod, events, logs, retrieved, anomaly, usage = diagnose_inputs(fx, variant)
-    prompt = build_user_prompt(pod, events, logs, retrieved, anomaly, usage)
+    pod, events, logs, retrieved, anomaly, usage, deps = diagnose_inputs(fx, variant)
+    prompt = build_user_prompt(pod, events, logs, retrieved, anomaly, usage, deps)
     estimate = (len(SYSTEM_PROMPT) + len(prompt)) // 4 + 900
     rec: dict[str, Any] = {"case": fx.id, "task": "diagnose", "variant": variant}
     try:
-        run, latency = pacer.call(lambda: explainer.explain_detailed(pod, events, logs, retrieved, anomaly, usage), estimate)
+        run, latency = pacer.call(lambda: explainer.explain_detailed(pod, events, logs, retrieved, anomaly, usage, deps), estimate)
     except QuotaExhausted:
         raise
     except Exception as exc:  # noqa: BLE001 — record and move on
@@ -177,7 +177,8 @@ def run_propose(fx: Fixture, variant: str, proposer, pacer: Pacer) -> dict[str, 
     from app.actions.policy import HARD_DENIED_NAMESPACES, IncidentScope, PolicyConfig, TargetState, validate
     from app.actions.proposer import SYSTEM_PROMPT, build_context
 
-    context = build_context(fx.pod, fx.events, fx.logs, fx.deployment, propose_signals(fx, variant))
+    context = build_context(fx.pod, fx.events, fx.logs, fx.deployment, propose_signals(fx, variant),
+                            usage=fx.usage, dependencies=fx.dependencies)
     tools_config = PolicyConfig()  # only scale_min/max are used to describe the tools
     estimate = (len(SYSTEM_PROMPT) + len(context)) // 4 + 1100
     rec: dict[str, Any] = {"case": fx.id, "task": "propose", "variant": variant}
@@ -513,7 +514,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--variants", default="full", help=f"Comma-separated: {','.join(VARIANTS)}")
     parser.add_argument("--tasks", default="diagnose,propose")
     parser.add_argument("--only", default="", help="Comma-separated case ids")
-    parser.add_argument("--fixtures", type=Path, default=FIXTURE_DIR)
+    parser.add_argument("--fixtures", type=Path, default=FIXTURE_DIR_V3)
     parser.add_argument("--out-dir", type=Path, default=REPORT_DIR)
     parser.add_argument("--tpm", type=int, default=int(os.environ.get("EVAL_TPM", "7000")),
                         help="Tokens per minute to stay under (Groq free tier: 8000). 0 = no pacing")
@@ -556,7 +557,8 @@ def main(argv: list[str] | None = None) -> int:
         from app.llm_explainer import build_user_prompt
 
         sizes = [len(build_user_prompt(*diagnose_inputs(f, "full"))) for f in fixtures]
-        sizes_p = [len(build_context(f.pod, f.events, f.logs, f.deployment, f.signals)) for f in fixtures]
+        sizes_p = [len(build_context(f.pod, f.events, f.logs, f.deployment, f.signals, usage=f.usage,
+                                     dependencies=f.dependencies)) for f in fixtures]
         print(f"diagnose prompt chars max {max(sizes)}, propose context chars max {max(sizes_p)}")
         print(json.dumps({"dataset": dataset_summary(fixtures), "baselines": base,
                           "diagnose_prompt_chars_mean": round(statistics.mean(sizes)),

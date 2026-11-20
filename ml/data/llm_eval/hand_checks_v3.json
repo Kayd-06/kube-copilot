@@ -1,0 +1,185 @@
+{
+  "_about": "Hand checks for the PR #34 code on cases_v3 (original 38). PARTIAL: the daily Groq quota stopped both runs during Diagnose (120b after 30 of 76 calls, 20b after 25), so only those diagnoses exist and no proposer calls ran. Same rubric as hand_checks_v2.json; written by reading each diagnosis.",
+  "openai/gpt-oss-120b": {
+    "cm_deleted_after_rollout": {
+      "correct": true
+    },
+    "cm_edited_after_rollout": {
+      "correct": true
+    },
+    "config_loglevel_first": {
+      "correct": true
+    },
+    "config_port_rollout": {
+      "correct": true
+    },
+    "cpu_throttle_first": {
+      "correct": true
+    },
+    "crash_bad_command_rollout": {
+      "correct": true
+    },
+    "crash_panic_rollout": {
+      "correct": true
+    },
+    "crash_traceback_first": {
+      "correct": true
+    },
+    "dns_missing_service": {
+      "correct": true
+    },
+    "healthy_after_rollout": {
+      "correct": true
+    },
+    "healthy_job_completed": {
+      "correct": true
+    },
+    "healthy_noisy_logs": {
+      "correct": true,
+      "note": "Borderline, counted right (same standard as ho_trap_healthy_retry_logs): the summary says the pod is healthy and the retries succeed, and the root cause says the timeouts do not stop the work; it still suggests investigating the upstream. Under a strict 'root cause must say nothing is wrong' reading it is wrong."
+    },
+    "healthy_web": {
+      "correct": true
+    },
+    "img_private_rollout": {
+      "correct": true,
+      "note": "Registry DNS failure (no registry egress on the box's kind node); same convention as v1/v2."
+    },
+    "img_registry_first": {
+      "correct": true,
+      "note": "Registry DNS failure (no registry egress on the box's kind node); same convention as v1/v2."
+    },
+    "img_tag_rollout": {
+      "correct": true,
+      "note": "Registry DNS failure (no registry egress on the box's kind node); same convention as v1/v2."
+    },
+    "init_migration_first": {
+      "correct": true,
+      "note": "Init container exits non-zero; the real migration error is not in the context. Category-level correct (same as v1/v2)."
+    },
+    "liveness_path_rollout": {
+      "correct": true
+    },
+    "liveness_slow_start_first": {
+      "correct": true
+    },
+    "missing_cm_envfrom_rollout": {
+      "correct": true
+    },
+    "missing_cm_volume_first": {
+      "correct": true
+    },
+    "missing_secret_first": {
+      "correct": true
+    },
+    "missing_secret_key_rollout": {
+      "correct": true
+    },
+    "oom_first": {
+      "correct": true
+    },
+    "oom_leak_first": {
+      "correct": true
+    },
+    "oom_limit_rollout": {
+      "correct": true
+    },
+    "pending_antiaffinity_first": {
+      "correct": true
+    },
+    "pending_cpu_first": {
+      "correct": true
+    },
+    "pending_nodeselector_rollout": {
+      "correct": true
+    },
+    "pod_kill_after_rollout": {
+      "correct": true
+    }
+  },
+  "openai/gpt-oss-20b": {
+    "cm_deleted_after_rollout": {
+      "correct": true
+    },
+    "cm_edited_after_rollout": {
+      "correct": true
+    },
+    "config_loglevel_first": {
+      "correct": true
+    },
+    "config_port_rollout": {
+      "correct": true
+    },
+    "cpu_throttle_first": {
+      "correct": true
+    },
+    "crash_bad_command_rollout": {
+      "correct": true
+    },
+    "crash_panic_rollout": {
+      "correct": true
+    },
+    "crash_traceback_first": {
+      "correct": true,
+      "note": "KeyError for a missing handler -> app crash; regex miss."
+    },
+    "dns_missing_service": {
+      "correct": true
+    },
+    "healthy_after_rollout": {
+      "correct": true
+    },
+    "healthy_job_completed": {
+      "correct": true,
+      "note": "Finished as intended -> correct; regex miss."
+    },
+    "healthy_noisy_logs": {
+      "correct": true,
+      "note": "'not a pod failure' plus 'anomaly false positive' in the summary -> correct."
+    },
+    "healthy_web": {
+      "correct": true
+    },
+    "img_private_rollout": {
+      "correct": true,
+      "note": "Registry DNS failure (no registry egress on the box's kind node); same convention as v1/v2."
+    },
+    "img_registry_first": {
+      "correct": true,
+      "note": "Registry DNS failure (no registry egress on the box's kind node); same convention as v1/v2."
+    },
+    "img_tag_rollout": {
+      "correct": true,
+      "note": "Registry DNS failure (no registry egress on the box's kind node); same convention as v1/v2."
+    },
+    "init_migration_first": {
+      "correct": true,
+      "note": "Init container exits non-zero; the real migration error is not in the context. Category-level correct (same as v1/v2)."
+    },
+    "liveness_path_rollout": {
+      "correct": true
+    },
+    "liveness_slow_start_first": {
+      "correct": true
+    },
+    "missing_cm_envfrom_rollout": {
+      "correct": true
+    },
+    "missing_cm_volume_first": {
+      "correct": true
+    },
+    "missing_secret_first": {
+      "correct": true
+    },
+    "missing_secret_key_rollout": {
+      "correct": true,
+      "note": "Secret lacks key api_token -> correct; regex miss."
+    },
+    "oom_first": {
+      "correct": true
+    },
+    "oom_leak_first": {
+      "correct": true
+    }
+  }
+}

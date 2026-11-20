@@ -35,8 +35,9 @@ from ml.llm_eval.cases import CASES, Case  # noqa: E402
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "data" / "llm_eval"
 # Schema 2 adds diagnose_input.usage, containers[].resources and the
-# Deployment's template_diff / template_refs.
-SCHEMA_VERSION = 2
+# Deployment's template_diff / template_refs. Schema 3 adds diagnose_input.dependencies
+# (in-cluster Services named in the pod's env and whether they serve now).
+SCHEMA_VERSION = 3
 EVAL_LABEL = "kube-copilot.io/eval"
 log = logging.getLogger("capture")
 _print_lock = threading.Lock()
@@ -143,6 +144,7 @@ def capture_context(ns: str, pod_name: str, workload: str) -> dict:
     pod = to_pod_summary(raw)
     events = k8s.get_pod_events(ns, pod_name)
     logs = k8s.get_pod_logs(ns, pod_name, pod=raw)
+    dependencies = k8s.get_dependencies(raw)
     usage = _pod_usage(get_prometheus_client(), ns, pod_name)
     retrieved = retrieve(pod, events, logs, usage)
     anomaly, anomaly_unavailable = _score_pod(
@@ -165,6 +167,7 @@ def capture_context(ns: str, pod_name: str, workload: str) -> dict:
             "anomaly": anomaly.model_dump(mode="json") if anomaly is not None else None,
             "anomaly_unavailable": anomaly_unavailable,
             "usage": usage.model_dump(mode="json") if usage is not None else None,
+            "dependencies": [d.model_dump(mode="json") for d in dependencies],
         },
         "propose_input": {
             "deployment": dataclasses.asdict(deployment) if deployment is not None else None,
@@ -211,10 +214,38 @@ def run_case(index: int, case: Case, keep: bool, out_dir: Path, prefix: str = "k
         say(case.id, f"FAILED: {exc}")
         log.debug(traceback.format_exc())
     finally:
+        for args in case.cleanup:
+            kubectl(*args, check=False)
         if not keep:
             kubectl("-n", ns, "delete", "podchaos", "--all", "--wait=true", "--timeout=60s", check=False)
             kubectl("delete", "namespace", ns, "--wait=false", check=False)
     return result
+
+
+def reretrieve(out_dir: Path, only: set[str]) -> int:
+    """Refresh `retrieved` / `retrieval_query` with the API's retriever over the current runbooks.
+
+    Retrieval only depends on the pod, events, logs and usage already in the fixture, so this
+    gives what the API would retrieve today for the same incident without touching the cluster.
+    """
+    from ml.llm_eval.fixtures import load_fixture
+    from ml.llm_eval.knowledge import retrieve
+
+    changed = 0
+    for path in sorted(out_dir.glob("*.json")):
+        fx = load_fixture(path)
+        if only and fx.id not in only:
+            continue
+        got = retrieve(fx.pod, fx.events, fx.logs, fx.usage)
+        di = fx.raw["diagnose_input"]
+        new = [dataclasses.asdict(c) for c in got.chunks]
+        if new != di["retrieved"] or got.query != di.get("retrieval_query"):
+            changed += 1
+        di["retrieved"], di["retrieval_query"] = new, got.query
+        di["knowledge_unavailable"] = got.knowledge_unavailable
+        path.write_text(json.dumps(fx.raw, indent=2, default=str) + "\n")
+    print(f"re-ran retrieval for {out_dir}: {changed} fixture(s) changed")
+    return 0
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -225,7 +256,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--set", choices=("main", "heldout"), default="main",
                         help="main: cases.py (38 incidents); heldout: cases_heldout.py")
     parser.add_argument("--out", type=Path, default=None,
-                        help="Default: ml/data/llm_eval/cases_v2 (main) or ml/data/llm_eval/heldout")
+                        help="Default: ml/data/llm_eval/cases_v3 (main) or ml/data/llm_eval/heldout_v3")
+    parser.add_argument("--reretrieve", action="store_true",
+                        help="Only re-run retrieval for existing fixtures against the current runbooks (no cluster)")
     parser.add_argument("--relabel", action="store_true",
                         help="Only rewrite the labels of existing fixtures from cases.py (no cluster access)")
     args = parser.parse_args(argv)
@@ -235,7 +268,9 @@ def main(argv: list[str] | None = None) -> int:
     else:
         cases, prefix = CASES, "kc-eval"
     if args.out is None:
-        args.out = DATA_DIR / ("heldout" if args.set == "heldout" else "cases_v2")
+        args.out = DATA_DIR / ("heldout_v3" if args.set == "heldout" else "cases_v3")
+    if args.reretrieve:
+        return reretrieve(args.out, {s for s in args.only.split(",") if s})
     if args.relabel:
         by_id = {c.id: c for c in cases}
         for path in sorted(args.out.glob("*.json")):

@@ -35,6 +35,7 @@ from app.models import (
     AnomaliesResponse,
     AnomalyScore,
     Citation,
+    DependencyStatus,
     DiagnoseResponse,
     Diagnosis,
     DisruptionsResponse,
@@ -152,7 +153,16 @@ def _collect_evidence(k8s: K8sClient, namespace: str, name: str):
         logs = k8s.get_pod_logs(namespace, name, pod=raw_pod)
     except K8sUnavailableError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
-    return pod, events, logs
+    return pod, events, logs, _dependencies(k8s, raw_pod)
+
+
+def _dependencies(k8s: K8sClient, raw_pod) -> list[DependencyStatus]:
+    """Best effort: in-cluster Services the pod's env points at and whether they serve now. Never raises."""
+    try:
+        return k8s.get_dependencies(raw_pod)
+    except Exception as exc:  # noqa: BLE001 — diagnose must still succeed without it
+        logger.info("Dependency check unavailable: %s", exc)
+        return []
 
 
 def _citations(chunks: list[RetrievedChunk]) -> list[Citation]:
@@ -310,14 +320,14 @@ async def diagnose_pod(
     prometheus: PrometheusClient = Depends(get_prometheus_client),
     lifecycle: LifecycleDetector = Depends(get_lifecycle_detector),
 ):
-    pod, events, logs = _collect_evidence(k8s, namespace, name)
+    pod, events, logs, dependencies = _collect_evidence(k8s, namespace, name)
     usage = _pod_usage(prometheus, namespace, name)
     retrieved = _retrieve(retriever, pod, events, logs, usage)
     anomaly, anomaly_unavailable = _score_pod(scorer, prometheus, namespace, name, lifecycle)
 
     if stream:
         return StreamingResponse(
-            _diagnosis_sse(llm, pod, events, logs, retrieved, anomaly, anomaly_unavailable, usage),
+            _diagnosis_sse(llm, pod, events, logs, retrieved, anomaly, anomaly_unavailable, usage, dependencies),
             media_type="text/event-stream",
             headers={
                 "Cache-Control": "no-cache",
@@ -328,7 +338,9 @@ async def diagnose_pod(
 
     with track_diagnose_latency():
         try:
-            diagnosis = llm.explain(pod, events, logs, retrieved=retrieved.chunks, anomaly=anomaly, usage=usage)
+            diagnosis = llm.explain(
+                pod, events, logs, retrieved=retrieved.chunks, anomaly=anomaly, usage=usage, dependencies=dependencies
+            )
             record_llm_call(True)
         except LLMError as exc:
             record_llm_call(False)
@@ -343,6 +355,7 @@ async def diagnose_pod(
         anomaly=anomaly,
         anomaly_unavailable=anomaly_unavailable,
         usage=usage,
+        dependencies=dependencies,
     )
 
 
@@ -360,6 +373,7 @@ async def _diagnosis_sse(
     anomaly: AnomalyScore | None = None,
     anomaly_unavailable: bool = False,
     usage: PodUsage | None = None,
+    dependencies: list[DependencyStatus] | None = None,
 ) -> AsyncIterator[str]:
     citations = [c.model_dump(mode="json") for c in _citations(retrieved.chunks)]
     anomaly_payload = anomaly.model_dump(mode="json") if anomaly is not None else None
@@ -374,6 +388,7 @@ async def _diagnosis_sse(
             "anomaly": anomaly_payload,
             "anomaly_unavailable": anomaly_unavailable,
             "usage": usage.model_dump(mode="json") if usage is not None else None,
+            "dependencies": [d.model_dump(mode="json") for d in dependencies or []],
         },
     )
     yield _sse(
@@ -398,7 +413,7 @@ async def _diagnosis_sse(
     with track_diagnose_latency():
         try:
             async for piece in llm.aexplain_stream(
-                pod, events, logs, retrieved=retrieved.chunks, anomaly=anomaly, usage=usage
+                pod, events, logs, retrieved=retrieved.chunks, anomaly=anomaly, usage=usage, dependencies=dependencies
             ):
                 chunks.append(piece)
                 yield _sse("token", json.dumps({"text": piece}))
